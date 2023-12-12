@@ -1,0 +1,234 @@
+#include <MsgFormat.hpp>
+
+HeaderOfMessage::HeaderOfMessage	(	int		MsgType,		//  Message Type
+										int		SystemId,		//	SYSTEM ID
+										int		SvcId,			//	SERVICE ID
+										int		GrpType,		//	GROUP ID
+										int		ProcType,		//	PROCESS TYPE
+										int		ProcSerial,		//	PROCESS SERIAL NUMBER
+										int		ProcRemark		//	PROCESS REMARK
+									)
+{
+	nMsgType	= MsgType;
+    nSystemId	= SystemId;
+    nSvcId		= SvcId;
+    nGrpType	= GrpType;
+    nProcType	= ProcType;
+    nProcSerial	= ProcSerial;
+    nProcRemark	= ProcRemark;
+    
+//	Delete After TEST
+//	displayHeader();
+//	Delete After TEST
+
+}
+
+char* HeaderOfMessage::get_ProcessId()
+{
+	static char	TempStr[9];
+	strstream	s;
+
+	s 	<< setw(1)	<<	setfill(0)	<<	nSystemId
+		<< setw(1)	<<	setfill(0)	<<	nSvcId
+		<< setw(1)	<<	setfill(0)	<<	nGrpType
+		<< setw(1)	<<	setfill(0)	<<	nProcType
+		<< setw(2)	<<	setfill(0)	<<	nProcSerial
+		<< setw(2)	<<	setfill(0)	<<	nProcRemark	<< ends;
+
+	memcpy(TempStr, s.str(), 8);
+	TempStr[8] = NULL;
+	delete s.str();
+
+	return(TempStr);
+}	//	Modified 2000. 11. 13
+
+void HeaderOfMessage::put_strDate()
+{	
+	DateTime	clsDateTime;
+	strcpy(strDate, clsDateTime.get_date());
+}
+
+void HeaderOfMessage::put_strTime()
+{	
+	DateTime	clsDateTime;
+	strcpy(strTime, clsDateTime.get_time());
+}
+
+void HeaderOfMessage::displayHeader(void)
+{
+	cout << nMsgType 	<< " / " << nSystemId 	<< " / " <<
+			nSvcId   	<< " / " << nGrpType	<< " / " <<
+			nProcType	<< " / " << nProcSerial	<< " / " <<
+			nProcRemark	<< " / " << strDate		<< " / " <<
+			strTime		<< endl;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+void MsgPmsStatus::set_nStatus(int	nValue)
+{
+	put_strDate();
+	put_strTime();
+	nStatus = nValue;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+
+int	 MsgLog::put_nErrorCode	(int nValue)				
+{	
+	nErrorCode = nValue;
+	return nValue;
+}
+
+void MsgLog::put_strMsg		(const char* strValue, int nLen)
+{
+	memcpy(strMsg, strValue, nLen);
+	strMsg[nLen] = NULL;
+
+	cout << "put_strMsg = [" << strMsg << "]" << endl;
+
+}
+void MsgLog::displayValue(void)
+{
+	displayHeader();
+	cout << strMsg << endl;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+void ProcPerformData::put_PerformData(	int 		nDataType,
+										unsigned int unFileNo,
+										unsigned int unUdrCnt,
+										unsigned int unFailUdrCnt,		//smy 2000.11.25
+										unsigned int nQueryCnt,
+										int cnt
+
+									)
+{
+	
+	
+	nBillDataType	= nDataType;
+	if( (cnt == 1) || (cnt==0) )	unFileSeq = unFileNo;
+	if(unFileSeq == unFileNo)
+	{
+		memcpy(strProcId, get_ProcessId(), 8);
+		strProcId[8]   = NULL;											//smy 2000.11.25
+		nUdrCount	  += unUdrCnt;										//smy 2000.11.25
+		nFailUdrCount += unFailUdrCnt;									//smy 2000.11.25
+		nQuery_Count  += nQueryCnt;	
+	}	
+ 
+}
+
+void ProcPerformData::put_strDateTime(int nFlag, int cnt)
+{
+	DateTime	clsDateTime;
+	char		strTemp[15];
+	
+	sprintf(strTemp, "%08s%06s", 	clsDateTime.get_date(), 
+									clsDateTime.get_time());
+	
+	switch(nFlag)
+	{
+		case	FLAG_START	:
+			strcpy(strStartDateTime, strTemp);
+			break;
+		
+		case	FLAG_ACC	:
+			if(cnt == 1)
+			{
+				strcpy(strStartDateTime, strTemp);
+				break;
+			}				
+			else
+			{
+				strcpy(strEndDateTime, strTemp);						
+				break;
+			}	
+		
+		case	FLAG_END	:
+			strcpy(strEndDateTime, strTemp);
+			break;
+	}
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+void ProcEventData::put_ProcEventData(int nExitValue)	//	Start Date & Time Setting
+{
+	nExitCode = nExitValue;
+}
+
+void ProcEventData::put_strEventDateTime(void)
+{
+	DateTime	clsDateTime;
+	char		strTemp[15];
+	
+	sprintf(strTemp, "%08s%06s", 	clsDateTime.get_date(), 
+									clsDateTime.get_time());
+									
+	strcpy(strEventDateTime, strTemp);
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+void ProcErrInfo::put_ProcErrInfo(int nError, char* strErrMsg)
+{
+	DateTime	clsDateTime;
+
+	//	Move to Event Date
+	memcpy(strEventDate, clsDateTime.get_date(), 8);
+	//	Move to Event Time
+	memcpy(strEventTime, clsDateTime.get_time(), 6);
+	//	Move to Error Code
+	sprintf(strErrCode, "%04d", nError);
+	//	Move to Error File Name
+	put_strFileName();
+	//	Move to Error Message
+	
+	//sprintf(strDayTime, "%s %s", clsDateTime.get_date(), clsDateTime.get_time()); //sycho
+	
+	int		nMsgLen = strlen(strErrMsg);
+	if (nMsgLen >= 512)
+		nMsgLen = 511;
+	memcpy(strErrDetail, strErrMsg, nMsgLen);
+	strErrDetail[nMsgLen] = NULL;
+}
+
+void ProcErrInfo::put_strFileName()
+{
+	DateTime	clsDateTime;
+	
+	sprintf(strFileName, 	"/SVC%1d/LOG/%1d_%1d_%02d_%02d.%8s",
+							get_nSvcId(),			//	SERVICE ID
+							get_nGrpType(),			//	GROUP ID
+							get_nProcType(),		//	PROCESS TYPE
+							get_nProcSerial(),		//	PROCESS SERIAL NUMBER
+							get_nProcRemark(),		//	PROCESS REMARK
+							clsDateTime .get_date());
+}
+
+int ProcErrInfo::put_nErrorCode	(int nValue)
+{
+	sprintf(strErrCode, "%04d", nValue);
+	return nValue;
+}
+
+int	ProcErrInfo::write_ErrorLog()
+{
+	ofstream	ErrLogFile(strFileName, ios::out |  ios::app);
+	
+	if (!ErrLogFile)
+		return -1;
+		
+//	DELETE after TEST	
+//	cout << "Str before write file = [" << strErrDetail << endl;
+//	DELETE after TEST	
+	
+	ErrLogFile 	<<	"<"	<< strEventDate << "-" << strEventTime << "> "
+				<<	strErrDetail << endl;
+
+	//ErrLogFile 	<<	"<"	<< strDayTime << "> " << strErrDetail << endl;	//sycho
+				
+					
+	ErrLogFile.close();
+	return 0;
+}
+
+

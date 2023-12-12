@@ -1,0 +1,120 @@
+#include <ProcPerform.hpp>
+
+#define SQLCA_STORAGE_CLASS extern
+EXEC    SQL     INCLUDE SQLCA;
+
+EXEC SQL BEGIN DECLARE SECTION;
+static int		nBillType;
+static int		nFileSeq;
+static char		ProcId[PROC_ID_LEN+1];
+static int		nUdrCount;
+static int		nQueryCount;
+static char		SDate[DATE_LEN+1];
+static char		EDate[DATE_LEN+1];
+EXEC SQL END DECLARE SECTION;
+
+
+//--------------------------------------------------------------------
+int ProcPerform::Set_PerForm(int billtype,int fileseq, int udrcount,int querycount, char *sdate,char *edate)
+{
+	int	nRet;
+	
+	/*
+	DbConnect	clsDbConnect;
+
+	nRet = clsDbConnect.connect();
+	if (nRet < 0)
+	{
+		cout << "DB Connect Failure [" << nRet << "]" << endl;
+		return nRet;
+	}else cout << "DB Connect Success " << endl;
+	*/
+	
+	//---------------- 변수할당
+	nBillType=billtype;
+	nFileSeq=fileseq;
+	sprintf(ProcId, "%d%d%d%d%02d%02d",	sys_id, svc_id, group_type, proc_type, proc_sn, proc_remark);
+	nUdrCount = udrcount;
+	nQueryCount = querycount;
+	strcpy(SDate, sdate);
+	strcpy(EDate, edate);
+	//---------------- 변수할당
+	
+	cout << "INSERT....." << endl;
+	EXEC SQL INSERT INTO t_proc_perform(bill_data_type, file_seq, proc_id, udr_count, query_count, start_date_time, end_date_time)
+	values(:nBillType, :nFileSeq, :ProcId, :nUdrCount, :nQueryCount, TO_DATE(:SDate, 'YYYYMMDDHH24MISS'), TO_DATE(:EDate, 'YYYYMMDDHH24MISS'));
+	
+	nRet = sqlca.sqlcode;
+	if (sqlca.sqlcode == 0)  EXEC SQL COMMIT WORK;
+	else
+	{
+		cout << "[INSERT] T_PROC_PERFORM ERROR : " << (int)sqlca.sqlcode << endl;
+		EXEC SQL ROLLBACK;
+	}	
+	
+	
+	if(nRet == -1) 
+	{	// 추가에러 UPdate 하기 
+		cout << "UPDATE....." << endl;
+		EXEC SQL UPDATE t_proc_perform SET udr_count=:nUdrCount, 
+										query_count=:nQueryCount, 
+										start_date_time=TO_DATE(:SDate, 'YYYYMMDDHH24MISS'),
+										end_date_time=TO_DATE(:EDate, 'YYYYMMDDHH24MISS')
+					WHERE bill_data_type =:nBillType and file_seq=:nFileSeq and proc_id=:ProcId;
+		
+		
+		if (sqlca.sqlcode == 0)  EXEC SQL COMMIT WORK;
+		else
+		{
+			cout << "[UPDATE] T_PROC_PERFORM ERROR : " << sqlca.sqlcode << endl;
+			EXEC SQL ROLLBACK;
+		}	
+	}
+	
+
+	cout << "nBillType   = " << nBillType << endl;
+	cout << "nFileSeq    = " << nFileSeq << endl;
+	cout << "ProcId      = " << ProcId << endl;
+	cout << "nUdrCount   = " << nUdrCount << endl;
+	cout << "nQueryCount = " << nQueryCount << endl;
+	cout << "SDate 	     = " << SDate << endl;
+	cout << "EDate	     = " << EDate << endl;
+
+	nRet = (int)sqlca.sqlcode;
+
+ 	//clsDbConnect.disconnect();
+
+ 	return (nRet);
+}
+
+
+/*
+//--------------------------------------------------------------------
+int main(int argc, char *argv[])
+{
+	
+	if(argc<6) 
+	{
+		cout << " Usage:" << argv[0] << "[systemid] [serviceid] [groupid] [processtype] [serialno] [remarks]" << endl;
+		exit(1);
+	}
+	
+	int			nRet;
+	DbConnect	clsDbConnect;
+
+	nRet = clsDbConnect.connect();
+	if (nRet < 0)
+	{
+		cout << "DB Connect Failure [" << nRet << "]" << endl;
+		return nRet;
+	}else cout << "DB Connect Success " << endl;
+	
+	ProcPerform Perform(atoi(argv[1]),atoi(argv[2]),atoi(argv[3]),atoi(argv[4]),atoi(argv[5]), atoi(argv[6]));
+	
+	//Perform.Set_PerForm(1, 20, 6, 20, "20001111121220", "20001111121250");
+	Perform.Set_PerForm(1, 20, 6, 100, "20001111121220", "20001115121250");
+	
+	clsDbConnect.disconnect();
+	exit(1);
+}
+*/

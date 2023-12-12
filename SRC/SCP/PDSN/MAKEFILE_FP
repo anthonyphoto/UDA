@@ -1,0 +1,20 @@
+include $(HOME)/common/env_proc_32.mk
+include $(HOME)/common/env_uda.mk
+
+MFLAGS=-D_SVC1
+
+EXE = pdsnif_fp
+OBJS = pdsn_if_fp.o $(UDALINKLIBES)
+
+all : $(EXE)
+
+$(EXE) : $(OBJS)
+	$(CC) -o $@ $(OBJS) $(PROLDLIBS) $(UDASQLLIBES) $(UDALINKLIBES)
+
+install : $(EXE)
+	$(INSTALL2) $(EXE) $(COMMBINPATH)/
+	rm -rf $(EXE) *.o core 
+
+clean :	
+	rm -rf $(EXE) *.o core 
+	touch *.cpp

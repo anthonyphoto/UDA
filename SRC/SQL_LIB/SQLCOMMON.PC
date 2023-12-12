@@ -1,0 +1,136 @@
+/******************************************************************
+* 파 일 명     : SqlCommon.pc 			     					  *
+* 기   능                                                          *
+* : DB connection, close, 그리고 인자로 받은 프로세스 형상구분을        *
+*   가지고 있는 파일.                     	 				 		  *
+* 작 성 자     : 권 종 욱               		      				  *
+* first data  :  				  	     						  *
+* last updata : 2000. 12. 23  by 한 근 희   	 					  *
+* 관 련 화 일  : SqlCommon.hpp              						  *
+* program history                        						  *
+*  2000.12.23 -> 프로그램 주석추가        	 				 		  *
+* bug fix                        	     						  *
+*                         	        	 						  *
+******************************************************************/
+#include <iostream.h>
+#include <sys/unistd.h>
+#include "SqlCommon.hpp"
+
+EXEC    SQL     INCLUDE SQLCA;
+
+EXEC SQL BEGIN DECLARE SECTION;
+	VARCHAR	username[32];
+	VARCHAR	passwd[32];
+EXEC SQL END DECLARE SECTION;
+
+//===============================================================
+// DbConnect Method												=
+//  : connect method 호출				           				=
+// argument : None												=
+// return value : None											=
+//																=
+//===============================================================
+DbConnect::DbConnect()
+{
+	strcpy((char*)username.arr, "uda");
+	username.len = strlen((char*)username.arr);
+	strcpy((char*)passwd.arr, "uda");
+	passwd.len = strlen((char*)passwd.arr);
+}
+//===============================================================
+// connect Method												=
+//  : DB에 연결							           				=
+// argument : None												=
+// return value : Sql code										=
+//																=
+//===============================================================
+int DbConnect::connect()
+{
+	EXEC SQL CONNECT :username IDENTIFIED BY :passwd;
+	return((int)sqlca.sqlcode);
+}
+//===============================================================
+// disconnect Method											=
+//  : DB disconnect						           				=
+// argument : None												=
+// return value : Sql code										=
+//																=
+//===============================================================
+int DbConnect::disconnect()
+{
+	EXEC SQL COMMIT WORK RELEASE;
+	return((int)sqlca.sqlcode);
+}
+//===============================================================
+// Constructor Method											=
+//  :입력받은 인자를 클래스의 속성값에 대입해 준다.			  		=
+// argument : 프로세스 형상구분 6가지								=
+// return value : None											=
+//																=
+//===============================================================
+ProcessID::ProcessID(	int		nLSystemId,
+						int		nLServiceId,
+						int		nLGroupType,
+						int		nLProcessType,
+						int		nLSerialNo,
+						int		nLRemark
+					)
+{
+//	this->sys_id		=	nLSystemId;
+//	this->svc_id		=   nLServiceId;
+//	this->group_type	=   nLGroupType;
+//	this->proc_type		=   nLProcessType;
+//	this->proc_sn	    =   nLSerialNo;
+//	this->proc_remark	=   nLRemark;
+
+	sys_id		=	nLSystemId;
+	svc_id		=   nLServiceId;
+	group_type	=   nLGroupType;
+	proc_type	=   nLProcessType;
+	proc_sn	    =   nLSerialNo;
+	proc_remark	=   nLRemark;
+}
+
+/*
+strstream ProcessID::operator << (strstream& s, ProcessID& clsPID)
+{
+	strstream& s;
+
+	s 	<< setw(1) << setfill('0') << this->sys_id
+		<< setw(1) << setfill('0') << this->svc_id
+		<< setw(1) << setfill('0') << this->group_id
+		<< setw(1) << setfill('0') << this->proc_type
+		<< setw(2) << setfill('0') << this->proc_sn
+		<< setw(2) << setfill('0') << this->proc_remark;
+
+	return s;
+}
+
+char*	ProcessID::makeStrProcessID()
+{
+	static char		strProcessID[10];
+	strstream		s;
+
+	s << clsPID;
+
+	memcpy(strProcessID, s.str(), strlen(s.str()));
+
+	delete s.str();
+
+	return (strProcessID);
+}
+
+int		ProcessID::makeIntProcessID(ProcessID& clsPID)
+{
+	strstream	s;
+	int			nRet;
+
+	s << clsPID;
+
+	nRet = atoi(s.str());
+
+	delete s.str();
+
+	return nRet;
+}
+*/

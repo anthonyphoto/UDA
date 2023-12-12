@@ -1,0 +1,28 @@
+####################
+# Declare
+####################
+CC        = aCC
+OBJECTS   = ctime.o ptrList.o 
+COMMONLIB = pmslib.a
+
+
+
+####################
+# Process
+####################
+all : $(COMMONLIB)
+
+$(COMMONLIB) : $(OBJECTS)
+	ar r $(COMMONLIB) $(OBJECTS)
+    				
+clean:
+	rm -rf $(OBJECTS) $(COMMONLIB)
+
+
+
+####################
+# Suffix
+####################
+.SUFFIXES: .cpp .o
+.cpp.o :
+	$(CC) -c -o $*.o $*.cpp

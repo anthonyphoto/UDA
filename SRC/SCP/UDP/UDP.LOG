@@ -1,0 +1,35 @@
+[NOTICE] CreateUDPServer => @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+serv_addr.sin_addr.s_addr => 150.25.4.141
+serv_addr.sin_port => 1813
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+3
+SERV_UDP_ADDR => 150.25.4.141
+SERV_UDP_PORT => 1813
+<<<<   RecvfromUDPSocket       >>>>
+recv_addr.sin_addr.s_addr => 70.1.9.34
+recv_addr.sin_port => 1813
+getpeername =>-1
+recv_addr.sin_addr.s_addr => 1174472994
+recv_addr.sin_addr.s_addr => 70.1.9.34
+recv_addr.sin_port => 1813
+recv_addr.sin_addr.s_addr => 70.1.9.34
+recv_addr.sin_port => 1813
+getpeername =>-1
+recv_addr.sin_addr.s_addr => 1174472994
+recv_addr.sin_addr.s_addr => 70.1.9.34
+recv_addr.sin_port => 1813
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+_socket->recv_addr.sin_addr.s_addr => 70.1.9.34
+_socket->recv_addr.sin_port => 1813
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+Code       : 
+Identifier : Ë
+Length     : 60
+Authenticator : 0x7f7f1954
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+ ### MD5 KEY ERROR ###
+0000:0000   04 CB 00 3C 05 D3 35 84 5D 50 D1 58 D9 53 E8 AF   ...<..5.]P.X.S.. 
+0000:0010   48 F3 0E 7F                                       H..             
+0000:0000   04 2B 01 EB 3C C0 59 EB E8 18 33 2B 2A 5A CA 51   .+..<.Y...3+*Z.Q 
+0000:0010   6A AA 6A 2B 01 1C 73 6B 74 65 6C 65 63 6F 6D 40   j.j+..sktelecom@ 
+0000:0020   77 61 70 39 35 63 2E 6E                           wap95c.n         

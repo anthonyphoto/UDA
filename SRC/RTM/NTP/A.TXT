@@ -1,0 +1,27 @@
+8c8
+< extern  char*	    PATH_NAME_NTOP_CFG;
+---
+> const char*	    PATH_NAME_NTOP_CFG			=   "/home/uda1/user/smy/ntop/NTOP_Info.cfg";
+42d41
+< 		SCPFormatNTOP.get_ItemE()->set_ServiceId(1);							// nTop Service = 1
+63,72c62,70
+< 				 << "[SpecificKey     ] " 		<< (int)SCPFormatNTOP.get_ItemA2()->get_Key()  	<< endl
+< 				 << "[Min             ] " 		<< SCPFormatNTOP.get_ItemA2()->get_Min() 	 	<< endl
+< 				 << "[Start Time      ] " 		<< SCPFormatNTOP.get_ItemC()->get_StartT() 		<< endl
+< 				 << "[End   Time      ] " 		<< SCPFormatNTOP.get_ItemC()->get_EndT()   		<< endl
+< 				 << "[ServiceIndicator]"		<< SCPFormatNTOP.get_ItemE()->get_ServiceId()	<< endl
+< 				 << "[ChargintClass   ] " 		<< SCPFormatNTOP.get_ItemE()->get_CgClass() 	<< endl
+< 				 << "[비할인Packet수  ] " 		<< SCPFormatNTOP.get_ItemE()->get_PacketN1()	<< endl
+< 				 << "[할인  Packet수  ] " 		<< SCPFormatNTOP.get_ItemE()->get_PacketN2()	<< endl				 
+< 				 << "[심야  Packet수  ] " 		<< SCPFormatNTOP.get_ItemE()->get_PacketN3()	<< endl				 
+< 				 << "[Use Money       ] " 		<< SCPFormatNTOP.get_ItemE()->get_UseMoney()	<< endl				 
+---
+> 				 << "[SpecificKey    ] " 		<< (int)SCPFormatNTOP.get_ItemA2()->get_Key()  	<< endl
+> 				 << "[Min            ] " 		<< SCPFormatNTOP.get_ItemA2()->get_Min() 	 	<< endl
+> 				 << "[Start Time     ] " 		<< SCPFormatNTOP.get_ItemC()->get_StartT() 		<< endl
+> 				 << "[End   Time     ] " 		<< SCPFormatNTOP.get_ItemC()->get_EndT()   		<< endl
+> 				 << "[ChargintClass  ] " 		<< SCPFormatNTOP.get_ItemE()->get_CgClass() 	<< endl
+> 				 << "[비할인Packet수] " 		<< SCPFormatNTOP.get_ItemE()->get_PacketN1()	<< endl
+> 				 << "[할인  Packet수] " 		<< SCPFormatNTOP.get_ItemE()->get_PacketN2()	<< endl				 
+> 				 << "[심야  Packet수] " 		<< SCPFormatNTOP.get_ItemE()->get_PacketN3()	<< endl				 
+> 				 << "[Use Money      ] " 		<< SCPFormatNTOP.get_ItemE()->get_UseMoney()	<< endl				 

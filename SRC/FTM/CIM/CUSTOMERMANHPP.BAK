@@ -1,0 +1,76 @@
+/****************************************************************************/
+/* 파 일 명 : CustmerMan.hpp		    									*/
+/* 작 성 자 : KSI / 한근희								                    */
+/* 기    능 : CCustomerMan Class 정의	                            		*/
+/* 작성일자 : 2000년 10월 29일                                              */
+/* 변경일자 :     년   월   일                                              */
+/* 관련화일 : SharedMemLegacy.hpp, scpformat.hpp							*/
+/* 기    타 :                                                               */
+/****************************************************************************/
+#ifndef CUSTOMERMAN_HPP
+#define CUSTOMERMAN_HPP
+                           
+//#include <SharedMemLegacy.hpp>
+#include <sys/unistd.h>
+#include <CustomerBtree.hpp>
+#include <scpformat.hpp>
+
+#define  EVENT_DATE_LEN  8 
+#define  EVENT_TIME_LEN  6
+#define  PRICE_PLAN_LEN  5
+#define  DB_USERNAME  "uda"
+#define  DB_PASSWORD  "uda"
+
+// Scp-if(R) to 0m040|8.
+MessageQueue<CustFormat> mqCUST("scptocust.txt",  3000,  SCP_JOBID, SCP_PROID, GUE_JOBID, GUE_PROID);
+// 0m040|8. to SCP-IF(S)
+MessageQueue<ReCustFormat> mqReCUST("custtoscp.txt",  3000,  GUE_JOBID, GUE_PROID, SCP_JOBID2, SCP_PROID);
+
+const    int				 CUSTOMER_DEBUG=1;
+const   int                 SIZE_CUSTFORMATMDB  = sizeof( CustFormatMdb );
+const   char*               DATA_NAME_SHM       = "../include/CustomerBtree.hpp";
+const   unsigned char       DATA_ID_SHM         = 'H';
+
+class CCustomerMan
+{
+	public:
+								CCustomerMan(); 
+								~CCustomerMan();
+		int         		    nTransactionID;
+
+		void 					ReadDataToMQ( void );
+		int        		        ReponseToMQ( ReCustFormat* pSendUdr );
+		int            		    TransactInsert( CustFormat stCustFormat, CustFormatMdb* pCustFormatMdb );
+		void           		    PrintAllFormat( CustFormat *pCustFormat, CustFormatMdb* pCustFormatMdb );
+		int						SearchMdb( int nSearchMin );
+		/*
+		TransactUpdate();
+		TransactDelete();
+		*/
+
+	private:
+		CustFormat				cRecvData;
+		CustFormatMdb 			cCustFormatMdb;
+		ReCustFormat    		cSendData;
+		fstream         		fInOut;
+		CCustomerBtree*         pCustomerBtree;
+		ShmMemory*         		shmData;
+		CustFormatMdb* 			stPtrDataIndexInfo;
+		HandleOfAllocIndex*     pAllocDataIndexC;
+
+		int 					ConnectToDB( void );
+		int 					InsertDb( CustFormat cRecvUdr );
+		int                     InsertMdb( CustFormatMdb* pCustFormatMdb, CustFormat stCustFormat );
+		void 					MatchToDb( CustFormat stUdr );
+		void 					ConversionMsID( CustFormatMdb* pCustFormatMdb, CustFormat stCustFormat );
+		void					PrintCustFormat( ostream& output, CustFormat* pRecvData );
+		void 					PrintCustFormatMdb( ostream& output, CustFormatMdb* pCustFormatMdb );
+		/*
+		void       			    UpdateDb( CustFormat RecvUdr );
+		void           			DeleteDb( CustFormat RecvUdr );
+		UpdateMdb();
+		DeleteMdb();
+	*/
+};
+
+#endif

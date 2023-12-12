@@ -1,0 +1,22 @@
+include $(HOME)/common/env_proc_32.mk
+include $(HOME)/common/env_tplmdb.mk
+
+OBJS = HandleOfAllocIndex_new.o FileLogWrite.o CommCfgFile.o
+#OBJS = CSemHandler.o SharedMemLegacy.o HandleOfAllocIndex_new.o FileLogWrite.o CommCfgFile.o
+
+all : $(OBJS)
+	ar r $(TPLMDBLIBES) $(OBJS)
+	ranlib $(TPLMDBLIBES)
+	rm -rf $(OBJS) core
+	@echo ..............Library building finished .............................
+	@ctags -w *cpp
+
+install : $(OBJS)
+	$(INSTALL2) $(TPLMDBLIBES) $(COMMLIBPATH)/bak/
+	rm -rf $(OBJS) core
+	@echo ..............Library install finished .............................
+
+clean :
+	rm -rf $(OBJS) core
+	touch *
+	@echo ..............Library clean finished .............................

@@ -1,0 +1,820 @@
+/******************************************************************
+* 파 일 명     : LimitMan.hpp 			     					  *
+* 기   능                                                          *
+* : UDR을 인자로 받아, 한도관리요건을 검색한후, 한도관리를 수행.          *
+* 작 성 자     : Han Guen Hee                    				  *
+* first data  : 2000. 10. 31       	     						  *
+* last updata : 2000. 12. 22        		 					  *
+* 관 련 화 일  : Aggregator.hpp, AGG_AccountCnt.cfg				  *
+* program history                        						  *
+* 	Service Stop 요청 후, 중간정산을 해준다  -> 2001. 01. 11    	  *
+* bug fix                        	     						  *
+*                         	        	 						  *
+******************************************************************/
+#ifndef LIMITMAN_HPP
+#define LIMITMAN_HPP
+
+#include <scpformat.hpp>
+#include <RateRule.hpp>
+#include <fileSearchC.hpp>
+
+char 	PATH_NAME_ACCOUNT_COUNT[80] 	= "/SVC#/DATA/AGG_AccountCnt.cfg";
+#define LIMIT_DEBUG	1
+enum LIMIT_TYPE      { NOT_LIMIT, LIMIT_PACKET, LIMIT_TIME };
+// AGG -> Scp-if(S)
+MessageQueue<SCPFormatAgg> *mqSCP;
+
+class CLimitMan
+{
+	public:
+		CLimitMan( int nServiceId );
+		~CLimitMan();
+		// 해당 UDR이 한도관리를 해야하는지 찾아내는 메소드
+		int				 	   	CompareServiceType( UdrFormat* pUdrFormat );
+		int						LimitAccessRequest( UdrFormat* pUdrFormat, int nCompareFlag );
+		int						LimitInterimAccountRequest( UdrFormat* pUdrFormat, UdrFormat* pSearchUdrFormat, int nCompareFlag );
+		int						LimitServiceEndRequest( UdrFormat* pUdrFormat, UdrFormat* pSearchUdrFormat, int nCompareFlag );
+		int						MakeAndSendRequest( UdrFormat* pUdrFormat, int nFlag );
+		void 					CompareLimitInfo( UdrFormat* pUdrFormat, UdrFormat* pSearchUdrFormat );
+	private:
+		short				    nServiceType;   //  Packet or nTop
+        short			 	   	nSubsType;   //  PPS or TTL_School
+        int						nForwardMUXOpt; // 전송속도
+        unsigned int  			unMsId;
+        unsigned int 			nAccountCount;   // 한도정보요청 count를 저장하는 변수.
+        AccountCnt*				pAccountCnt;     // 한도정보요청 count를 가져오기 위한 인스턴스
+        char    				strAccountSessionID [LEN_ACCOUNT_SESSION_ID+1];
+        char   					strCorrelationID    [LEN_CORRELATION_ID+1];
+        SCPFormatAgg      	  	cRequestData;	 // SCP I/F와 통신하기 위한 Data Format
+        RateRule 				rate;	         // 주어진 시간과 패킷량에 따라 금액을 계산하기 위한 인스턴스
+		// 한도정보를 A-S MQ에 요청하는 메소드.
+		int 					RequireLimitInfo( SCPFormatAgg* pRequestData );
+
+};
+//===============================================================
+// Constructor Method											=
+//  : 한도관리에 필요한 Config정보를 읽어온다.				  		=
+// argument : nServiceId -> Service ID							=
+// return value : None											=
+//																=
+//===============================================================
+CLimitMan::CLimitMan(int nServiceId )
+{
+	// 몇번만에 한도정보중간정산을 해야하는지를 나타내는 
+	// Config data를 읽어오는 부분.
+	sprintf( PATH_NAME_ACCOUNT_COUNT, "/SVC%d/DATA/AGG_AccountCnt.cfg",nServiceId );
+	pAccountCnt = new AccountCnt(PATH_NAME_ACCOUNT_COUNT);
+	pAccountCnt->read_AccountCnt();
+	nAccountCount = pAccountCnt->getAccountCnt();
+}
+// destructor
+CLimitMan::~CLimitMan()
+{
+	delete pAccountCnt;
+}
+//===============================================================
+// LimitAccessRequest Method				   					=
+//  : 한도정보요청을 해주는 Method						       		=
+// argument     :  pUdrFormat -> 처리하기 위해 들어온 UdrFormat	=
+//				   nCompareFlag -> Packet과금, or 시간 과금		=
+// return value : 1-> success									=
+//                0-> fail										=
+//																=
+//===============================================================
+int	CLimitMan::LimitAccessRequest( UdrFormat* pUdrFormat, int nCompareFlag )
+{
+	// UDR의 LIMIT_INFO부분을 채워준다.
+	// Start에 해당하는 변수만.
+	pUdrFormat->get_LimitInfo()->put_nOperationID( 0 );
+	pUdrFormat->get_LimitInfo()->put_nSessionStartTime( pUdrFormat->get_ItemG()->get_nStartEventTime() );
+	pUdrFormat->get_LimitInfo()->put_nSessionEndTime( pUdrFormat->get_ItemG()->get_nEndEventTime() );
+	pUdrFormat->get_LimitInfo()->put_nSessionCount( 0 );
+	pUdrFormat->get_LimitInfo()->put_nLimitPrice( 0 );
+	pUdrFormat->get_LimitInfo()->put_nNtopFreeTime( 0 );
+	pUdrFormat->get_LimitInfo()->put_nRemain( 0 );
+	pUdrFormat->get_LimitInfo()->put_nQueryResult( 0 );
+	
+	if( !MakeAndSendRequest( pUdrFormat, 0 ) )
+	{
+		if( LIMIT_DEBUG )
+		{
+			// Error Code를 추가해주어야 한다.
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "Error Make And Send Request!!" << endl;
+			return 0;
+		}
+	}
+	else
+	{
+		if( LIMIT_DEBUG )
+		{
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "Complete Make And Send Request!!" << endl;
+		}
+	}
+	
+	return 1;
+}
+//===============================================================
+// LimitInterimAccountRequest Method		   					=
+//  : 한도정보 중간계산을 해주는 Method.				       		=
+//	  짜투리 시간과 octet은 적용시키지 않았음.						=
+// argument     :  pUdrFormat -> 처리하기 위해 들어온 UdrFormat	=
+//				   pSearchUdrFormat -> 이전에 MDB에 있던 DATA		=
+//				   nCompareFlag -> Packet과금, or 시간 과금		=
+// return value : 1-> success									=
+//                0-> fail										=
+//																=
+//===============================================================
+int	CLimitMan::LimitInterimAccountRequest( UdrFormat* pUdrFormat, UdrFormat* pSearchUdrFormat, int nCompareFlag )
+{
+	int 	nTempSessionCount;
+	int 	nTempOperationID;
+	int		nRatedTatalDataOctet;
+	int 	nTatalDataOctet;
+	int 	nRatingDataOctet;
+	int		nRatingPrice=0;
+	int 	nRatingTime;
+	int		nTempPrice;
+	int		nTempTime;
+	int		nRemainPrice=0;
+	int		nRemainTime=0;
+	int		nRemain=0;
+	int		nQueryResultFlag=0;
+	
+	// 과거의 정보를 얻어온다.
+	nTempSessionCount = pSearchUdrFormat->get_LimitInfo()->get_nSessionCount();
+	nTempOperationID = pSearchUdrFormat->get_LimitInfo()->get_nOperationID();
+	nQueryResultFlag = pSearchUdrFormat->get_LimitInfo()->get_nQueryResult();
+	
+	// UDR의 LIMIT_INFO부분을 채워준다.
+	// OperationID를 증가.******************
+	pUdrFormat->get_LimitInfo()->put_nOperationID( ++nTempOperationID );
+	pUdrFormat->get_LimitInfo()->put_nSessionStartTime( pSearchUdrFormat->get_LimitInfo()->get_nSessionStartTime() );
+	pUdrFormat->get_LimitInfo()->put_nSessionEndTime( pUdrFormat->get_ItemG()->get_nEndEventTime() );
+	pUdrFormat->get_LimitInfo()->put_nSessionCount( ++nTempSessionCount );
+	pUdrFormat->get_LimitInfo()->put_nLimitPrice( pSearchUdrFormat->get_LimitInfo()->get_nLimitPrice() );
+	pUdrFormat->get_LimitInfo()->put_nNtopFreeTime( pSearchUdrFormat->get_LimitInfo()->get_nNtopFreeTime() );
+	pUdrFormat->get_LimitInfo()->put_nQueryResult( nQueryResultFlag );
+	
+	switch( nCompareFlag )
+	{
+		case LIMIT_PACKET:
+			// 과금할 패킷량을 계산
+			nTatalDataOctet = pUdrFormat->get_ItemG()->get_nDataOctetCntTerminat() + pUdrFormat->get_ItemG()->get_nDataOctetCntOrigin();
+			// 과거에 과금된 정보.
+			nRatingDataOctet =  pSearchUdrFormat->get_LimitInfo()->get_nRemain();
+			// 과거에 과금된 정보를 유지해야 한다.
+			pUdrFormat->get_LimitInfo()->put_nRemain( nRatingDataOctet );
+			nTatalDataOctet = nTatalDataOctet - nRatingDataOctet;
+			if( nTatalDataOctet <= 0 )
+			{
+				*AggregatorLogM << AggregatorLogM->ErrorCode(4201) 
+					<< "Small Rating Data Octet!!" << endl;
+				return 0;
+			}
+			// 게산괸 패킷량으로 사용금액을 계산.
+			// 계산하고 남은 짜투리는 적용시키지 않는다.
+			nRatingPrice = rate.GetRate(2, pUdrFormat->get_LimitInfo()->get_nSessionStartTime(), pUdrFormat->get_LimitInfo()->get_nSessionEndTime(), 0, nTatalDataOctet );
+			// 계산하고 남은 짜투리 패킷
+			nRemain = rate.GetLimitSec();
+			if( LIMIT_DEBUG )
+			{
+				*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "============ 한도처리결과 ===========" <<  endl;
+				*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "한도 금액 : " << pUdrFormat->get_LimitInfo()->get_nLimitPrice() <<  endl;
+				*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "사용 DataOctet : " << nTatalDataOctet<<  endl;
+				*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "사용금액 : " << nRatingPrice<<  endl;
+				*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "과금후 나머지 DataOctet : " << nRemain <<  endl;
+				
+			}	
+			pUdrFormat->get_LimitInfo()->put_nUsePrice( nRatingPrice );
+			nTempPrice=pUdrFormat->get_LimitInfo()->get_nLimitPrice()-nRatingPrice;
+			
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "남은 한도 금액 : " << nTempPrice <<  endl;
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "nQueryResultFlag : " << nQueryResultFlag <<  endl;
+			// 한번도 한도요청 응답을 받지 않았을때는 stop request를 하지 않아야 한다.
+			// 일단 한도 금액이 0인것으로 판단한다.
+			if( nQueryResultFlag )
+			{
+				// 한도 초과시 Service Stop Request요청
+				if( nTempPrice <= 0 )
+				{
+					// Service Stop Request
+					if( !MakeAndSendRequest( pUdrFormat, 2 ) )
+					{
+						if( LIMIT_DEBUG )
+						{
+							// Error Code를 추가해주어야 한다.
+							*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+								<< "Error Make And Send Request!!" << endl;
+							return 0;
+						}
+					}
+					else
+					{
+						if( LIMIT_DEBUG )
+						{
+							*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+								<< "Complete Make And Send Request!!" << endl;
+						}
+					}
+					// Service Stop 요청 후, 중간정산을 해준다.
+					// 2001. 01. 11
+					nTempSessionCount=nAccountCount;
+				}
+			}
+			break;
+		case LIMIT_TIME:
+			// 과금할 시간을 계산
+			nRatingTime = pUdrFormat->get_LimitInfo()->get_nSessionEndTime() - pUdrFormat->get_LimitInfo()->get_nSessionStartTime();
+			if( nRatingTime < 0 )
+			{
+				*AggregatorLogM << AggregatorLogM->ErrorCode(4202) 
+					<< "Small Rating Time!!" << endl;
+				return 0;
+			}
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "============ 한도처리결과 ===========" <<  endl;
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "한도 금액 : " << pUdrFormat->get_LimitInfo()->get_nLimitPrice() <<  endl;
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "N-top 무료사용시간 : " << pUdrFormat->get_LimitInfo()->get_nNtopFreeTime()<<  endl;
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "총 사용시간 : " << nRatingTime <<  endl;
+			
+			// N-top 무료사용시간이 있다면, 먼저 무료사용시간에서 사용시간을 빼준다.
+			nRemainTime=pUdrFormat->get_LimitInfo()->get_nNtopFreeTime()-nRatingTime;
+			
+			// 한도 초과시 Service Stop Request요청
+			if( nRemainTime <= 0 )			
+			{
+					nTempTime = nRemainTime*-1;
+					// 남은 시간양으로 사용금액을 계산
+					// 요율적용은 n-Top무료시간을 뺀 이후부터 적용한다.
+					nTempPrice = rate.GetRate(1, pUdrFormat->get_LimitInfo()->get_nSessionStartTime()+(nRatingTime-nTempTime), pUdrFormat->get_LimitInfo()->get_nSessionEndTime(),0 );
+					// 계산하고 남은 짜투리 시간.
+					nRemain = rate.GetLimitSec();	
+					pUdrFormat->get_LimitInfo()->put_nUseTime( nRatingTime-nTempTime );
+					pUdrFormat->get_LimitInfo()->put_nUsePrice( nTempPrice );
+					nRemainPrice = pUdrFormat->get_LimitInfo()->get_nLimitPrice()-nTempPrice;
+					
+					*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+						<< "N-top무료사용시간을 초과한 시간 : " << ( nRemainTime * (-1) ) <<  endl;
+					*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+						<< "사용금액 : " << nTempPrice<<  endl;
+					*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+						<< "계산되지않은 시간 : " << nRemain <<  endl;	
+					*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+						<< "남은 한도 금액 : " << nRemainPrice <<  endl;
+					*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+						<< "nQueryResultFlag : " << nQueryResultFlag <<  endl;
+				// flag check 요망.
+				if( nQueryResultFlag )
+				{
+					if( nRemainPrice <= 0 )
+					{
+						// Service Stop Request
+						if( !MakeAndSendRequest( pUdrFormat, 2 ) )
+						{
+							if( LIMIT_DEBUG )
+							{
+								// Error Code를 추가해주어야 한다.
+								*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+									<< "Error Make And Send Request!!" << endl;
+								return 0;
+							}
+						}
+						else
+						{
+							if( LIMIT_DEBUG )
+							{
+								*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+									<< "Complete Make And Send Request!!" << endl;
+							}
+						}
+						// Service Stop 요청 후, 중간정산을 해준다.
+						// 2001. 01. 11
+						nTempSessionCount=nAccountCount;
+					}
+				}
+			}
+			else
+			{
+				*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "사용한 시간 : " << nRatingTime <<  endl;
+				*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "남은 N-top무료사용시간 : " << nRemainTime<<  endl;
+				pUdrFormat->get_LimitInfo()->put_nUseTime( nRatingTime );
+			}
+			break;
+		default :
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "Error Compare Limit Info!!" << endl;
+			break;
+	}
+	
+	*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "nTempSessionCount=" << nTempSessionCount <<endl;	
+	// 만약 중간정산요청할 횟수가 됐다면
+	if( nTempSessionCount == nAccountCount )
+	{
+		// 중간정산 요청.
+		if( !MakeAndSendRequest( pUdrFormat, 1 ) )
+		{
+			if( LIMIT_DEBUG )
+			{
+				*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "Error Make And Send Request!!" << endl;
+				return 0;
+			}
+		}
+		else
+		{
+			if( LIMIT_DEBUG )
+			{
+				*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "Complete Make And Send Request!!" << endl;
+			}
+		}
+		
+		// UDR의 LIMIT_INFO부분의 변수들을 초기화해 준다.
+		pUdrFormat->get_LimitInfo()->put_nSessionCount( 0 );
+		
+		// UDR의 LIMIT_INFO부분의 변수들을 계산해준다.
+		// sessing count, nLimitPrice, nNtopFreeTime, nUsePrice, nUseTime
+		switch( nCompareFlag )
+		{
+			case LIMIT_PACKET:
+				pUdrFormat->get_LimitInfo()->put_nLimitPrice( nTempPrice );
+				
+				pUdrFormat->get_LimitInfo()->put_nUsePrice( 0 );
+				// SessionStartTime을 Update해준다.
+				pUdrFormat->get_LimitInfo()->put_nSessionStartTime( pUdrFormat->get_LimitInfo()->get_nSessionEndTime() );
+				// 과금된 패킷량을 계산.( (총패킷량-짜투리) + 과거에 과금된 패킷량 )
+				pUdrFormat->get_LimitInfo()->put_nRemain( (nTatalDataOctet-nRemain)+nRatingDataOctet );
+				
+				break;
+			case LIMIT_TIME:
+				if( nRemainTime >= 0 )
+				{
+					pUdrFormat->get_LimitInfo()->put_nNtopFreeTime( nRemainTime );
+				}
+				else
+				{
+					pUdrFormat->get_LimitInfo()->put_nNtopFreeTime( 0 );
+					pUdrFormat->get_LimitInfo()->put_nLimitPrice( nRemainPrice );
+				}
+				pUdrFormat->get_LimitInfo()->put_nUseTime( 0 );
+				pUdrFormat->get_LimitInfo()->put_nUsePrice( 0 );
+				// SessionStartTime을 Update해준다.
+				pUdrFormat->get_LimitInfo()->put_nSessionStartTime( ( pUdrFormat->get_LimitInfo()->get_nSessionEndTime()- nRemain ) );	
+				// pUdrFormat->get_LimitInfo()->put_nRemain( 0 );
+				break;
+			default :
+				*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "Error Compare Limit Info!!" << endl;
+				break;
+		}
+	}
+	
+	return 1;
+}
+//===============================================================
+// LimitServiceEndRequest Method		  	 					=
+//  : 한도정보 END요청을 해주는 Method.					       		=
+// argument     :  pUdrFormat -> 처리하기 위해 들어온 UdrFormat	=
+//				   pSearchUdrFormat -> 이전에 MDB에 있던 DATA		=
+//				   nCompareFlag -> Packet과금, or 시간 과금		=
+// return value : 1-> success									=
+//                0-> fail										=
+//																=
+//===============================================================
+int	CLimitMan::LimitServiceEndRequest( UdrFormat* pUdrFormat, UdrFormat* pSearchUdrFormat, int nCompareFlag )
+{
+	int		nRatedTatalDataOctet;
+	int 	nTatalDataOctet;
+	int 	nRatingDataOctet;
+	int		nRatingPrice=0;
+	int 	nRatingTime;
+	int     nTotalRatingTime;
+	int		nTempPrice;
+	int		nTempTime;
+	int		nRemainTime;
+	int		nRemainPrice;
+		
+	// UDR의 LIMIT_INFO부분을 채워준다.
+	pUdrFormat->get_LimitInfo()->put_nSessionStartTime( pSearchUdrFormat->get_LimitInfo()->get_nSessionStartTime() );
+	pUdrFormat->get_LimitInfo()->put_nSessionEndTime( pUdrFormat->get_ItemG()->get_nEndEventTime() );
+	pUdrFormat->get_LimitInfo()->put_nLimitPrice( pSearchUdrFormat->get_LimitInfo()->get_nLimitPrice() );
+	pUdrFormat->get_LimitInfo()->put_nNtopFreeTime( pSearchUdrFormat->get_LimitInfo()->get_nNtopFreeTime() );
+
+	switch( nCompareFlag )
+	{
+		case LIMIT_PACKET:
+			// 과금할 패킷량을 계산
+			nTatalDataOctet = pUdrFormat->get_ItemG()->get_nDataOctetCntTerminat() + pUdrFormat->get_ItemG()->get_nDataOctetCntOrigin();
+			nRatingDataOctet =  pSearchUdrFormat->get_LimitInfo()->get_nRemain();
+			nTatalDataOctet = nTatalDataOctet - nRatingDataOctet;
+			if( nTatalDataOctet <= 0 )
+			{
+				*AggregatorLogM << AggregatorLogM->ErrorCode(4201) 
+					<< "Small Rating Data Octet!!" << endl;
+				return 0;
+			}
+			// 게산괸 패킷량으로 사용금액을 계산.
+			// 계산하고 남은 짜투리는 적용시키지 않는다.
+			nRatingPrice = rate.GetRate(2, pUdrFormat->get_LimitInfo()->get_nSessionStartTime(), pUdrFormat->get_LimitInfo()->get_nSessionEndTime(), 1, nTatalDataOctet);
+			if( LIMIT_DEBUG )
+			{
+				*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "============ 한도처리결과 ===========" <<  endl;
+				*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "한도 금액 : " << pUdrFormat->get_LimitInfo()->get_nLimitPrice() <<  endl;
+				*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "사용 DataOctet : " << nTatalDataOctet<<  endl;
+				*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "사용금액 : " << nRatingPrice<<  endl;
+			}	
+			pUdrFormat->get_LimitInfo()->put_nUsePrice( nRatingPrice );
+			nTempPrice=pUdrFormat->get_LimitInfo()->get_nLimitPrice()-nRatingPrice;
+			
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "남은 한도 금액 : " << nTempPrice <<  endl;
+			break;
+		case LIMIT_TIME:
+			// 과금할 시간을 계산
+			nRatingTime = pUdrFormat->get_LimitInfo()->get_nSessionEndTime() - pUdrFormat->get_LimitInfo()->get_nSessionStartTime();
+			if( nRatingTime < 0 )
+			{
+				*AggregatorLogM << AggregatorLogM->ErrorCode(4202) 
+					<< "Small Rating Time!!" << endl;
+				return 0;
+			}
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "============ 한도처리결과 ===========" <<  endl;
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "한도 금액 : " << pUdrFormat->get_LimitInfo()->get_nLimitPrice() <<  endl;
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "N-top 무료사용시간 : " << pUdrFormat->get_LimitInfo()->get_nNtopFreeTime()<<  endl;
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "총 사용시간 : " << nRatingTime <<  endl;
+			
+			// N-top 무료사용시간이 있다면, 먼저 무료사용시간에서 사용시간을 빼준다.
+			nRemainTime=pUdrFormat->get_LimitInfo()->get_nNtopFreeTime()-nRatingTime;
+			
+			// 한도 초과시 Service Stop Request요청
+			if( nRemainTime <= 0 )			
+			{
+					nTempTime = nRemainTime*-1;
+					// 남은 시간양으로 사용금액을 계산
+					nTempPrice = rate.GetRate(1, pUdrFormat->get_LimitInfo()->get_nSessionStartTime()+(nRatingTime-nTempTime), pUdrFormat->get_LimitInfo()->get_nSessionEndTime(), 1 );
+						
+					pUdrFormat->get_LimitInfo()->put_nUseTime( nRatingTime-nTempTime );
+					pUdrFormat->get_LimitInfo()->put_nUsePrice( nTempPrice );
+					nRemainPrice = pUdrFormat->get_LimitInfo()->get_nLimitPrice()-nTempPrice;
+					
+					*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+						<< "N-top무료사용시간을 초과한 시간 : " << ( nRemainTime * (-1) ) <<  endl;
+					*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+						<< "사용금액 : " << nTempPrice <<  endl;
+					*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+						<< "남은 금액 : " << nRemainPrice <<  endl;
+			}
+			else
+			{
+				*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "사용한 시간 : " << nRatingTime<<  endl;
+				*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "남은 N-top무료사용시간 : " << nRemainTime<<  endl;
+				pUdrFormat->get_LimitInfo()->put_nUseTime( nRatingTime );
+			}
+			break;
+		default :
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "Error Compare Limit Info!!" << endl;
+			break;
+	}
+
+	if( !MakeAndSendRequest( pUdrFormat, 3 ) )
+	{
+		if( LIMIT_DEBUG )
+		{
+			// Error Code를 추가해주어야 한다.
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "Error Make And Send Request!!" << endl;
+			return 0;
+		}
+	}
+	else
+	{
+		if( LIMIT_DEBUG )
+		{
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "Complete Make And Send Request!!" << endl;
+		}
+	}
+	
+	// UDR의 LIMIT_INFO부분의 변수들을 초기화해 준다.
+		pUdrFormat->get_LimitInfo()->put_nSessionCount( 0 );
+		
+		// UDR의 LIMIT_INFO부분의 변수들을 계산해준다.
+		// sessing count, nLimitPrice, nNtopFreeTime, nUsePrice, nUseTime
+		switch( nCompareFlag )
+		{
+			case LIMIT_PACKET:
+				pUdrFormat->get_LimitInfo()->put_nLimitPrice( nTempPrice );
+				pUdrFormat->get_LimitInfo()->put_nUsePrice( 0 );
+				pUdrFormat->get_LimitInfo()->put_nRemain( 0 );
+				break;
+			case LIMIT_TIME:
+				if( nRemainTime >= 0 )
+				{
+					pUdrFormat->get_LimitInfo()->put_nNtopFreeTime( nRemainTime );
+				}
+				else
+				{
+					pUdrFormat->get_LimitInfo()->put_nNtopFreeTime( 0 );
+					pUdrFormat->get_LimitInfo()->put_nLimitPrice( nRemainPrice );
+				}
+				pUdrFormat->get_LimitInfo()->put_nUseTime( 0 );
+				pUdrFormat->get_LimitInfo()->put_nUsePrice( 0 );
+				// SessionStartTime을 Update해준다.
+				pUdrFormat->get_LimitInfo()->put_nSessionStartTime( pUdrFormat->get_LimitInfo()->get_nSessionEndTime() );	
+				pUdrFormat->get_LimitInfo()->put_nRemain( 0 );
+				break;
+			default :
+				*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "Error Compare Limit Info!!" << endl;
+				break;
+		}
+
+	return 1;
+}
+//===============================================================
+// MakeAndSendRequest Method		  	 						=
+//  :SCP I/F로 해당 요청을 보내는 Method.				       		=
+// argument     :  pUdrFormat -> 처리하기 위해 들어온 UdrFormat	=
+//				   nFlag -> 어떤 요청에 해당하는지를 나타내는 Flag	=
+// return value : 1-> success									=
+//                0-> fail										=
+//																=
+//===============================================================
+int	CLimitMan::MakeAndSendRequest( UdrFormat* pUdrFormat, int nFlag )
+{
+	memset( ( char* )&cRequestData, NULL, sizeof( SCPFormatAgg ) );
+	
+	// 한도정보를 요청할 구조체를 만들어 준다.
+	cRequestData.get_ItemA2()->set_Min( pUdrFormat->get_ItemA()->get_unMsId() );  
+	switch( nFlag )
+	{
+		// Access Request
+		case 0 : 
+			cRequestData.get_ItemA2()->set_Key(0x01);
+			cRequestData.get_ItemB()->set_OperId( pUdrFormat->get_LimitInfo()->get_nOperationID() );
+			cRequestData.get_ItemB()->set_AccSessionId( pUdrFormat->get_ItemC()->get_strAccountSessionID() );
+			cRequestData.get_ItemB()->set_CorreId( pUdrFormat->get_ItemC()->get_strCorrelationID() );
+			break;
+		// Interim Account Request
+		case 1 :
+			cRequestData.get_ItemA2()->set_Key(0x02);
+			cRequestData.get_ItemB()->set_OperId( pUdrFormat->get_LimitInfo()->get_nOperationID() );
+			cRequestData.get_ItemB()->set_AccSessionId( pUdrFormat->get_ItemC()->get_strAccountSessionID() );
+			cRequestData.get_ItemB()->set_CorreId( pUdrFormat->get_ItemC()->get_strCorrelationID() );
+			cRequestData.get_ItemC()->set_StartT( pUdrFormat->get_LimitInfo()->get_nSessionStartTime() );
+			cRequestData.get_ItemC()->set_EndT( pUdrFormat->get_LimitInfo()->get_nSessionEndTime() );
+			cRequestData.get_ItemD()->set_LimitT( pUdrFormat->get_LimitInfo()->get_nUsePrice() );
+			cRequestData.get_ItemD()->set_NTuseT( pUdrFormat->get_LimitInfo()->get_nUseTime() );
+			break;
+		// Service Stop Request
+		case 2 : 
+			cRequestData.get_ItemA2()->set_Key(0x03);
+			break;
+		// Service End Request
+		case 3 :
+			cRequestData.get_ItemA2()->set_Key(0x04);
+			cRequestData.get_ItemC()->set_StartT( pUdrFormat->get_LimitInfo()->get_nSessionStartTime() );
+			cRequestData.get_ItemC()->set_EndT( pUdrFormat->get_LimitInfo()->get_nSessionEndTime() );
+			cRequestData.get_ItemD()->set_LimitT( pUdrFormat->get_LimitInfo()->get_nUsePrice() );
+			cRequestData.get_ItemD()->set_NTuseT( pUdrFormat->get_LimitInfo()->get_nUseTime() );
+			break;
+		default :
+			// Error Code를 추가해줘야 함.
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "CLimitMan : MakeAndSendRequest!!" << endl;
+	}
+	
+	if( LIMIT_DEBUG )
+	{
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+			<< "============ Request Data 정보 ===========" <<  endl;
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+			<< "Key=" << cRequestData.get_ItemA2()->get_Key() <<endl;
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+			<< "unMsId=" << cRequestData.get_ItemA2()->get_Min() <<endl;
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+			<< "OperId=" << cRequestData.get_ItemB()->get_OperId() <<endl;
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+			<< "AccSessionId=" << cRequestData.get_ItemB()->get_AccSessionId() <<endl;
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+			<< "CorreId=" << cRequestData.get_ItemB()->get_CorreId() <<endl;
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+			<< "StartT=" << cRequestData.get_ItemC()->get_StartT() <<endl;
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+			<< "EndT=" << cRequestData.get_ItemC()->get_EndT() <<endl;
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+			<< "LimitT=" << cRequestData.get_ItemD()->get_LimitT() <<endl;
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+			<< "NTuseT=" << cRequestData.get_ItemD()->get_NTuseT() <<endl;	
+	}
+	
+	// SCP I/F로 중간정산요청을 보낸다.
+	if( !RequireLimitInfo( &cRequestData ) )
+	{
+		if( LIMIT_DEBUG )
+		{
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "SCP에 정보전송실패" << endl;
+			return 0;
+		}
+	}
+	else
+	{
+		if( LIMIT_DEBUG )
+		{
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "SCP에 정보전송완료" << endl;
+		}
+	}
+
+	return 1;
+}
+//===============================================================
+// CompareLimitInfo Method		  	 							=
+//  : 과거의 정보와 비교하여, 정보를 일관되게 유지하기 위한 Method.		=
+//	 일반UDR->한도관리UDR, Packet -> Time, Time -> Packet등등  	=
+// argument     :  pUdrFormat -> 처리하기 위해 들어온 UdrFormat	=
+//				   pSearchUdrFormat -> 이전에 MDB에 있던 DATA		=
+// return value : None											=
+//																=
+//===============================================================
+void CLimitMan::CompareLimitInfo( UdrFormat* pUdrFormat, UdrFormat* pSearchUdrFormat )
+{
+	int TempServiceType;
+	int TempSubsType;
+	
+	nServiceType = pUdrFormat->get_ItemHead()->get_nServiceType();
+	nSubsType = pUdrFormat->get_ItemHead()->get_nSubsType();
+	nForwardMUXOpt = pUdrFormat->get_ItemF()->get_nForwardMUXOpt();
+	
+	// 이전 UDR의 한도정보와 현재 UDR의 한도정보가 같은지 비교한다.
+	// 만약 같지 않다면 과거의 정보를 유지한다.
+	// START UDR일때는 제외
+	TempServiceType = pSearchUdrFormat->get_ItemHead()->get_nServiceType();
+	TempSubsType = pSearchUdrFormat->get_ItemHead()->get_nSubsType();
+	if( TempServiceType != nServiceType )
+	{
+		nServiceType = TempServiceType;
+		pUdrFormat->get_ItemHead()->put_nServiceType(nServiceType);
+	}
+	if( TempSubsType != nSubsType )
+	{
+		nSubsType = TempSubsType;
+		pUdrFormat->get_ItemHead()->put_nSubsType(nSubsType);
+	}
+}
+//===============================================================
+// CompareServiceType Method		  	 						=
+//  : 현재 UDR이 일반UDR인지, 한도관리를 해야하는지 판단하는 Method.	=
+// argument     :  pUdrFormat -> 처리하기 위해 들어온 UdrFormat	=
+// return value : 0->일반 UDR									=
+//				  1-> Packet방식 한도관리							=
+//				  2 -> 시간방식 한도관리 							=
+//===============================================================	
+int CLimitMan::CompareServiceType( UdrFormat* pUdrFormat )
+{
+	nServiceType = pUdrFormat->get_ItemHead()->get_nServiceType();
+	nSubsType = pUdrFormat->get_ItemHead()->get_nSubsType();
+	nForwardMUXOpt = pUdrFormat->get_ItemF()->get_nForwardMUXOpt();
+	
+	if( 0 )
+	{
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "==========CompareServiceType============" <<  endl;
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "nServiceType=" <<nServiceType <<endl;
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "nSubsType=" << nSubsType <<endl;
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "nForwardMUXOpt=" << nForwardMUXOpt <<endl;
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "========================================" <<  endl;
+	}	
+	
+	switch( nServiceType )
+	{
+		// 일반 packet 과금방식
+		case PACKET :
+			// TTL School요금방식이면 Packet으로 한도관리.
+			if( nSubsType == 1 )
+			{
+				if( LIMIT_DEBUG )
+				{
+					*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+						<< "Packet Limit UDR!!" << endl;
+				}
+				return 1;
+		    }
+		    // 일반 UDR
+		    else
+		    {
+		    	if( LIMIT_DEBUG )
+				{
+					*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+						<< "Normal UDR!!" << endl;
+				}
+				return 0;
+		    }
+			break;
+		// N-Top Service
+		case NTOP :
+			// N_Top이면서 TTL School이면 
+			/*
+			if( nSubsType == 1 )
+			{
+				// if Forward Mux Option이 1 or 2이면
+				if( nForwardMUXOpt== 1 || nForwardMUXOpt == 2 )
+				{
+					if( LIMIT_DEBUG )
+					{
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+							<< "TIME Limit UDR!!" << endl;
+					}
+					return 2;
+				}
+				else
+				{
+					if( LIMIT_DEBUG )
+					{
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+							<< "Normal UDR!!" << endl;
+					}
+					return 0;
+				}
+		    }
+		    else
+		    {
+		    	if( LIMIT_DEBUG )
+				{
+					*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+						<< "Normal UDR!!" << endl;
+				}
+				return 0;
+		    }
+			break;
+			*/
+		default :
+			if( LIMIT_DEBUG )
+			{
+				*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+						<< "Normal UDR!!" << endl;
+			}
+			return 0;
+			break;
+	}
+}
+//===============================================================
+// RequireLimitInfo Method		  	 							=
+//  :SCP I/F MQ로 해당 요청을 보내는 Method.			       		=
+// argument     :  pRequestData -> 요청하기위한  SCPFormatAgg		=
+// return value : 1-> success									=
+//                0-> fail										=
+//																=
+//===============================================================
+int CLimitMan::RequireLimitInfo( SCPFormatAgg* pRequestData )
+{
+    // Send request Aggregator - Scp I/F MQ
+    while(1)
+    {
+        if( mqSCP->sendMsg( pRequestData ) == FLAG_MQ_IS_FULL )
+        {
+        	*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "Wait  MSG Queue FULL!!" << endl;
+			usleep(100);
+  //         return 0;
+        }
+        else break;
+    }
+    return 1;
+}
+#endif
+
+
+
+

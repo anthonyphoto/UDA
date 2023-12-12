@@ -1,0 +1,19 @@
+include $(HOME)/common/env_uda.mk
+
+EXE = main_scpr
+OBJS = main_scpr.o $(UDALINKLIBES)
+
+all : $(EXE)
+
+$(EXE) : $(OBJS)
+	$(CC) -o $@ $(OBJS) $(PROLDLIBS) $(UDALINKLIBES)
+
+install : $(EXE)
+	$(INSTALL2) $(EXE) $(COMMBINPATH)/
+	rm -rf $(EXE) *.o core 
+
+clean :	
+	rm -rf $(EXE) *.o core 
+	touch *.cpp
+
+

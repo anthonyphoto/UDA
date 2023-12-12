@@ -1,0 +1,24 @@
+include /home/uda1/common/env_proc_32.mk
+include /home/uda1/common/env_uda.mk
+
+MFLAGS = -D_SVC1
+
+EXE = quesend
+OBJS = quesend.o $(UDASQLLIBES) $(UDALINKLIBES)
+
+all : $(EXE)
+
+$(EXE) : $(OBJS)
+	$(CC) -o $@ $(OBJS) $(CFLAGS) $(PROLDLIBS) $(UDASQLLIBES) $(UDALINKLIBES)
+
+install : $(EXE)
+	$(INSTALL2) $(EXE) $(COMMBINPATH)
+	rm -rf $(EXE) *.o core 
+
+clean :	
+	rm -rf $(EXE) *.o core 
+	touch *.cpp
+
+
+
+

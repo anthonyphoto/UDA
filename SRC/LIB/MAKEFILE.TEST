@@ -1,0 +1,24 @@
+include $(HOME)/common/env_proc_32.mk
+include $(HOME)/common/env_uda.mk
+
+MFLAGS = -D_SVC1
+
+UDALINKLIBE = ./libTest.a
+
+#OBJS = UdrBds.o HandleOfAllocIndex.o HandleOfAllocIndex_new.o SharedMemLegacy.o MqInfo.o ConfigLog.o CSemHandler.o BlockFile.o
+OBJS = UdrBds.o HandleOfAllocIndex.o HandleOfAllocIndex_new.o SharedMemLegacy.o MqInfo.o ConfigLog.o CSemHandler.o BlockFile.o SendLogManage.o MqInfo_file.o
+
+all : $(OBJS)
+	ar r $(UDALINKLIBE) $(OBJS)
+	ranlib $(UDALINKLIBE)
+	rm -rf $(OBJS) core
+	@echo ..............Library building finished .............................
+	@ctags -w *cpp
+
+install : $(OBJS)
+	$(INSTALL2) $(UDALINKLIBE) $(LIBUDR) $(COMMLIBPATH)/bak/
+	rm -rf $(OBJS) core
+
+clean :
+	rm -rf $(OBJS) core
+	touch *

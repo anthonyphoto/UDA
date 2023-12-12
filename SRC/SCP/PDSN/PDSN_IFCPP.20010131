@@ -1,0 +1,1122 @@
+#include <intndefs.hpp>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <time.h>
+#include <unistd.h>
+#include <sys/time.h>
+#include <strings.h>
+
+#include <socketudpC.hpp>
+//#include <TempMsgQ_new.hpp>
+#include <TempMsgQ_file.hpp>
+#include <MsgFormat.hpp>
+#include <SendLogManage.hpp>
+
+
+#include "pdsn_if.hpp"
+#include "hexdump.h"
+
+
+#define		FILE_RECV_ON	0
+
+//MessageQueue<UdrFormat>* mqUDR;
+MessageQueue<MsgPmsStatus>* mqPMS;
+SendLogManage*	LogM;
+Pdsn_IF*		pdMain;
+
+static int	SystemId;
+static int	ServiceId;
+static int	GroupId;
+static int	ProcessType;
+static int 	PserialNo;
+static int	PreMark;
+
+//==============================================================================
+void WritePMSMQ(int sigNo)
+{
+	int 			i=0;
+	char 			PMSMQ_NO[2];
+	MsgPmsStatus	OneRec(MSG_STATUS, SystemId, ServiceId, GroupId, ProcessType, PserialNo, PreMark);
+
+	
+	sprintf(PMSMQ_NO, "%d", SystemId);
+	OneRec.set_nStatus(sigNo);
+	
+	while(1)
+	{
+		i++;
+		if (mqPMS->sendMsg(&OneRec) == FLAG_MQ_IS_FULL)
+		{
+			cout << "[ERROR] PMSMQ " << PMSMQ_NO << " IS FULL sleep(1)...!"	<< endl;
+			sleep(1);
+			if (i >= 10)
+			{
+				kill(0,SIGINT);
+			}
+		}else break;
+	}
+}
+
+
+//---------------------------------------------------------------------------------
+void sigCapture(int sigNo)
+{
+	cout << "PDSN-IF Process End " << endl;
+	*LogM<< "PDSN-IF Process End " << LogM->ErrorCode(0) << endl;
+
+	//delete mqUDR;
+	delete pdMain;
+	
+	switch(sigNo)
+	{
+		case SIGINT :
+		case SIGQUIT :
+		case SIGKILL :
+		case SIGTERM :
+				WritePMSMQ(FLAG_PROC_KILL);//-1//프로세스 비정상 stop (killed)
+				LogM->put_EventHistData(FLAG_END, -1);
+				delete LogM;
+				delete mqPMS;
+				exit(-1);
+				break;
+		case SIGUSR1:
+				WritePMSMQ(FLAG_PROC_TERM);//0//프로세스정상stop (Client업무명령)
+				LogM->put_EventHistData(FLAG_END, 0);
+				delete LogM;
+				delete mqPMS;
+				exit(0);
+				break;
+		default:
+				WritePMSMQ(FLAG_PROC_KILL);//-1//프로세스 비정상 stop (killed)
+				LogM->put_EventHistData(FLAG_END, -1);
+				delete LogM;
+				delete mqPMS;
+				exit(-1);
+				break;
+	}
+}
+
+
+//==============================================================================
+Pdsn_IF::Pdsn_IF(char *mdkey, char *serv_addr, int serv_port)
+{
+	strcpy(Serv_Addr, serv_addr); 
+	Serv_Port = serv_port;
+	strcpy(Md5Key, mdkey);
+	
+	Socket_Create();
+	
+	memset((char*)&sHeader, 0x00, sizeof(sHeader));
+	memset((void *)&rHeader,0x00, sizeof(rHeader));
+	
+	configM = new ConfigMGR(ServiceId, PserialNo, 0);
+	configM->set_iNum();
+	
+	
+	//### Client 별로 Identifier 관리 (총 10개까지..) ###
+	mClient = new Mem_Client(10);
+}
+
+
+//-------------------------------------------------------------------------------------
+Pdsn_IF::~Pdsn_IF()
+{
+	#if FILE_RECV_ON
+	#else
+	if(!SOCK_ERROR) delete _socket;	
+	#endif
+	
+	delete mClient;
+	delete configM;
+}
+
+
+//-------------------------------------------------------------------------------------
+int Pdsn_IF::Socket_Create()
+{
+	int ret;
+	
+	#if FILE_RECV_ON
+	ret = 1;
+	#else
+	_socket = new SockC(Serv_Addr, Serv_Port);
+	ret = _socket->CreateUDPServer(Serv_Addr, Serv_Port);	
+	#endif
+	
+	cout << "[PDSNIF] Create PDSN Server : " << ret;
+	*LogM << "[PDSNIF] Create PDSN Server [" << Serv_Addr <<":" << Serv_Port << "]" << LogM->ErrorCode(0) <<endl<<endl;
+	
+	if(ret < 0) 
+	{
+		delete _socket;
+		SOCK_ERROR = 1;
+	}else SOCK_ERROR = 0;
+	
+	return ret;	
+}
+
+//-------------------------------------------------------------------------------------
+//MD5 hash 검증
+int Pdsn_IF::ChkMd5Key()
+{
+	conMd5 = new MD5;
+
+	//끝에추가
+	memcpy(strMd, sockBuf, rHeader.Length);
+	memcpy((char *)&strMd[4], 0x00, 16);	//@@@
+	memcpy((char *)&strMd[rHeader.Length], Md5Key, strlen(Md5Key));//@@ 비밀키 추가
+		
+	conMd5->update((unsigned char *)strMd, rHeader.Length+strlen(Md5Key));
+		
+	conMd5->finalize();
+		
+	if(memcmp(conMd5->raw_digest(), rHeader.Authenticator, 16))
+	{
+		cout << " ### MD5 KEY ERROR ### " << endl;
+		*LogM << " ### MD5 KEY ERROR ### " << LogM->ErrorCode(0) <<endl;
+		cout << "My Authenticator : " << endl;
+		//HexDump((char *)conMd5->raw_digest(), 16); // 
+			
+		cout << "Authenticator : " << endl;
+		//HexDump((char *)rHeader.Authenticator, 16); // 
+		
+		delete conMd5;
+		return 0;
+	}else 
+	{ 
+		cout << " ### MD5 KEY OK ### " << endl; 
+		*LogM << " ### MD5 KEY OK ### " << LogM->ErrorCode(0) <<endl;
+		delete conMd5;
+		return 1;
+	}
+}
+
+//-------------------------------------------------------------------------------------
+int Pdsn_IF::SendAck()
+{
+	int senLen;
+	
+	memcpy((char*)&sHeader, (char*)&rHeader, sizeof(sHeader));
+	sHeader.Code=5; // 과금응답
+	sHeader.Length=HEAD_SIZE;
+		
+	//---------MD5 hash 생성--------------
+	conMd5 = new MD5;
+	memset(strMd, 0x00, sizeof(strMd));
+	memcpy(strMd, (char *)&sHeader, 4);
+	memcpy((char *)&strMd[sHeader.Length], Md5Key, 16);	//@@ 비밀키 추가
+	conMd5->update((unsigned char *)strMd, sHeader.Length+16);
+	conMd5->finalize();
+	memcpy(sHeader.Authenticator, conMd5->raw_digest(), 16);
+	delete conMd5;
+	//---------MD5 hash 생성--------------
+		
+	printf("<<<<   SendtoUDPSocket   : [%d:%d]   >>>>\n", (int)rHeader.Identifier, (int)sHeader.Identifier);
+	*LogM << "<<<<   SendtoUDPSocket   : [" << (int)rHeader.Identifier << " : " << (int)sHeader.Identifier << "]    >>>>" << LogM->ErrorCode(0) << endl;
+	
+	cout << "Code       : " << (int)sHeader.Code << endl;
+	*LogM<< "Code       : " << (int)sHeader.Code << LogM->ErrorCode(0) << endl;
+	cout << "Identifier : " << (int)sHeader.Identifier << endl;
+	*LogM<< "Identifier : " << (int)sHeader.Identifier << LogM->ErrorCode(0) << endl;
+	cout << "Length     : " << sHeader.Length << endl;
+	*LogM<< "Length     : " << sHeader.Length << LogM->ErrorCode(0) << endl;
+	
+	senLen = _socket->SendtoUDPSocket((void *)&sHeader, sHeader.Length, (char *)_socket->recv_addr.sin_addr.s_addr, _socket->recv_addr.sin_port);
+	*LogM << "recv_addr.sin_addr.s_addr => " << inet_ntoa((in_addr &)_socket->recv_addr.sin_addr.s_addr) << LogM->ErrorCode(0) << endl;
+	*LogM << "recv_addr.sin_port => " << _socket->recv_addr.sin_port << LogM->ErrorCode(0) << endl;
+	
+	if (senLen > 0)
+	{
+		cout << "[PDSNIF] SendByte => " << senLen << endl;
+		*LogM << "[PDSNIF] SendByte => " << senLen << LogM->ErrorCode(0) <<endl;
+		//*LogM<< "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << LogM->ErrorCode(0) << endl;
+		return 1;
+	}else
+	{
+		cout << "[PDSNIF] Send ERROR" << endl;
+		*LogM << "[PDSNIF] Send ERROR" <<  LogM->ErrorCode(0) <<endl;
+		//*LogM<< "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << LogM->ErrorCode(0) << endl;
+		return 0;
+	}
+		
+	//cout << "Next...Call.." << endl << endl;
+}
+
+
+//-------------------------------------------------------------------------------------
+int Pdsn_IF::RecvData()
+{
+	int		ret;
+	int		recvLen;
+	char	strip[20];
+	
+	#if	FILE_RECV_ON
+	FILE	*fp;
+	fp = fopen("radius.dat", "r+b");
+	#endif
+	
+	DATA_ERROR = 0;	
+	memset((void *)&rHeader,0x00,sizeof(rHeader));
+	*LogM<< "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << LogM->ErrorCode(0) << endl;
+	cout << "<<<<   Recvfrom PDSN      >>>>" << endl;
+	*LogM<< "<<<<   Recvfrom PDSN      >>>>" << LogM->ErrorCode(0) << endl;
+		
+	#if	FILE_RECV_ON
+	fread(sockBuf, sizeof(sockBuf), 1, fp);
+	fclose(fp);
+	memcpy((char *)&rHeader, sockBuf, HEAD_SIZE);
+	recvLen = rHeader.Length;	// fp
+	#else
+	recvLen = _socket->RecvfromUDPSocket(sockBuf, 4096, 0);
+	#endif
+	
+	cout << "[PDSNIF] Recv Size : " << recvLen << endl;
+	*LogM<< "[PDSNIF] Recv Size : " << recvLen << LogM->ErrorCode(0) << endl;
+	if(recvLen <= HEAD_SIZE) return 0;	
+	
+	// Data Header 
+	memcpy((char *)&rHeader, sockBuf, HEAD_SIZE);
+	if(rHeader.Length-HEAD_SIZE > recvLen)
+	{
+		cout << "[PDSNIF] Size Small [" << rHeader.Length << " | " << recvLen << "]" << endl;
+		*LogM<< "[PDSNIF] Size Small [ " << rHeader.Length << " | " << recvLen << "]" << LogM->ErrorCode(0) << endl;
+		return 0;	
+	}
+	
+	memcpy(strBuf, (char *)&sockBuf[HEAD_SIZE], rHeader.Length-HEAD_SIZE);
+		
+		
+	cout << "Code       : " << (int)rHeader.Code << endl;
+	*LogM<< "Code       : " << (int)rHeader.Code << LogM->ErrorCode(0) << endl;
+	cout << "Identifier : " << (int)rHeader.Identifier << endl;
+	*LogM<< "Identifier : " << (int)rHeader.Identifier << LogM->ErrorCode(0) << endl;
+	cout << "Length     : " << rHeader.Length << endl;
+	*LogM<< "Length     : " << rHeader.Length << LogM->ErrorCode(0) << endl;
+	cout << "Authenticator : " << endl;
+	*LogM<< "Authenticator : " << LogM->ErrorCode(0) << endl;
+	//rHeader.Length = recvLen + 20;	// @@@
+	//HexDump((char *)rHeader.Authenticator, 16); // @@@@ 
+		
+	cout << "-------HEX DUMP----------------------" << endl;
+	//HexDump(sockBuf, recvLen); // @@@@ 
+	cout << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << endl;
+	
+	
+	//if(rHeader.Identifier==sHeader.Identifier) 
+	if(rHeader.Identifier==mClient->getSearchId(strip)) 
+	{
+		*LogM<< "[#ERROR#] Identifier ERROR [ " << (int)rHeader.Identifier << " : "<< mClient->getSearchId(strip) << "]" << LogM->ErrorCode(0) << endl;
+		DATA_ERROR = 1;	// 동일한 내용수신
+	}else
+	{
+		if(!ChkMd5Key()) return 0;
+		MakeUdrFormat();
+	}
+	
+	sprintf(strip, "%s", inet_ntoa((in_addr &)_socket->recv_addr.sin_addr.s_addr));
+	ret=mClient->putCLI(strip, rHeader.Identifier); // (-1) 기존에 존재하는 Client
+	*LogM<< "CLIENT : [" << strip << ":" << (int)rHeader.Identifier << "] : " << LogM->ErrorCode(0) << endl;
+	return 1;
+}
+
+
+
+//-------------------------------------------------------------------------------------
+// 수신한 데이터를 UDR Format으로 변환한다.
+void Pdsn_IF::MakeUdrFormat()
+{
+	uint	i, j;
+	uint	imin=0;
+	int 	pos=0;
+	uchar	ipadd[4];
+	char 	imsi[50], strtemp[10];
+	
+	memset((void *)&fmUDR, 0x00, sizeof(UdrFormat));
+	
+	while(1){
+
+		switch(strBuf[pos]) {
+			case USER_NAME:	// 1 (B2)
+				memset(imsi, 0x00, sizeof(imsi));
+				memcpy(imsi, (char *)&strBuf[pos+2], strBuf[pos+1]-2);
+				cout << "[USER_NAME] Length = " <<  (int)strBuf[pos+1] << endl;
+				cout << "[USER_NAME] Value = " << imsi << endl;
+				pos+=strBuf[pos+1];
+				
+				fmUDR.get_ItemB()->put_strNAI(imsi);
+				break;
+				
+			case NAS_IP_ADDRESS:	// 4 (D2)
+				i=0;
+				memcpy((char *)&i, (char *)&strBuf[pos+2], strBuf[pos+1]-2);
+				memcpy(ipadd, (char *)&strBuf[pos+2],  4);
+				cout <<"[NAS_IP_Address] Length = " << (int)strBuf[pos+1] << endl;
+				//printf("[NAS_IP_Address] Value = %d.%d.%d.%d  \n ", ipadd[0],ipadd[1],ipadd[2],ipadd[3]);
+				pos+=strBuf[pos+1];
+				
+				i=0;
+    			i |= (unsigned int)ipadd[0] << 24;    
+    			i |= (unsigned int)ipadd[1] << 16;    
+    			i |= (unsigned int)ipadd[2] << 8;    
+    			i |= (unsigned int)ipadd[3];    
+				
+				fmUDR.get_ItemD()->put_nPDSN_FA_Addr(i);
+				printf("[NAS_IP_Address] Value = %d.%d.%d.%d  / %d \n", ipadd[0],ipadd[1],ipadd[2],ipadd[3], i);
+				break;	
+				
+			case NAS_PORT:	
+				i=0;
+				memcpy((char *)&i, (char *)&strBuf[pos+2], strBuf[pos+1]-2);
+				printf("[NAS_PORT] Length = %d\n", strBuf[pos+1]);
+				printf("[NAS_PORT] Value = %d\n", i);
+				pos+=strBuf[pos+1];	
+				break;		
+			case SERVICE_TYPE:	//6
+				cout << "[SERVICE_TYPE:6] ----------- NOT USE ------ " << endl;
+				pos+=strBuf[pos+1];
+				break;				
+			case FRAMED_PROTOCOL:	//7
+				i=0;
+				memcpy((char *)&i, (char *)&strBuf[pos+2], strBuf[pos+1]-2);
+				printf("[FRAMED_PROTOCOL] Length = %d\n", strBuf[pos+1]);
+				printf("[FRAMED_PROTOCOL] Value = %d\n", i);
+				pos+=strBuf[pos+1];	
+				break;				
+				
+			case FRAMED_IP_ADDRESS: //8 (B1)
+				memset(ipadd, 0x00, 4);
+				memcpy(ipadd, (char *)&strBuf[pos+2], 4);
+				printf("[FRAMED_IP_ADDRESS] Length = %d\n", strBuf[pos+1]);
+				//printf("[FRAMED_IP_ADDRESS] Value = %d.%d.%d.%d \n", ipadd[0],ipadd[1],ipadd[2],ipadd[3]);
+				pos+=strBuf[pos+1];	
+				
+				i=0;
+    			i |= (unsigned int)ipadd[0] << 24;    
+    			i |= (unsigned int)ipadd[1] << 16;    
+    			i |= (unsigned int)ipadd[2] << 8;    
+    			i |= (unsigned int)ipadd[3];    
+    			
+				fmUDR.get_ItemB()->put_nIpAddr(i);
+				printf("[FRAMED_IP_ADDRESS] Value = %d.%d.%d.%d / %d \n", ipadd[0],ipadd[1],ipadd[2],ipadd[3], i);
+				break;
+				
+			case VENDOR_SPECIFIC: //26 
+				printf("[VENDOR_SPECIFIC] Length = %d\n", strBuf[pos+1]);
+				
+				memset(imsi, 0x00, sizeof(imsi));
+				memcpy(imsi, (char *)&strBuf[pos+2], 4);
+				printf("[VENDOR_SPECIFIC] Id     = %02X%02X%02X \n", (uchar)imsi[1], (uchar)imsi[2],(uchar)imsi[3]);
+				MKVendor_SPEC((char *)&strBuf[pos+6], (int)(strBuf[pos+1]-6));
+				/*
+				printf("[VENDOR_SPECIFIC] Vendor Type = %d\n", strBuf[pos+6]);
+				printf("[VENDOR_SPECIFIC] Vendor Len  = %d\n", strBuf[pos+7]);
+				printf("[VENDOR_SPECIFIC] Vendor Attri= ");
+				
+				memcpy(imsi, (char *)&strBuf[pos+8], strBuf[pos+7]-2);
+				for(i=0; i<strBuf[pos+7]-2; i++) printf("%02X", (uchar)imsi[i]);
+				printf("\n\n");
+				*/
+				pos+=strBuf[pos+1];	
+				break;
+				
+			case CALLING_STATION_ID: // 31 (A1)
+				memset(imsi, 0x00, sizeof(imsi));
+				memcpy(imsi, (char *)&strBuf[pos+2], strBuf[pos+1]-2);
+				printf("[CALLING_STATION_ID] Length = %d\n", strBuf[pos+1]);
+				printf("[CALLING_STATION_ID] Value = %s\n", imsi);
+				pos+=strBuf[pos+1];	
+				
+				imin=atol(imsi);
+				fmUDR.get_ItemA()->put_unMsId(imin);
+				
+				if(imin<=0)
+				{
+					DATA_ERROR = 1;
+					*LogM << "[CALLING_STATION_ID] ERROR : " << imin << LogM->ErrorCode(0) << endl;
+					return;
+				}
+				
+				memset(strtemp, 0x00, sizeof(strtemp));
+				sprintf(imsi, "%ld", imin);
+				if(strlen(imsi)==9)
+				{
+					sprintf(imsi, "0%-14ld", imin);
+					strncpy(strtemp, imsi, 3);
+					fmUDR.get_ItemHead()->put_nServiceProvider(atoi(strtemp));
+					cout << "[ServiceProvider] : " << strtemp << endl;
+					
+					memset(strtemp, 0x00, sizeof(strtemp));
+					strncpy(strtemp, (char *)&imsi[3], 3);
+					fmUDR.get_ItemHead()->put_nMin1(atoi(strtemp));
+					cout << "[MIN1 ] : " << strtemp << endl;
+				}else 
+				{
+					sprintf(imsi, "%-15ld", imin);
+					strncpy(strtemp, imsi, 2);
+					fmUDR.get_ItemHead()->put_nServiceProvider(atoi(strtemp));
+					cout << "[ServiceProvider] : " << strtemp << endl;
+					
+					memset(strtemp, 0x00, sizeof(strtemp));
+					strncpy(strtemp, (char *)&imsi[2], 4);
+					fmUDR.get_ItemHead()->put_nMin1(atoi(strtemp));
+					cout << "[MIN1 ] : " << strtemp << endl;
+				}
+				
+				memset(strtemp, 0x00, sizeof(strtemp));
+				strncpy(strtemp, (char *)&imsi[6], 4);
+				fmUDR.get_ItemHead()->put_nMin2(atoi(strtemp));
+				cout << "[MIN2 ] : " << strtemp << endl;
+				
+				break;
+			
+			/*	
+			case FRAMED_APPLETALK_NETWORK:
+				memcpy((char *)&attr, (char *)&strBuf[pos], sizeof(attr));
+				cout << "[Framed_AppleTalk_Network] Value = " << attr.Value << endl;
+				pos+=6;
+				break;			
+			*/
+				
+			case ACCT_STATUS_TYPE:	//40
+				memset(imsi, 0x00, sizeof(imsi));
+				memcpy(imsi, (char *)&strBuf[pos+2], strBuf[pos+1]-2);
+				printf("[ACCT_STATUS_TYPE] Length = %d\n", strBuf[pos+1]);
+				printf("[ACCT_STATUS_TYPE] Value = %X [", imsi[3]);
+				switch(imsi[3]){
+					case 1: printf("START]\n"); 
+						fmUDR.get_ItemHead()->put_nUdrType(0); 
+						break;
+					case 2: printf("STOP]\n"); 
+						fmUDR.get_ItemHead()->put_nUdrType(2); 
+						break;
+					case 3: printf("INTERIM]\n"); 
+						fmUDR.get_ItemHead()->put_nUdrType(1); 
+						break;
+					//case 7: printf("Accounting-On]\n"); break;
+					//case 8: printf("Sccounting-Off]\n"); break;
+					default : printf("Error]\n"); 
+						DATA_ERROR = 1;
+						*LogM << "[ACCT_STATUS_TYPE] ERROR : "<< (int)imsi[3] << LogM->ErrorCode(0) << endl;
+						return;
+				}
+				*LogM << "[ACCT_STATUS_TYPE] => [" << (int)imsi[3] << "] [START|STOP|INTERIM] " << LogM->ErrorCode(0) << endl;
+				pos+=strBuf[pos+1];	
+				break;
+			
+				
+			case ACCT_DELAY_TIME: 	//41
+				cout << "[ACCT_DELAY_TIME:41] ----------- NOT USE ------ " << endl;
+				pos+=strBuf[pos+1];
+				break;			
+			
+									
+			case ACCT_INPUT_OCTETS: //42 (G2)
+				i=0;
+				memcpy((char *)&i, (char *)&strBuf[pos+2], strBuf[pos+1]-2);
+				cout << "[ACCT_INPUT_OCTETS] Length = " << (int)strBuf[pos+1] << endl;
+				cout << "[ACCT_INPUT_OCTETS] Value = " << i << endl;
+				pos+=strBuf[pos+1];
+
+				fmUDR.get_ItemG()->put_nDataOctetCntOrigin(i);				
+				break;								
+				
+			case ACCT_OUTPUT_OCTETS: //43 (G1)
+				i=0;
+				memcpy((char *)&i, (char *)&strBuf[pos+2], strBuf[pos+1]-2);
+				cout << "[ACCT_OUTPUT_OCTETS] Length = " << (int)strBuf[pos+1] << endl;
+				cout << "[ACCT_OUTPUT_OCTETS] Value = " << i << endl;
+				pos+=strBuf[pos+1];
+				
+				fmUDR.get_ItemG()->put_nDataOctetCntTerminat(i);				
+				break;	
+				
+			case ACCT_SESSION_ID: //44 (C1)
+				memset(imsi, 0x00, sizeof(imsi));
+				memcpy(imsi, (char *)&strBuf[pos+2], strBuf[pos+1]-2);
+				cout <<"[ACCT_SESSION_ID] Length = "<< (int)strBuf[pos+1] << endl;
+				cout <<"[ACCT_SESSION_ID] Value = "<< imsi << endl;
+				pos+=strBuf[pos+1];
+				
+				fmUDR.get_ItemC()->put_strAccountSessionID(imsi);
+				break;						
+				
+			case ACCT_AUTHENTIC:	// 45
+				cout << "[ACCT_AUTHENTIC:45] ----------- NOT USE ------ " << endl;
+				pos+=strBuf[pos+1];
+				break;
+			
+				
+			case ACCT_SESSION_TIME: // 46 (G8)
+				i=0;
+				memcpy((char *)&i, (char *)&strBuf[pos+2], strBuf[pos+1]-2);
+				cout <<"[ACCT_SESSION_TIME] Length = " << (int)strBuf[pos+1] << endl;
+				cout <<"[ACCT_SESSION_TIME] Value = " << i << endl;
+				pos+=strBuf[pos+1];
+				
+				fmUDR.get_ItemG()->put_nActiveTime(i);				
+				break;
+				
+			case ACCT_INPUT_PACKETS:
+				i=0;
+				memcpy((char *)&i, (char *)&strBuf[pos+2], strBuf[pos+1]-2);
+				printf("[ACCT_INPUT_PACKETS] Length = %d\n", strBuf[pos+1]);
+				printf("[ACCT_INPUT_PACKETS] Value = %d\n", i);
+				pos+=strBuf[pos+1];
+				break;
+				
+			case ACCT_OUTPUT_PACKETS:
+				i=0;
+				memcpy((char *)&i, (char *)&strBuf[pos+2], strBuf[pos+1]-2);
+				printf("[ACCT_OUTPUT_PACKETS] Length = %d\n", strBuf[pos+1]);
+				printf("[ACCT_OUTPUT_PACKETS] Value = %d\n", i);
+				pos+=strBuf[pos+1];
+				break;
+			/*	
+			case ACCT_TERMINATE_CAUSE:
+				memcpy((char *)&attr, (char *)&strBuf[pos], sizeof(attr));
+				cout << "[ACCT_TERMINATE_CAUSE] Value = " << attr.Value << endl;
+				pos+=6;
+				break;
+			*/
+				
+			case ACCT_MULTI_SESSION_ID:
+				memset(imsi, 0x00, sizeof(imsi));
+				memcpy(imsi, (char *)&strBuf[pos+2], strBuf[pos+1]-2);
+				cout << "[ACCT_MULTI_SESSION_ID] Value = " << imsi << endl;
+				pos+=(strBuf[pos+1]-2);
+				break;
+			/*	
+			case ACCT_LINK_COUNT:
+				memcpy((char *)&attr, (char *)&strBuf[pos], sizeof(attr));
+				cout << "[ACCT_LINK_COUNT] Value = " << attr.Value << endl;
+				pos+=6;
+				break;
+			*/
+				
+			case ACCT_EVENT_TIME: // 55	(G4)
+				i=0;
+				memcpy((char *)&i, (char *)&strBuf[pos+2], strBuf[pos+1]-2);
+				cout << "[ACCT_EVENT_TIME] Length = " << (int)strBuf[pos+1] << endl;
+				cout << "[ACCT_EVENT_TIME] Value = " << i << endl;
+				pos+=strBuf[pos+1];
+				
+				//fmUDR.get_ItemHead()->get_nUdrType();
+				fmUDR.get_ItemG()->put_nStartEventTime(0);
+				fmUDR.get_ItemG()->put_nEndEventTime(i);
+				break;	
+				
+			case NAS_PORT_TYPE:
+				cout << "[NAS_PORT_TYPE:61] ----------- NOT USE ------ " << endl;
+				pos+=strBuf[pos+1];
+				break;
+				
+			default:
+				printf("[NOTICE] ERROR FOND NOT TYPE (sleep 5s..!!) : %d\n", strBuf[pos]);
+				printf("[NOTICE] NOT TYPE Length = %d\n", strBuf[pos+1]);
+				pos+=strBuf[pos+1];
+				//sleep(1);
+				break;
+			
+		}
+		
+		cout << endl;
+		if(pos >= (rHeader.Length-HEAD_SIZE)) break;
+	} // end of while(1);
+	
+	cout << "<<<<<<<<<<<<<<<<<<<<<<<<<[ "<< pos <<"]>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << endl << endl;
+	
+	if(!imin)
+	{
+		DATA_ERROR = 1;
+		*LogM << "[CALLING_STATION_ID] Not Found " << LogM->ErrorCode(0) << endl;
+	}
+	
+}
+
+
+//-------------------------------------------------------------------------------------
+//Vender_SPECIFIC (26)
+void Pdsn_IF::MKVendor_SPEC(char *sBuf, int len)
+{
+	int		i;
+	uint	iadd;
+	uchar	ipadd[4];
+	char 	specBuf[20];
+	char	imsi[20];
+	
+	memcpy(specBuf, sBuf, len);
+	
+	cout << "[VENDOR_SPECIFIC] Vendor Type = " << (int)specBuf[0] << endl;
+	cout << "[VENDOR_SPECIFIC] Vendor Len  = " << (int)specBuf[1] << endl;
+	//printf("[VENDOR_SPECIFIC] Vendor Attri= ");
+	memset(imsi, 0x00, sizeof(imsi));
+	
+	switch(specBuf[0])
+	{
+		case 7:		// D1 (MIP Home Agent)
+			memset(ipadd, 0x00, 4);
+			memcpy(ipadd, (char *)&specBuf[2],  4);
+			//printf("[Serving PCF] Value = %d.%d.%d.%d / ", ipadd[0],ipadd[1],ipadd[2],ipadd[3]);
+				
+			iadd =0;
+    		iadd |= (unsigned int)ipadd[0] << 24;    
+    		iadd |= (unsigned int)ipadd[1] << 16;    
+    		iadd |= (unsigned int)ipadd[2] << 8;    
+    		iadd |= (unsigned int)ipadd[3];    
+    			
+			fmUDR.get_ItemD()->put_nMIP_HomeAgent(iadd);
+			printf("[Serving PCF] Value = %d.%d.%d.%d / %d \n", ipadd[0],ipadd[1],ipadd[2],ipadd[3], iadd);
+			break;
+			
+		case 9:		// D3 (Serving PCF)
+			memset(ipadd, 0x00, 4);
+			memcpy(ipadd, (char *)&specBuf[2],  4);
+			//printf("[Serving PCF] Value = %d.%d.%d.%d / ", ipadd[0],ipadd[1],ipadd[2],ipadd[3]);
+				
+			iadd =0;
+    		iadd |= (unsigned int)ipadd[0] << 24;    
+    		iadd |= (unsigned int)ipadd[1] << 16;    
+    		iadd |= (unsigned int)ipadd[2] << 8;    
+    		iadd |= (unsigned int)ipadd[3];    
+    			
+			fmUDR.get_ItemD()->put_nServing_PCF(iadd);
+			printf("[Serving PCF] Value = %d.%d.%d.%d / %d \n", ipadd[0],ipadd[1],ipadd[2],ipadd[3], iadd);
+			break;
+			
+		case 10:	//D4 (BS / MSC ID)
+			memcpy(imsi, (char *)&specBuf[2], specBuf[1]-2);		
+			cout << "[BS MSC ID   ] : " << imsi << endl;
+			
+			fmUDR.get_ItemD()->put_strBS_MSC_ID(imsi);	
+			break;
+			
+		case 11 :	// E1 (User Zone)
+			i=0;
+			memcpy((char *)&i, (char *)&specBuf[2], specBuf[1]-2);
+			cout << "[User Zone    ] : " << i << endl;;
+			
+			fmUDR.get_ItemE()->put_nUserZone(i);
+			break;
+			
+		case 12:	// F1 (Forward MUX Option)
+			i=0;
+			memcpy((char *)&i, (char *)&specBuf[2], specBuf[1]-2);
+			cout << "[FW MUX OPTION] : " << i << endl;
+			
+			fmUDR.get_ItemF()->put_nForwardMUXOpt(i);
+			break;
+			
+		case 13:	// F2 (Reverse MUX Option)
+			i=0;
+			memcpy((char *)&i, (char *)&specBuf[2], specBuf[1]-2);
+			cout << "[RV MUX OPTION] : " << i << endl;
+			
+			fmUDR.get_ItemF()->put_nReverseMUXOpt(i);
+			break;
+			
+		case 14:	// F3 (Fwd. Fundamental Rate)
+			i=0;
+			memcpy((char *)&i, (char *)&specBuf[2], specBuf[1]-2);
+			cout << "[Fwd Fundm Rate] : " << i << endl;
+			
+			fmUDR.get_ItemF()->put_nForward_Fund_Rate(i);
+			break;
+			
+		case 15:	// F4 (Revs. Fundamental Rate)
+			i=0;
+			memcpy((char *)&i, (char *)&specBuf[2], specBuf[1]-2);
+			cout << "[Rev Fundm Rate] : " << i <<endl;
+			
+			fmUDR.get_ItemF()->put_nReverse_Fund_Rate(i);
+			break;
+			
+		case 16:	// F5 (Service Option)
+			i=0;
+			memcpy((char *)&i, (char *)&specBuf[2], specBuf[1]-2);
+			cout << "[Service OPTION] : " << i <<endl;
+			
+			fmUDR.get_ItemF()->put_nServiceOpt(i);
+			break;
+			
+		case 17:	// F6 (Fwd Traffic Type)
+			i=0;
+			memcpy((char *)&i, (char *)&specBuf[2], specBuf[1]-2);
+			cout << "[FWD Traffic T] : " << i <<endl;
+			
+			fmUDR.get_ItemF()->put_nForwardTrafficType(i);
+			break;
+			
+		case 18:	// F7 (Revs Traffic Type)
+			i=0;
+			memcpy((char *)&i, (char *)&specBuf[2], specBuf[1]-2);
+			cout << "[REV Traffic T] : " << i <<endl;
+			
+			fmUDR.get_ItemF()->put_nReverseTrafficType(i);
+			break;
+			
+		case 19:	// F8 (Fundamental Frame Size)
+			i=0;
+			memcpy((char *)&i, (char *)&specBuf[2], specBuf[1]-2);
+			cout << "[FD Frame Size] : " << i <<endl;
+			
+			fmUDR.get_ItemF()->put_nFundFrameSize(i);
+			break;
+			
+		case 20:	// F9 (Fwd Fundamental RC)
+			i=0;
+			memcpy((char *)&i, (char *)&specBuf[2], specBuf[1]-2);
+			cout << "[FWD Fundam RC] : " << i <<endl;
+			
+			fmUDR.get_ItemF()->put_nForwardFundamentalRC(i);
+			break;
+			
+		case 21:	// F10 (Revs Fundamental RC)
+			i=0;
+			memcpy((char *)&i, (char *)&specBuf[2], specBuf[1]-2);
+			cout << "[REV Fundam RC] : " << i <<endl;
+			
+			fmUDR.get_ItemF()->put_nReverseFundamentalRC(i);
+			break;
+			
+		case 22:	// F11 (IP Telephony)
+			i=0;
+			memcpy((char *)&i, (char *)&specBuf[2], specBuf[1]-2);
+			cout << "[IP Telephony ] : " << i <<endl;
+			
+			fmUDR.get_ItemF()->put_nIP_Technology(i);
+			break;
+			
+		case 23:	// F12 (Compulsory Tunnel Indicator)
+			i=0;
+			memcpy((char *)&i, (char *)&specBuf[2], specBuf[1]-2);
+			cout << "[Compul Tunnel] : " << i <<endl;
+			
+			fmUDR.get_ItemF()->put_nCompulsoryTunnelInd(i);
+			break;
+			
+		case 24:	// F13 (Release Indicator)
+			i=0;
+			memcpy((char *)&i, (char *)&specBuf[2], specBuf[1]-2);
+			cout << "[Release Indicator] : " << i <<endl;
+			
+			fmUDR.get_ItemF()->put_nReleaseIndicator(i);
+			break;
+		
+		case 25:	// G3	(BAD PPP Frame Count)
+			i=0;
+			memcpy((char *)&i, (char *)&specBuf[2], specBuf[1]-2);
+			cout << "[Release Indicator] : " << i <<endl;
+			
+			fmUDR.get_ItemG()->put_nBadPPPframeCnt(i);
+			break;
+			
+		case 30:	// G9	(Number of Active Transition)
+			i=0;
+			memcpy((char *)&i, (char *)&specBuf[2], specBuf[1]-2);
+			cout << "[NumofAct Transition] : " << i <<endl;
+			
+			fmUDR.get_ItemG()->put_nNumOfActiveTransitions(i);
+			break;
+			
+		case 31:	// G10	(SDB Octet Count)
+			i=0;
+			memcpy((char *)&i, (char *)&specBuf[2], specBuf[1]-2);
+			cout << "[SDB Octet Count-T] : " << i <<endl;
+			
+			fmUDR.get_ItemG()->put_nSDB_OctetCountTerminat(i);
+			break;
+			
+		case 32:	// G11	(SDB Octet Count)
+			i=0;
+			memcpy((char *)&i, (char *)&specBuf[2], specBuf[1]-2);
+			cout << "[SDB Octet Count-O] : " << i <<endl;
+			
+			fmUDR.get_ItemG()->put_nSDB_OctetCountOrigin(i);
+			break;
+			
+		case 33:	// G12	(Number of SDBs)
+			i=0;
+			memcpy((char *)&i, (char *)&specBuf[2], specBuf[1]-2);
+			cout << "[Num of SDBs-T] : " << i <<endl;
+			
+			fmUDR.get_ItemG()->put_nNumOfSDBsTerminat(i);
+			break;
+		
+		case 34:	// G13	(Number of SDBs)
+			i=0;
+			memcpy((char *)&i, (char *)&specBuf[2], specBuf[1]-2);
+			cout << "[Num of SDBs-O] : " << i <<endl;
+			
+			fmUDR.get_ItemG()->put_nNumOfSDBsOrigin(i);
+			break;
+			
+		case 35:	// H1	(Alternate Billing Identifier)
+			i=0;
+			memcpy((char *)&i, (char *)&specBuf[2], specBuf[1]-2);
+			cout << "[Alt Billing ID] : " << i <<endl;
+			
+			fmUDR.get_ItemH()->put_nAlternateBillingId(i);
+			break;
+			
+		case 36:	// I1	(IP QoS)
+			i=0;
+			memcpy((char *)&i, (char *)&specBuf[2], specBuf[1]-2);
+			cout << "[IP QoS] : " << i <<endl;
+			
+			fmUDR.get_ItemI()->put_nIP_QoS(i);
+			break;
+			
+		case 37:	// I2	(IP N/W Provider ID)
+			//i=0;
+			//memcpy((char *)&i, (char *)&specBuf[2], specBuf[1]-2);
+			//cout << "[IP NW ProviderID] : " << i;
+			memset(ipadd, 0x00, 4);
+			memcpy(ipadd, (char *)&specBuf[2],  4);
+			//printf("[IP NW ProviderID] Value = %d.%d.%d.%d / ", ipadd[0],ipadd[1],ipadd[2],ipadd[3]);
+				
+			iadd =0;
+    		iadd |= (unsigned int)ipadd[0] << 24;    
+    		iadd |= (unsigned int)ipadd[1] << 16;    
+    		iadd |= (unsigned int)ipadd[2] << 8;    
+    		iadd |= (unsigned int)ipadd[3];    
+			
+			fmUDR.get_ItemI()->put_nInterconnectIP_NetworkProviderID(iadd);
+			printf("[IP NW ProviderID] Value = %d.%d.%d.%d / %d \n", ipadd[0],ipadd[1],ipadd[2],ipadd[3], iadd);
+			break;
+			
+		case 38:	// I3	(IP N/W Service QoS)
+			i=0;
+			memcpy((char *)&i, (char *)&specBuf[2], specBuf[1]-2);
+			cout << "[IP NW Service QoS] : " << i <<endl;
+			
+			fmUDR.get_ItemI()->put_nInterconnectIP_NetworkServiceQoS(i);
+			break;
+		
+		case 39:	// I4	(Airlink  QoS)
+			i=0;
+			memcpy((char *)&i, (char *)&specBuf[2], specBuf[1]-2);
+			cout << "[Airlink  QoS] : " << i <<endl;
+			
+			fmUDR.get_ItemI()->put_nAirlinkQoS(i);
+			break;
+			
+		case 43:	// G14 (Num of PPP bytes)
+			i=0;
+			memcpy((char *)&i, (char *)&specBuf[2], specBuf[1]-2);
+			cout << "[Num of PPP Bytes] : " << i <<endl;
+			
+			fmUDR.get_ItemG()->put_nNumOfPPPbytesReceived(i);
+			break;
+			
+		case 44 :	// C2 (Correlation ID)
+			memcpy(imsi, (char *)&specBuf[2], specBuf[1]-2);		
+			cout << "[CorrelationID] : " << imsi <<endl;
+			
+			fmUDR.get_ItemC()->put_strCorrelationID(imsi);			
+			break;	
+			
+		default:
+			printf("[NOTICE] ERROR NOT FOND : VENDOR_SPECIFIC : %d \n", specBuf[0]);
+			//sleep(1);
+			break;
+	}
+				
+}
+
+
+//-------------------------------------------------------------------------------------
+// 0. 기록실패 1.기록성공
+int  Pdsn_IF::SendMQUdr()
+{
+	return configM->write_Udr(&fmUDR);	
+	//return mqUDR->sendMsg(&fmUDR);
+}
+
+
+//-------------------------------------------------------------------------------------	
+void  Pdsn_IF::DisplayUDR()
+{
+	*LogM<<LogM->ErrorCode(0) 
+    	<< "==SEND UDR===================INFO=====" << endl;
+
+    *LogM<<LogM->ErrorCode(0) 
+    	<< "HD : " << "[ " << fmUDR.stItemHead.get_nUdrType()<< " ] "
+        << "[ " << fmUDR.stItemHead.get_nUdrFileSeq()  << " ] " 
+        << "[ " << fmUDR.stItemHead.get_nUdrSeqNo()    << " ] " 
+        << "[ " << fmUDR.stItemHead.get_nUdrStatus()   << " ] " 
+        << "[ " << fmUDR.stItemHead.get_nServiceType() << " ] " 
+        << "[ " << fmUDR.stItemHead.get_nSubsType()    << " ] " << endl; 
+                           
+    *LogM<<LogM->ErrorCode(0) 
+    	<< "MI : " << "[ " << fmUDR.stItemHead.get_nServiceProvider()<< " ] " 
+        << "[ " << fmUDR.stItemHead.get_nMin1()            << " ] " 
+        << "[ " << fmUDR.stItemHead.get_nMin2()            << " ] " << endl;
+
+    *LogM<<LogM->ErrorCode(0) 
+    	<< "A  : " << "[ " << fmUDR.stItemA.get_unMsId() << " ]" << endl;
+    
+    *LogM<<LogM->ErrorCode(0) 
+    	<< "B  : " << "[ " << fmUDR.stItemB.get_nIpAddr() << " ]" 
+        << "[ " << fmUDR.stItemB.get_strNAI()  << " ]" << endl;
+
+    *LogM<<LogM->ErrorCode(0) 
+    	<< "C  : " << "[ " << fmUDR.stItemC.get_strAccountSessionID() << " ]" 
+        << "[ " << fmUDR.stItemC.get_strCorrelationID()    << " ]" << endl;
+
+    *LogM<<LogM->ErrorCode(0) 
+    	<< "D  : " << "[ " << fmUDR.stItemD.get_nMIP_HomeAgent() << " ]"
+        << "[ " << fmUDR.stItemD.get_nPDSN_FA_Addr()  << " ]" 
+        << "[ " << fmUDR.stItemD.get_nServing_PCF()   << " ]" 
+        << "[ " << fmUDR.stItemD.get_strBS_MSC_ID()   << " ]" << endl;
+
+    *LogM<<LogM->ErrorCode(0) 
+    	<< "E  : " << "[ " << fmUDR.stItemE.get_nUserZone() << " ]" << endl;
+
+    *LogM<<LogM->ErrorCode(0) 
+    	<< "F  : " << "[ " << fmUDR.stItemF.get_nForwardMUXOpt() << " ]"
+        << "[ " << fmUDR.stItemF.get_nReverseMUXOpt()        << " ]" 
+        << "[ " << fmUDR.stItemF.get_nForward_Fund_Rate()    << " ]" 
+        << "[ " << fmUDR.stItemF.get_nReverse_Fund_Rate()    << " ]"
+        << "[ " << fmUDR.stItemF.get_nServiceOpt()           << " ]"
+        << "[ " << fmUDR.stItemF.get_nForwardTrafficType()   << " ]"
+        << "[ " << fmUDR.stItemF.get_nReverseTrafficType()   << " ]" << endl;
+    
+    *LogM<<LogM->ErrorCode(0) 
+    	<< "     " << "[ " << fmUDR.stItemF.get_nFundFrameSize() << " ]"                    
+    	<< "[ " << fmUDR.stItemF.get_nForwardFundamentalRC() << " ]" 
+        << "[ " << fmUDR.stItemF.get_nReverseFundamentalRC() << " ]" 
+        << "[ " << fmUDR.stItemF.get_nIP_Technology()        << " ]" 
+        << "[ " << fmUDR.stItemF.get_nCompulsoryTunnelInd()  << " ]" 
+        << "[ " << fmUDR.stItemF.get_nReleaseIndicator()     << " ]" << endl;
+
+    *LogM<<LogM->ErrorCode(0) 
+    	<< "G  : " << "[ " << fmUDR.stItemG.get_nDataOctetCntTerminat()   << " ]"
+    	<< "[ " << fmUDR.stItemG.get_nDataOctetCntOrigin()     << " ]"
+        << "[ " << fmUDR.stItemG.get_nBadPPPframeCnt()         << " ]"
+        << "[ " << fmUDR.stItemG.get_nStartEventTime()         << " ]"
+        << "[ " << fmUDR.stItemG.get_nEndEventTime()           << " ]"
+        << "[ " << fmUDR.stItemG.get_nActiveTime()             << " ]" << endl;
+    
+    *LogM<<LogM->ErrorCode(0) 
+    	<< "     " << "[ " << fmUDR.stItemG.get_nNumOfActiveTransitions() << " ]"
+        << "[ " << fmUDR.stItemG.get_nSDB_OctetCountTerminat() << " ]"
+        << "[ " << fmUDR.stItemG.get_nSDB_OctetCountOrigin()   << " ]"
+        << "[ " << fmUDR.stItemG.get_nNumOfSDBsTerminat()      << " ]"
+        << "[ " << fmUDR.stItemG.get_nNumOfSDBsOrigin()        << " ]"
+        << "[ " << fmUDR.stItemG.get_nNumOfPPPbytesReceived()  << " ]" << endl;
+                                                                               
+    *LogM<<LogM->ErrorCode(0) 
+    	<< "H  : " << "[ " << fmUDR.stItemH.get_nAlternateBillingId() << " ]" << endl;
+
+    *LogM<<LogM->ErrorCode(0) 
+    	<< "I  : " << "[ " << fmUDR.stItemI.get_nIP_QoS()<< " ]" 
+        << "[ " << fmUDR.stItemI.get_nInterconnectIP_NetworkProviderID() << " ]" 
+        << "[ " << fmUDR.stItemI.get_nInterconnectIP_NetworkServiceQoS() << " ]" 
+        << "[ " << fmUDR.stItemI.get_nAirlinkQoS()                       << " ]" << endl;                      
+        
+    *LogM<<LogM->ErrorCode(0) 
+    	<< "Y  : " << "[ " << fmUDR.stItemY.get_nAirlinkRecType()<< " ]"
+        << "[ " << fmUDR.stItemY.get_nRP_SessionID()            << " ]"           
+        << "[ " << fmUDR.stItemY.get_nAirlinkSeqNum()           << " ]"
+        << "[ " << fmUDR.stItemY.get_nMobileOrigin_TerminatID() << " ]" << endl;
+ 
+    *LogM<<LogM->ErrorCode(0) 
+    	<< "Z  : " << "[ " << fmUDR.stItemZ.get_strContainer() << " ]" << endl;
+    	
+}
+	
+//====================================================================================
+int main(int argc, char *argv[])
+{
+	if(argc < 10)
+	{
+		cout <<"Usage:" << argv[0] << "[systemid] [serviceid] [groupid] [processtype] [serialno] [remarks] [ipaddr] [port] [key]" << endl;
+		exit(-2);
+	}
+	
+	SystemId=atoi(argv[1]);
+	ServiceId=atoi(argv[2]);
+	GroupId=atoi(argv[3]);
+	ProcessType=atoi(argv[4]);
+	PserialNo=atoi(argv[5]);
+	PreMark=atoi(argv[6]);
+	
+	//signal(SIGNULL,sigCapture);	//0
+	signal(SIGHUP,sigCapture);
+	signal(SIGINT,sigCapture);
+	signal(SIGQUIT,sigCapture);
+	signal(SIGKILL,sigCapture);
+	signal(SIGTERM,sigCapture);
+	signal(SIGSTOP,sigCapture);
+	signal(SIGTSTP,sigCapture);
+	signal(SIGCONT,sigCapture);	//26
+	signal(SIGUSR1,sigCapture);
+	
+	
+	//mqUDR = new MessageQueue<UdrFormat>(1, 1, 3,1,0,10,1000);
+	mqPMS = new MessageQueue<MsgPmsStatus>(SystemId, 0,1,1,0,10, 1000);
+	LogM = new SendLogManage(SystemId, ServiceId, GroupId, ProcessType, PserialNo, PreMark);
+	pdMain = new Pdsn_IF(argv[9], argv[7], atoi(argv[8]));	
+	//pdMain = new Pdsn_IF((char *)MD5_HASH_KEY, (char *)SERV_UDP_ADDR, SERV_UDP_PORT);
+	
+	LogM->put_EventHistData(FLAG_START, FLAG_PROC_START);
+	WritePMSMQ(FLAG_PROC_START);
+	
+	cout << "Argv : " << SystemId << "/" << ServiceId << "/" << GroupId <<"/" << ProcessType 
+		<< "/" << PserialNo <<"/" << PreMark << "/" << argv[7] <<"/" << atoi(argv[8]) 
+		<< "/" << argv[9] <<  endl;
+		
+	*LogM << "Argv : " << SystemId << "/" << ServiceId << "/" << GroupId <<"/" << ProcessType 
+		<< "/" << PserialNo <<"/" << PreMark << "/" << argv[7] <<"/" << atoi(argv[8]) 
+		<< "/" << argv[9] << LogM->ErrorCode(0) << endl;
+	
+	
+	
+	while(pdMain->SOCK_ERROR)
+	{
+		WritePMSMQ(FLAG_NW_ERROR);
+		sleep(30);
+		pdMain->Socket_Create();
+	}
+	
+	
+	WritePMSMQ(FLAG_NW_NORMAL);
+	while(1)
+	{
+		if(!pdMain->RecvData()) 
+		{
+			//break;	// fp 
+			cout << "[PDSNIF] sleep 2..." << endl;
+			sleep(2);
+			continue;
+		}else
+		{
+			//cout << "SIZE OF : " << (int)sizeof(UdrFormat) << endl;
+			//break; // fp
+			
+			pdMain->DisplayUDR();
+			if(!pdMain->DATA_ERROR && !pdMain->SendMQUdr())// == FLAG_MQ_IS_FULL)
+			{
+				cout << "[PDSNIF] UdrFormat  : FILE WRITE FAIL " << endl;
+				*LogM<< "[PDSNIF] UdrFormat  : FILE WRITE FAIL " << LogM->ErrorCode(0)  << endl;
+				sleep(30);
+				break;
+			}
+			//continue;	//test
+			//break; // fp
+		}
+		pdMain->SendAck();
+	}
+	
+	LogM->put_EventHistData(FLAG_END, 1);
+	
+	delete pdMain;
+	delete LogM;
+	delete mqPMS;
+	//delete mqUDR;
+	
+	
+	exit(1);
+}
+

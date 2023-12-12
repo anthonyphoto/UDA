@@ -1,0 +1,35 @@
+###############################
+# Declare
+##############################
+include $(HOME)/common/env_proc_32.mk
+include $(HOME)/common/env_uda.mk
+
+
+LOCALFLAGS = +W829 -I../INCLUDE
+
+
+IN      = inputtrap
+INOBJS  = inputtrap.o 
+
+TRAP    = CTrapMain
+OBJECTS = CTrapAgent.o CTrapMain.o 
+
+
+###############################
+# Process
+##############################
+all : $(TRAP)
+in  : $(IN)
+
+
+$(TRAP) : $(OBJECTS)
+	aCC -o $(TRAP) $(OBJECTS) $(UDALINKLIBES) $(PROLDLIBS)
+
+$(IN) : $(INOBJS)
+	aCC -o $(IN) $(INOBJS) $(UDALINKLIBES) $(PROLDLIBS)
+
+install :
+	 cp -i $(TRAP) $(HOME)/bin
+
+clean :
+	rm -rf $(TRAP) *.o *.lis *.a inputtrap

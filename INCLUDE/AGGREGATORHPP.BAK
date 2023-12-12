@@ -1,0 +1,1042 @@
+/*****************************************
+* Aggregation을 하기 위한 program        *
+* writer : Han Guen Hee                  *
+* file name : Aggregator.hpp             *
+* program history                        *
+*                                		 *
+* bug fix                        	     *
+*                                  	     *
+* last updata : 2000. 9. 29        		 *
+*****************************************/
+
+#ifndef AGGREGATOR_HPP
+#define AGGREGATOR_HPP
+
+#include<iomanip.h>
+#include<fstream.h>
+#include<stdlib.h>
+#include<stdio.h>
+#include<TransactOfAggregate.hpp>
+#include<PrintUdr.hpp>
+#include<TempMsgQ1.hpp>
+
+//#define DEBUG 	0
+
+class CAggregator 
+{
+	public:
+		CAggregator();
+		~CAggregator();
+		int					Aggregator( UdrFormat* pUdrFormat );
+	
+	private:
+		CTransactOfAggregate 	TransactOfAggregate;
+		CBtree*					pBtree;
+		fstream					fAggregator;    // Aggregation된 udr
+		fstream					fLog;           // error log 
+		CPrintUdr				PrintData;
+		// 새로 들어온 UDR Type을 얻기위한 구조체 변수.
+		UDRHEAD_TYPE*			pItemHead;
+		A_INT_TYPE*				pItemA;
+		G_TYPE*					pItemG;
+		C_TYPE*					pItemC;
+		// 기존에 있던 UDR_TYPE 구조체를 얻기위한 변수.
+		UDRHEAD_TYPE*		    pSearchItemHead;
+		G_TYPE*					pSearchItemG;
+		C_TYPE* 				pSearchItemC;
+		_DATATYPE				stDataType;
+		UdrFormat*				pSearchUdrFormat;
+		int						tStartTime;
+		int						tEndTime;
+		unsigned int 			nUdrCount;
+		unsigned int 			nSumAggregationUdr;
+		DateTime				 dateTime; // for time log add jkjung
+		int 					InsertAggregator( UdrFormat*  pUdrFormat );
+		int 					DeleteAggregator( UdrFormat*  pUdrFormat );
+		int						UpdateAggregator( UdrFormat*  pUdrFormat );
+		int						_StartProcess( UdrFormat* pUdrFormat );
+		int						_InterimProcess( UdrFormat* pUdrFormat );
+		int						_StopProcess( UdrFormat* pUdrFormat );
+		void					_RemainsItem( UdrFormat* pSearchUdrFormat, UdrFormat* pUdrFormat );
+		
+};
+// Constructor
+CAggregator::CAggregator() 
+{
+	// Btree shared memory의 pointer를 얻어온다.
+	pBtree = TransactOfAggregate.get_BtreePointer();
+	fLog.open( "/SVC1/LOG/AggregatorLog.txt", ios::out );
+	if( !fLog )
+	{
+		cout << "File could not be opened AggregatorLog.txt" << endl;
+		exit( 1 );
+	}
+	fAggregator.open( "/SVC1/LOG/Aggregation.txt", ios::out | ios::binary );
+	if( !fAggregator )
+	{
+		cout << "File could not be opened Aggregation.txt" << endl;
+		exit( 1 );
+	}
+	nUdrCount=0;
+	nSumAggregationUdr=0;
+}
+// 소멸자.
+CAggregator::~CAggregator()
+{
+	fLog.close();
+	fAggregator.close();
+}
+// Aggregator Method
+// 실제 들어온 data를 비교해서 호출할 메소드를 결정.
+// return value : 0 -> success
+//                -1 -> error
+int CAggregator::Aggregator( UdrFormat* pUdrFormat )
+{
+	//add jkjung
+	char *strTime;
+	
+	if( (nUdrCount == 0) || ((nUdrCount % 1000) == 0) )
+	{
+		strTime = dateTime.get_time(0);
+		cout << "TIME_LOG:"<< strTime << endl;
+	}
+	//end
+	PrintData.Print( pUdrFormat );
+
+	// 비교에 필요한 class를 얻는다.
+	pItemG=pUdrFormat->get_ItemG();
+	pItemHead=pUdrFormat->get_ItemHead();
+	pItemA=pUdrFormat->get_ItemA();
+	pItemC=pUdrFormat->get_ItemC();
+
+	// 들어온 data가 현재 존재하는지 검색한다.
+	stDataType.iDataKey = pItemA->get_unMsId();
+	pSearchUdrFormat = pBtree->ShowSearch( &stDataType );
+	fLog << "=====Start Aggregator Error Log========" << '\n';
+	if( pSearchUdrFormat == NULL )
+	{
+//		cout << "Aggregator : Data Not Exist started aggregator" << endl;
+	}
+	pSearchItemG=pSearchUdrFormat->get_ItemG();
+	pSearchItemC=pSearchUdrFormat->get_ItemC();
+	pSearchItemHead=pSearchUdrFormat->get_ItemHead();
+	
+	// cout << "******************************" << endl;
+	// cout << "MAIN pUdrFormat: " << pUdrFormat << endl;
+	// cout << "MAIN pSearchUdrFormat: " << pSearchUdrFormat << endl;
+	// cout << "******************************" << endl;
+	switch( pItemHead->get_nUdrType() )
+	{
+
+		// INTERIM이 START라면
+		case START:
+			if( _StartProcess( pUdrFormat ) )
+			{
+				fLog << "Aggregator : _StartProcess Error!!" << '\n';
+				fLog.flush();
+				return -1;
+			}
+	 nUdrCount++;
+	 cout << "[Total Udr Count]:" << " " << nUdrCount << endl;
+//		return 0;
+			break;
+		case INTERIM:
+			if( _InterimProcess( pUdrFormat ) )
+			{
+				fLog << "Aggregator : _InterimProcess Error!!" << '\n';
+				fLog.flush();
+				return -1;
+			}
+	 nUdrCount++;
+	 cout << "[Total Udr Count]:" << " " << nUdrCount << endl;
+//			return 0;
+			break;
+		case STOP:
+			if( _StopProcess( pUdrFormat ) )
+			{
+				fLog << "Aggregator : _StopProcess Error!!" << '\n';
+				fLog.flush();
+				return -1;
+			}
+	 nUdrCount++;
+	 cout << "[Total Udr Count]:" << " " << nUdrCount << endl;
+//			return 0;
+			break;
+		default:
+			fLog << " different Udr Type Error !!! " << pItemHead->get_nUdrType() << '\n'; 
+				fLog.flush();
+				return -1;
+			break;
+	}	
+	// 정수값의 범위를 check.
+	if( nUdrCount ==  4294967294 )
+		nUdrCount = 0;
+	if( nSumAggregationUdr == 4294967294 )
+		nSumAggregationUdr=0;
+	return 0;
+}
+// _StartProcess Method.
+// START UDR이 들어왔을때 동작하는 Method
+// return value : 0 -> success 
+//                -1-> error
+int CAggregator::_StartProcess( UdrFormat* pUdrFormat )
+{
+//	cout << "******************************" << endl;
+//	cout << "START pUdrFormat: " << pUdrFormat << endl;
+//	cout << "START pSearchUdrFormat: " << pSearchUdrFormat << endl;
+//	cout << "******************************" << endl;
+	// 같은 Data가 존재한다면
+	if( pSearchUdrFormat != NULL )
+	{
+		// 이미 처리가 종료된 상태라면 
+		if( pSearchItemHead->get_nUdrStatus() == 1)
+		{
+			// session ID가 같은 경우
+			if( !strncmp( pItemC->get_strAccountSessionID(), pSearchItemC->get_strAccountSessionID(),LEN_ACCOUNT_SESSION_ID ) )
+			{
+				if(DEBUG)
+				{
+					//cout << "Discard Data START1 : End processing data" << endl;
+
+					//cout << "[Process Flow]"<<endl ;
+					cout << "START -> DATA EXIST -> UDRSTATUS=1(end) -> SAME SessionID";
+					cout << endl;
+				}
+
+				return 0;
+			}
+			// session ID가 다른 경우
+			else
+			{
+				// 정상data로 간주. 최초 Insert
+				tStartTime = pItemG->get_nEndEventTime();
+	//			tStartTime -= pItemG->get_nActiveTime();
+				pItemG->put_nStartEventTime( tStartTime );
+				 if( UpdateAggregator( pUdrFormat ) )
+				 {
+					 fLog << "Aggregator START : UpdateAggregator Error" << '\n';
+					fLog.flush();
+					 return -1;
+				 }
+
+				if(DEBUG)
+				{
+					 //cout << "[Process Flow]"<<endl ;
+				 	cout << "START -> DATA EXIST -> UDRSTATUS=1(end) -> Differ SessionID";
+					cout << endl;
+					cout << "->Run: UpdateAggregator  " << endl;
+				}
+
+				 return 0;
+			}
+		}
+		// 현재 처리하고 있는 상태라면
+		else if( pSearchItemHead->get_nUdrStatus() == 0 )
+		{
+			// session ID가 같은 경우
+			if( !strncmp( pItemC->get_strAccountSessionID(), pSearchItemC->get_strAccountSessionID(),LEN_ACCOUNT_SESSION_ID ) )
+			{
+				// 만약 새로들어온 시간이 기존에 있던 시간보다 작다면 
+				if( ( pItemG->get_nEndEventTime() - pSearchItemG->get_nEndEventTime() ) <= 0 )
+				{
+					if(DEBUG)
+					{
+	//					cout << "discard data START2 : small StartEventTime value" << endl;
+
+	//				 	cout << "[Process Flow]"<<endl ;
+					 	cout << "START -> DATA EXIST -> UDRSTATUS=0 -> Same SessionID -> Small Event Time";
+						cout << endl;
+					}
+
+					return 0;
+				}
+				else
+				{
+					// 만약 Active_Time이 작다면 
+					// 비정상 DATA로 처리한다.
+					if( ( pItemG->get_nActiveTime() - pSearchItemG->get_nActiveTime() ) < 0 )
+					{
+						if(DEBUG)
+						{
+//							cout << "discard data START1 : small ActiveTime value" << endl;
+
+//				 			cout << "[Process Flow]"<<endl ;
+				 			cout << "START -> DATA EXIST -> UDRSTATUS=0 -> Same SessionID -> Big Event Time -> Small Active Time";
+							cout << endl;
+
+						}
+						return 0;
+					}
+					else
+					{
+						// 예전 start event time을 보존.
+						tStartTime = pSearchItemG->get_nStartEventTime();
+						pItemG->put_nStartEventTime( tStartTime );
+						_RemainsItem( pSearchUdrFormat, pUdrFormat );
+		//				pUdrFormat->setItem( pItemG );
+						
+						// Hand-Off로 간주해서 기존것과 합산한다.
+						if( UpdateAggregator( pUdrFormat ) )
+				 		{
+						    fLog << "Aggregator START : UpdateAggregator Error" << '\n';
+							fLog.flush();
+							return -1;
+				 		}
+
+						if(DEBUG)
+						{
+//				 			cout << "[Process Flow]"<<endl ;
+				 			cout << "START -> DATA EXIST -> UDRSTATUS=0 -> Same SessionID -> Big Event Time -> Big Active Time";
+							cout << endl;
+				 			cout << "->Run: UpdateAggregator  " << endl;
+						}
+						
+						return 0;
+					}
+				}							
+			}
+			// session ID가 다른 경우
+			else
+			{
+				// 만약 새로들어온 시간이 기존에 있던 시간보다 작다면 
+				if( ( pItemG->get_nEndEventTime() - pSearchItemG->get_nEndEventTime() ) <= 0 )
+				{
+					if(DEBUG)
+					{
+//						cout << "discard data START3 : small StartEventTime value" << endl;
+
+//				 		cout << "[Process Flow]"<<endl ;
+				 		cout << "START -> DATA EXIST -> UDRSTATUS=0 -> Differ SessionID ->Small Event Time";
+						cout << endl;
+					}
+
+					return 0;
+				}
+				// end가 들어오지 않고 새로운 start가 시작된 data.
+				// 기존의 것을 내보낸후, 새로운 데이타를 다시 insert.
+				else
+				{
+					pSearchItemHead->put_nUdrStatus(1);
+				   while(1)
+				   {
+					   if(MqUdr.sendMsg(pSearchUdrFormat) == FLAG_MQ_IS_FULL)
+					   {
+						   fLog << "MSG Queue FULL!!" << '\n';// add jkjung start
+						   fLog.flush();
+						   return -1;
+					   }
+					   else break;
+				   }
+					nSumAggregationUdr++;
+					cout << "Sum Aggregation Udr Count => " << nSumAggregationUdr << endl;
+					fAggregator.write( ( char * )pSearchUdrFormat, sizeof( UdrFormat ) );
+					fAggregator.flush();
+					if( DeleteAggregator( pSearchUdrFormat ) )
+					{
+						 fLog << "Aggretator START : DeleteAggregator Error" << endl;
+						 fLog.flush();
+						 return -1;
+					}
+					tStartTime = pItemG->get_nEndEventTime();
+					tStartTime -= pItemG->get_nActiveTime();
+					pItemG->put_nStartEventTime( tStartTime );
+					if( InsertAggregator( pUdrFormat ) )
+					{
+					 	fLog << "Aggregator START : InsertAggregator Error" << endl;
+						return -1;
+					}
+
+					if(DEBUG)
+					{
+//				 		cout << "[Process Flow]"<<endl ;
+				 		cout << "START -> DATA EXIST -> UDRSTATUS=0 -> Differ SessionID ->Big Event Time";
+						cout << endl;
+				 		cout << "->Run: Send Old Data -> InsertAggregator  " << endl;
+					}
+
+					return 0;
+				}
+			}
+		}
+		// 잘못된 data가 들어온 경우
+		else
+		{
+			fLog<< "START nUdrStatus data Error!!" << endl;
+			return -1;
+		}
+	}
+	// 같은 Data가 존재하지 않는다면
+	else
+	{
+		tStartTime = pItemG->get_nEndEventTime();
+	//	tStartTime -= pItemG->get_nActiveTime();
+		pItemG->put_nStartEventTime( tStartTime );
+		// 최초의 Data. 정상적으로 insert.
+		if( InsertAggregator( pUdrFormat ) )
+		{
+			fLog << "Aggregator START : InsertAggregator Error" << endl;
+			return -1;
+		}
+		if(DEBUG)
+		{
+//			cout << "[Process Flow]"<<endl ;
+	 		cout << "START -> DATA Not EXIST " << endl;
+			cout << "->Run: InsertAggregator  " << endl;
+		}
+
+		return 0;
+	}
+}
+// _InterimProcess Method.
+// INTERIM UDR이 들어왔을때 동작하는 Method
+// return value : 0 -> success 
+//                -1-> error
+int CAggregator::_InterimProcess( UdrFormat* pUdrFormat )
+{
+
+//	cout << "******************************" << endl;
+//	cout << "INTERIM pUdrFormat: " << pUdrFormat << endl;
+//	cout << "INTERIM pSearchUdrFormat: " << pSearchUdrFormat << endl;
+//	cout << "******************************" << endl;
+	// update하고자 하는 data가 존재한다면
+	if( pSearchUdrFormat != NULL )
+	{
+		// 이미 처리가 종료된 상태라면 
+		if( pSearchItemHead->get_nUdrStatus() == 1)
+		{
+			// session ID가 같은 경우
+			if( !strncmp( pItemC->get_strAccountSessionID(), pSearchItemC->get_strAccountSessionID(),LEN_ACCOUNT_SESSION_ID ) )
+			{
+				// 만약 새로들어온 시간이 기존에 있던 시간보다 작다면 
+				if( ( pItemG->get_nEndEventTime() - pSearchItemG->get_nEndEventTime() ) <= 0 )
+				{
+					if(DEBUG)
+					{
+//						cout << "discard data INTERIM1 : small StartEventTime value" << endl;
+
+//			 			cout << "[Process Flow]"<<endl ;
+			 			cout << "INTERIM -> DATA EXIST -> UDRSTATUS=1 -> Same SessionID -> Small Event time";
+						cout << endl;
+					}
+
+					return 0;
+				}
+				else
+				{
+					// Active time 변화시, Dormant에서 Active로
+					// 신규 Aggregation을 시작
+					// 만약 Active_Time이 작다면 
+					// 비정상 DATA로 처리한다.
+					if( ( pItemG->get_nActiveTime() - pSearchItemG->get_nActiveTime() ) < 0 )
+					{
+						if(DEBUG)
+						{
+//							cout << "discard data INTERIM1 : small ActiveTime value" << endl;
+
+//			 				cout << "[Process Flow]"<<endl ;
+			 				cout << "INTERIM -> DATA EXIST -> UDRSTATUS=1 -> Same SessionID -> Big Event time -> Small Active Time";
+							cout << endl;
+						}
+
+						return 0;
+					}
+					else
+					{
+						// 예전 start time을 가져온다.
+						// update해준다.
+						tStartTime = pSearchItemG->get_nStartEventTime();
+						pItemG->put_nStartEventTime( tStartTime );
+						_RemainsItem( pSearchUdrFormat, pUdrFormat );
+						
+						if( UpdateAggregator( pUdrFormat ) )
+				 		{
+							 fLog << "Aggregator INTERIM : UpdateAggregator Error" << endl;
+							 return -1;
+				 		}
+
+						if(DEBUG)
+						{
+//			 				cout << "[Process Flow]"<<endl ;
+			 				cout << "INTERIM -> DATA EXIST -> UDRSTATUS=1 -> Same SessionID -> Big Event Time -> Big Active Time";
+							cout << endl;
+							cout << "->Run: UpdateAggregator  " << endl;
+						}
+
+						return 0;
+					}
+				}							
+			}
+			// session ID가 다른 경우
+			else
+			{
+				// 만약 새로들어온 시간이 기존에 있던 시간보다 작다면 
+				if( ( pItemG->get_nEndEventTime() - pSearchItemG->get_nEndEventTime() ) <= 0 )
+				{
+					if(DEBUG)
+					{
+//						cout << "discard data INTERIM2 : small StartEventTime value" << endl;
+
+//			 			cout << "[Process Flow]"<<endl ;
+			 			cout << "INTERIM -> DATA EXIST -> UDRSTATUS=1 -> differ SessionID -> Small Event Time";
+						cout << endl;
+					}
+
+					return 0;
+				}
+				else
+				{
+					// Start Udr 분실.
+					// 신규 Aggregation 시작
+					// 새로 들어온 end time을 start time으로 전환후,
+					// update해준다.
+					tStartTime = pItemG->get_nEndEventTime();
+					tStartTime -= pItemG->get_nActiveTime();
+					pItemG->put_nStartEventTime( tStartTime );
+					
+					if( UpdateAggregator( pUdrFormat ) )
+					{
+						fLog << "Aggregator INTERIM : InsertAggregator Error" << endl;
+						return -1;
+					}
+
+					if(DEBUG)
+					{
+//			 			cout << "[Process Flow]"<<endl ;
+			 			cout << "INTERIM -> DATA EXIST -> UDRSTATUS=1 -> differ SessionID -> Big Event Time";
+						cout << endl;
+						cout << "->Run: UpdateAggregator  " << endl;
+					}
+
+					return 0;
+				}							
+			}
+		}
+		// 현재 처리하고 있는 상태라면
+		else if( pSearchItemHead->get_nUdrStatus() == 0 )
+		{
+			// session ID가 같은 경우
+			if( !strncmp( pItemC->get_strAccountSessionID(), pSearchItemC->get_strAccountSessionID(),LEN_ACCOUNT_SESSION_ID ) )
+			{
+				// 만약 새로들어온 시간이 기존에 있던 시간보다 작다면 
+				if( ( pItemG->get_nEndEventTime() - pSearchItemG->get_nEndEventTime() ) < 0 )
+				{
+					if(DEBUG)
+					{
+						// 이전 UDR로 간주.					
+//						cout << "discard data INTERIM3 : small StartEventTime value" << endl;
+
+//			 			cout << "[Process Flow]"<<endl ;
+			 			cout << "INTERIM -> DATA EXIST -> UDRSTATUS=0 -> Same SessionID ->Small Event Time";
+						cout << endl;
+					}
+
+					return 0;
+				}
+				else
+				{
+					// 정상처리 기존것과 합산한다.
+					// 만약 Active_Time이 작다면 
+					// 비정상 DATA로 처리한다.
+				 	if( ( pItemG->get_nActiveTime() - pSearchItemG->get_nActiveTime() ) < 0 )
+					{
+						if(DEBUG)
+						{
+//							cout << "discard data INTERIM2 : small ActiveTime value" << endl;
+//
+//			 				cout << "[Process Flow]"<<endl ;
+			 				cout << "INTERIM -> DATA EXIST -> UDRSTATUS=0 -> Same SessionID -> Big Event Time -> Small Active Time";
+							cout << endl;
+						}
+
+						return 0;
+					}
+					else
+					{
+						// 예전 start time을 새로들어온 UDR의 start time에 넣어주고, 
+						// update해준다.
+						tStartTime = pSearchItemG->get_nStartEventTime();
+						pItemG->put_nStartEventTime( tStartTime );
+						_RemainsItem( pSearchUdrFormat, pUdrFormat );
+						if( UpdateAggregator( pUdrFormat ) )
+				 		{
+							 fLog << "Aggregator INTERIM : UpdateAggregator Error" << endl;
+							return -1;
+				 		}
+
+						if(DEBUG)
+						{
+//			 				cout << "[Process Flow]"<<endl ;
+			 				cout << "INTERIM -> DATA EXIST -> UDRSTATUS=0 -> Same SessionID -> Big Event Time -> Big Active Time";
+							cout << endl;
+							cout << "->Run: UpdateAggregator  " << endl;
+						}
+
+						return 0;
+					}
+				}	
+			}
+			// session ID가 다른 경우
+			else
+			{
+				// 만약 새로들어온 시간이 기존에 있던 시간보다 작다면 
+				if( ( pItemG->get_nEndEventTime() - pSearchItemG->get_nEndEventTime() ) <= 0 )
+				{
+					if(DEBUG)
+					{
+//						cout << "discard data INTERIM4 : small StartEventTime value" << endl;
+
+//			 			cout << "[Process Flow]"<<endl ;
+			 			cout << "INTERIM -> DATA EXIST -> UDRSTATUS=0 -> Differ SessionID -> Small Event Time";
+						cout << endl;
+					}
+
+					return 0;
+				}
+				// stop, start UDR 분실.
+				// 기존의 것을 내보낸후, 새로운 데이타를 다시 insert.
+				else
+				{
+					pSearchItemHead->put_nUdrStatus(1);
+				   	while(1)
+				   	{
+					    if(MqUdr.sendMsg(pSearchUdrFormat) == FLAG_MQ_IS_FULL)
+						{
+						    cout << "MSG Queue FULL!!\n";// add jkjung start
+							return -1;
+						}
+					    else break;
+				   	}
+					nSumAggregationUdr++;
+					cout << "Sum Aggregation Udr Count => " << nSumAggregationUdr << endl;
+					fAggregator.write( ( char * )pSearchUdrFormat, sizeof( UdrFormat ) );
+					fAggregator.flush();
+					if( DeleteAggregator( pSearchUdrFormat ) )
+					{
+						 fLog << "Aggretator INTERIM : DeleteAggregator Error" << endl;
+						 return -1;
+					}
+					// 새로 들어온 end time을 start time으로 전환후,
+					// insert해준다.
+					tStartTime = pItemG->get_nEndEventTime();
+					tStartTime -= pItemG->get_nActiveTime();
+					pItemG->put_nStartEventTime( tStartTime );
+					if( InsertAggregator( pUdrFormat ) )
+					{
+					 	fLog << "Aggregator INTERIM : InsertAggregator Error" << endl;
+						return -1;
+					}
+					if(DEBUG)
+					{
+//			 			cout << "[Process Flow]"<<endl ;
+			 			cout << "INTERIM -> DATA EXIST -> UDRSTATUS=0 -> Differ SessionID -> Big Event Time";
+						cout << endl;
+						cout << "->Run: Send Old Data -> InsertAggregator  " << endl;
+					}
+
+					return 0;
+				}
+			}
+		}
+		// 잘못된 data가 들어온 경우
+		else
+		{
+			fLog << "INTERIM nUdrStatus data Error!!" << endl;
+			return -1;
+		}
+	}
+	// non-exist data
+	else
+	{
+		// start를 잃어버린 data로 간주한다.
+		// 새로 들어온 end time을 start time으로 전환후,
+		// insert해준다.
+		tStartTime = pItemG->get_nEndEventTime();
+		tStartTime -= pItemG->get_nActiveTime();
+		pItemG->put_nStartEventTime( tStartTime );
+		if( InsertAggregator( pUdrFormat ) )
+		{
+		 	fLog << "Aggregator INTERIM : InsertAggregator Error" << endl;
+					    fLog.flush();
+			return -1;
+		}
+
+		if(DEBUG)
+		{
+//			cout << "[Process Flow]"<<endl ;
+			cout << "INTERIM -> DATA Not EXIST" << endl;
+			cout << "->Run: InsertAggregator  " << endl;
+		}
+
+		return 0;
+	}
+}
+// _StopProcess Method.
+// STOP UDR이 들어왔을때 동작하는 Method
+// return value : 0 -> success 
+//                -1-> error
+int CAggregator::_StopProcess( UdrFormat* pUdrFormat )
+{
+
+//	 cout << "******************************" << endl;
+//	 cout << "STOP pUdrFormat: " << pUdrFormat << endl;
+//	 cout << "STOP pSearchUdrFormat: " << pSearchUdrFormat << endl;
+//	 cout << "******************************" << endl;
+	// delete하고자 하는 data가 존재한다면
+	if( pSearchUdrFormat != NULL )
+	{
+		// 이미 처리가 종료된 상태라면 
+		if( pSearchItemHead->get_nUdrStatus() == 1)
+		{
+			// session ID가 같은 경우
+			if( !strncmp( pItemC->get_strAccountSessionID(), pSearchItemC->get_strAccountSessionID(),LEN_ACCOUNT_SESSION_ID ) )
+			{
+				if(DEBUG)
+				{
+//					cout << "discard data STOP1 : Processing End Data" << endl;
+
+//			 		cout << "[Process Flow]"<<endl ;
+			 		cout << "STOP -> DATA EXIST -> UDRSTATUS=1 -> Same SessionID ->Small Event Time";
+					cout << endl;
+				}
+				return 0;	
+			}
+			// session ID가 다른 경우
+			else
+			{
+				// 만약 새로들어온 시간이 기존에 있던 시간보다 작다면 
+				if( ( pItemG->get_nEndEventTime() - pSearchItemG->get_nEndEventTime() ) <= 0 )
+				{
+					if(DEBUG)
+					{
+//						cout << "discard data STOP2 : small StartEventTime value" << endl;
+//			 			cout << "[Process Flow]"<<endl ;
+			 			cout << "STOP -> DATA EXIST -> UDRSTATUS=1 -> differ SessionID -> Small Event Time";
+						cout << endl;
+					}	
+
+					return 0;
+				}
+				else
+				{
+					// Start, Interim Udr 분실.
+					// 신규 session을 만들어서 종료.
+					tStartTime = pItemG->get_nEndEventTime();
+					tStartTime -= pItemG->get_nActiveTime();
+					pItemG->put_nStartEventTime( tStartTime );
+					pItemHead->put_nUdrStatus(1);
+					if( UpdateAggregator( pUdrFormat ) )
+					{
+					 	fLog << "Aggregator STOP : UpdateAggregator Error" << endl;
+					    fLog.flush();
+						return -1;
+					}
+				   	while(1)
+				   	{
+					    if(MqUdr.sendMsg(pUdrFormat) == FLAG_MQ_IS_FULL)
+						{
+						    fLog << "MSG Queue FULL!!\n";// add jkjung start
+						    fLog.flush();
+							return -1;
+						}
+					    else break;
+				   	}
+					nSumAggregationUdr++;
+					cout << "Sum Aggregation Udr Count => " << nSumAggregationUdr << endl;
+					fAggregator.write( ( char * )pUdrFormat, sizeof( UdrFormat ) );
+					fAggregator.flush();
+
+					if(DEBUG)
+					{
+//			 			cout << "[Process Flow]"<<endl ;
+			 			cout << "STOP -> DATA EXIST -> UDRSTATUS=1 -> differ SessionID-> Big Event Time";
+						cout << endl;
+						cout << "->Run: UpdateAggregator -> Send Data  " << endl;
+					}
+
+					return 0;
+				}							
+			}
+		}
+		// 현재 처리하고 있는 상태라면
+		else if( pSearchItemHead->get_nUdrStatus() == 0 )
+		{
+			// session ID가 같은 경우
+			if( !strncmp( pItemC->get_strAccountSessionID(), pSearchItemC->get_strAccountSessionID(),LEN_ACCOUNT_SESSION_ID ) )
+			{
+				// 만약 새로들어온 시간이 기존에 있던 시간보다 작다면 
+				if( ( pItemG->get_nEndEventTime() - pSearchItemG->get_nEndEventTime() ) < 0 )
+				{
+					if(DEBUG)
+					{
+						// 이전 UDR로 간주.					
+//						cout << "discard data STOP3 : small StartEventTime value" << endl;
+
+//			 			cout << "[Process Flow]"<<endl ;
+			 			cout << "STOP -> DATA EXIST -> UDRSTATUS=0 -> Same SessionID -> Small Event Time";
+						cout << endl;
+					}
+
+					return 0;
+				}
+				// 정상처리 기존 session 종료.
+				else
+				{
+					// 만약 Active_Time이 작다면 
+					// 비정상 DATA로 처리한다.
+				 	if( ( pItemG->get_nActiveTime() - pSearchItemG->get_nActiveTime() ) < 0 )
+					{
+						if(DEBUG)
+						{
+//							cout << "discard data STOP1 : small ActiveTime value" << endl;
+
+//			 				cout << "[Process Flow]"<<endl ;
+			 				cout << "STOP -> DATA EXIST -> UDRSTATUS=0 -> Same SessionID->Big EVent time -> Small Active Time";
+							cout << endl;
+						}
+						return 0;
+					}
+					else
+					{
+						// 끝난 data를 표시해주는 flag.
+						pItemHead->put_nUdrStatus(1);
+						tStartTime = pSearchItemG->get_nStartEventTime();
+						pItemG->put_nStartEventTime( tStartTime );
+						_RemainsItem( pSearchUdrFormat, pUdrFormat );
+					    if( UpdateAggregator( pUdrFormat ) )
+					    {
+						   fLog << "Aggregator STOP : UpdateAggregator Error!!" << endl;
+						    fLog.flush();
+							return -1;
+				  	 	}
+				   		while(1)
+				   		{
+					    	if(MqUdr.sendMsg(pUdrFormat) == FLAG_MQ_IS_FULL)
+							{
+							    fLog << "MSG Queue FULL!!\n";// add jkjung start
+						 		fLog.flush();
+								return -1;
+							}
+					    	else break;
+					   	}
+						nSumAggregationUdr++;
+						cout << "Sum Aggregation Udr Count => " << nSumAggregationUdr << endl;
+						fAggregator.write( ( char * )pUdrFormat, sizeof( UdrFormat ) );
+						fAggregator.flush();
+						// 끝난 data도 삭제하지않고 남겨둔다.
+
+						if(DEBUG)
+						{
+//			 				cout << "[Process Flow]"<<endl ;
+			 				cout << "STOP -> DATA EXIST -> UDRSTATUS=0 -> Same SessionID -> Big Event Time -> Big Active Time";
+							cout << endl;
+							cout << "->Run: UpdateAggregator -> Send Data  " << endl;
+						}
+
+						return 0;
+					}
+				}	
+			}
+			// session ID가 다른 경우
+			else
+			{
+				// 만약 새로들어온 시간이 기존에 있던 시간보다 작다면 
+				if( ( pItemG->get_nEndEventTime() - pSearchItemG->get_nEndEventTime() ) <= 0 )
+				{
+					if(DEBUG)
+					{
+//						cout << "discard data STOP4 : small StartEventTime value" << endl;
+//			 			cout << "[Process Flow]"<<endl ;
+			 			cout << "STOP -> DATA EXIST -> UDRSTATUS=0 -> differ SessionID-> Small Event Time";
+						cout << endl;
+					}
+
+					return 0;
+				}
+				// stop, start, Interim UDR 분실.
+				// 기존의 것을 내보낸후, 새로운 데이타를 다시 insert후 종료시킨다.
+				else
+				{
+					// 기존 session 종료.
+					pSearchItemHead->put_nUdrStatus(1);
+				   	while(1)
+				   	{
+					    if(MqUdr.sendMsg(pSearchUdrFormat) == FLAG_MQ_IS_FULL)
+						{
+						    cout << "MSG Queue FULL!!\n";// add jkjung start
+						 	fLog.flush();
+							return -1;
+                        }
+					   	else break;
+				   	}
+					nSumAggregationUdr++;
+					cout << "Sum Aggregation Udr Count => " << nSumAggregationUdr << endl;
+					fAggregator.write( ( char * )pSearchUdrFormat, sizeof( UdrFormat ) );
+					fAggregator.flush();
+					if( DeleteAggregator( pSearchUdrFormat ) )
+					{
+						 fLog << "Aggretator STOP : DeleteAggregator Error" << endl;
+						 fLog.flush();
+						 return -1;
+					}
+					// 새로운 DATA를 Insert한후 종료.
+					pItemHead->put_nUdrStatus(1);
+					tStartTime = pItemG->get_nEndEventTime();
+					tStartTime -= pItemG->get_nActiveTime();
+					pItemG->put_nStartEventTime( tStartTime );
+					if( InsertAggregator( pUdrFormat ) )
+					{
+					 	fLog << "Aggregator STOP : InsertAggregator Error" << endl;
+						fLog.flush();
+						return -1;
+					}
+				   	while(1)
+				   	{
+					    if(MqUdr.sendMsg(pUdrFormat) == FLAG_MQ_IS_FULL)
+						{
+						    fLog << "MSG Queue FULL!!\n";// add jkjung start
+							fLog.flush();
+							return -1;
+						}
+					   	else break;
+				   	}
+					nSumAggregationUdr++;
+					cout << "Sum Aggregation Udr Count => " << nSumAggregationUdr << endl;
+					fAggregator.write( ( char * )pUdrFormat, sizeof( UdrFormat ) );
+					fAggregator.flush();
+
+					if(DEBUG)
+					{
+//			 			cout << "[Process Flow]"<<endl ;
+			 			cout << "STOP -> DATA EXIST -> UDRSTATUS=0 -> differ SessionID -> Big Event Time";
+						cout << endl;
+						cout << "->Run: Send Old Data -> InsertAggregator -> Send New Data*************" << endl;
+					}
+					return 0;
+				}
+			}
+		}
+	}
+	// non-exist data
+	else
+	{
+		// 신규 session을 만들어 insert한후, 
+		// flag를 setting하고 종료시킨다.
+		// 추후에 이미 처리된 후에 들어오는 STOP는 
+		// active time과 interval을 비교하여 처리한다. 
+		pItemHead->put_nUdrStatus(1);
+		tStartTime = pItemG->get_nEndEventTime();
+		tStartTime -= pItemG->get_nActiveTime();
+		pItemG->put_nStartEventTime( tStartTime );
+		if( InsertAggregator( pUdrFormat ) )
+		{
+		 	fLog << "Aggregator STOP : InsertAggregator Error" << endl;
+			fLog.flush();
+			return -1;
+		}
+	   	while(1)
+	   	{
+		    if(MqUdr.sendMsg(pUdrFormat) == FLAG_MQ_IS_FULL)
+			{
+			    fLog << "MSG Queue FULL!!\n";// add jkjung start
+				fLog.flush();
+				return -1;
+			}
+		   	else break;
+	   	}
+		nSumAggregationUdr++;
+		cout << "Sum Aggregation Udr Count => " << nSumAggregationUdr << endl;
+		fAggregator.write( ( char * )pUdrFormat, sizeof( UdrFormat ) );
+		fAggregator.flush();
+
+		if(DEBUG)
+		{
+ //			cout << "[Process Flow]"<<endl ;
+			cout << "STOP -> DATA Not EXIST" << endl;
+			cout << "->Run: InsertAggregator -> Send New Data*************" << endl;
+		}
+
+		return 0;
+	}
+}
+// _RemainsItem Method
+// remains not changed item.
+void CAggregator::_RemainsItem( UdrFormat* pSearchUdrFormat, UdrFormat* pUdrFormat )
+{
+	F_TYPE*          pItemF;
+	int				 nReleaseIndicator;
+	A_INT_TYPE*      pSearchItemA;
+	B_TYPE*          pSearchItemB;
+	C_TYPE*          pSearchItemC;
+	D_TYPE*          pSearchItemD;
+	E_TYPE*          pSearchItemE;
+	F_TYPE*          pSearchItemF;
+
+	pSearchItemA=pSearchUdrFormat->get_ItemA();
+	pSearchItemB=pSearchUdrFormat->get_ItemB();
+	pSearchItemC=pSearchUdrFormat->get_ItemC();
+	pSearchItemD=pSearchUdrFormat->get_ItemD();
+	pSearchItemE=pSearchUdrFormat->get_ItemE();
+	pSearchItemF=pSearchUdrFormat->get_ItemF();
+
+	pItemF=pUdrFormat->get_ItemF();
+    nReleaseIndicator=pItemF->get_nReleaseIndicator();
+	pSearchItemF->put_nReleaseIndicator( nReleaseIndicator );
+
+	pUdrFormat->setItem( pSearchItemA );
+	pUdrFormat->setItem( pSearchItemB );
+	pUdrFormat->setItem( pSearchItemC );
+	pUdrFormat->setItem( pSearchItemD );
+	pUdrFormat->setItem( pSearchItemE );
+	pUdrFormat->setItem( pSearchItemF );
+}
+// InsertAggregator Method.
+// 실제 Insert Transaction을 호출하는 Method
+// return value : 0 -> success
+//                -1 -> error
+int CAggregator::InsertAggregator( UdrFormat* pUdrFormat )
+{
+//	cout << "******************************" << endl;
+//	cout << "InsertAggregator pUdrFormat: " << pUdrFormat << endl;
+//	cout << "******************************" << endl;
+	if( TransactOfAggregate.insertshm( pUdrFormat ) )
+	{
+		fLog << "Error InsertAggregator : insertshm" << endl;
+		fLog.flush();
+		return -1;
+	}
+	return 0;
+}
+// DeleteAggregator Method.
+// 실제 Delete Transaction을 호출하는 Method
+// return value : 0 -> success
+//                -1 -> error
+int CAggregator::DeleteAggregator( UdrFormat* pUdrFormat )
+{
+	if( TransactOfAggregate.deleteshm( pUdrFormat ) == -1 )
+	{
+		fLog << "DeleteAggregator: _TransactionDelete Error !!!" << endl;
+		fLog.flush();
+		return -1;
+	}
+	return 0;
+}
+// UpdateAggregator Method.
+// 실제 Update Transaction을 호출하는 Method
+// return value : 0 -> success
+//                -1 -> error
+int CAggregator::UpdateAggregator( UdrFormat* pUdrFormat )
+{
+	if( TransactOfAggregate.updateshm( pUdrFormat ) )
+	{
+		fLog << "Error UpdateAggregator : updateshm" << endl;
+		fLog.flush();
+		return -1;
+	}
+	return 0;
+}
+
+#endif
+
+
+
+

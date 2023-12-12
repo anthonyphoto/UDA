@@ -1,0 +1,1815 @@
+/******************************************************************
+* 파 일 명     : Aggregator.cpp 			     					  *
+* 기   능                                                          *
+* : Aggregation을 하기 위한 program				                  *
+* 작 성 자     : Han Guen Hee                    				  *
+* first data  : 2000. 9. 29        	     						  *
+* last updata : 2001. 01. 04        		 					  *
+* 관 련 화 일  : Aggregator.hpp              						  *
+* program history                        						  *
+*   Aggregation Rule 수정(Interim) -> 2001. 01. 03		 		  *
+*   Aggregation된 UDR을 File에 써주는 부분을 주석처리.	-> 2001. 1. 4 *
+*   응답된 한도금액이 0이하일때 Service STOP요청 -> 2001. 1. 11        *
+*   Aggregation Rule 수정(Stop) -> 2001. 01. 12			 		  *
+*																  *
+* bug fix                        	     						  *
+*                         	        	 						  *
+******************************************************************/
+#include "Aggregator.hpp"
+
+void sigCapture(int sigNo );
+void WritePMSMQ(int sigNo);
+
+// Constructor
+CAggregator::CAggregator() 
+{
+}
+//===============================================================
+// Constructor Method											=
+//  : Aggregation에 필요한 CTransactOfAggregate class 선언   		=
+// argument : 프로세스 형상구분 6가지								=
+// return value : None											=
+//																=
+//===============================================================
+CAggregator::CAggregator( int nSystemId, int nServiceId, int nGroupId, int nProcessType, int nPserialNo, int nPreMark )
+{
+	char   cId='A';
+	
+	TempLimitMan = new CLimitMan( nServiceId ); 
+	sprintf( PATH_NAME_AGGREGATOR, "/SVC%d/DATA/AggShm%d.cfg",nServiceId,nPserialNo );
+	//sprintf( PATH_NAME_AGGREGATOR_LOG, "/SVC%d/LOG/Aggregation%d.txt",nServiceId,nPserialNo );
+	TransactOfAggregate= new CTransactOfAggregate( PATH_NAME_AGGREGATOR, cId,nSystemId,nServiceId,nGroupId,nProcessType,nPserialNo,nPreMark);
+	// Btree shared memory의 pointer를 얻어온다.
+	pBtree = TransactOfAggregate->get_BtreePointer();
+	/*
+	fAggregator.open( PATH_NAME_AGGREGATOR_LOG, ios::out | ios::binary );
+	if( !fAggregator )
+	{
+		*AggregatorLogM << AggregatorLogM->ErrorCode(4207) 
+			<< "File could not be opened!!" << endl;
+		AggregatorLogM->put_EventHistData(FLAG_END, -1);
+		delete AggregatorLogM;
+		exit( 1 );
+	}
+	*/
+	nUdrCount=0;
+	nSumAggregationUdr=0;
+}
+// destructor
+CAggregator::~CAggregator()
+{
+	delete TransactOfAggregate;
+	delete TempLimitMan;
+	delete mqPMS;
+	delete AggregatorLogM;
+	//fAggregator.close();
+}
+//===============================================================
+// Aggregator Method						   					=
+//  : 외부에서 Aggregator를 실행시키는 Method			       		=
+//		실제 들어온 data를 비교해서 호출할 메소드를 결정.				=
+// argument     :  pUdrFormat -> 처리하기 위해 들어온 UdrFormat	=
+// return value : 0-> success									=
+//                -1-> fail										=
+//																=
+//===============================================================
+void CAggregator::Aggregator( UdrFormat* pUdrFormat )
+{
+	//add jkjung
+//	char 		*strTime;
+//	int			nLimitInfo;
+	
+//	if( (nUdrCount == 0) || ((nUdrCount % 1000) == 0) )
+//	{
+//		strTime = dateTime.get_time(0);
+//	}
+
+	// 들어온 data가 현재 존재하는지 검색한다.
+	stDataType.iDataKey = pUdrFormat->get_ItemA()->get_unMsId();
+	// Memory Lock개념을 넣어야 한다.
+	pBtree->mem_lock(); // MEMORY LOCK
+	pSearchUdrFormat = pBtree->ShowSearch( &stDataType );
+	
+	if( pSearchUdrFormat == NULL )
+	{
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+			<< "Aggregator : Data Not Exist started aggregator!!" << endl;	
+	}
+	
+	*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+			<< "[ UdrType:" << pUdrFormat->get_ItemHead()->get_nUdrType() << "]" << endl;	
+	*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+			<< "[ MsId:" << pUdrFormat->get_ItemA()->get_unMsId() << "]" << endl;	
+	/*
+	*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+			<< "[ nServiceType=" << pUdrFormat->get_ItemHead()->get_nServiceType() << "]" << endl;
+	*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+			<< "[ nSubsType=" << pUdrFormat->get_ItemHead()->get_nSubsType() << "]" << endl;
+	*/
+	*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+			<< "[ pUdrFormat AccountSessionID=" << pUdrFormat->get_ItemC()->get_strAccountSessionID() << "]" << endl;
+	*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+			<< "[ pUdrFormat CorrelationID=" << pUdrFormat->get_ItemC()->get_strCorrelationID() << "]" << endl;
+	/*
+	*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+			<< "[ pUdrFormat EventTime=" << pUdrFormat->get_ItemG()->get_nEndEventTime() << "]" << endl;
+	*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+			<< "[ pSearchUdrFormat EventTime=" << pSearchUdrFormat->get_ItemG()->get_nEndEventTime() << "]" << endl;
+	*/
+	// SLA 통계-일반UDR
+	AggregatorLogM->put_PerformanceData(FLAG_ACC,0,pUdrFormat->get_ItemHead()->get_nUdrFileSeq(),1,0,0);
+	if( pUdrFormat->get_ItemHead()->get_nSubsType() == 1 )
+		// SLA 통계-한도관리UDR
+		AggregatorLogM->put_PerformanceData(FLAG_ACC,0,pUdrFormat->get_ItemHead()->get_nUdrFileSeq(),0,0,1);
+		
+
+	switch( pUdrFormat->get_ItemHead()->get_nUdrType() )
+	{
+
+		// INTERIM이 START라면
+		case START:
+			if( _StartProcess( pUdrFormat ) )
+			{
+				*AggregatorLogM << AggregatorLogM->ErrorCode(4216) 
+					<< "Aggregator : _StartProcess Error!!" << endl;	
+			}
+	 		nUdrCount++;
+	 		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "[Total Udr Count]:" << " " << nUdrCount << endl;	
+			break;
+		case INTERIM:
+			if( _InterimProcess( pUdrFormat ) )
+			{
+				*AggregatorLogM << AggregatorLogM->ErrorCode(4217) 
+					<< "Aggregator : _InterimProcess Error!!" << endl;	
+			}
+			 nUdrCount++;
+			 *AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "[Total Udr Count]:" << " " << nUdrCount << endl;	
+			break;
+		case STOP:
+			if( _StopProcess( pUdrFormat ) )
+			{
+				*AggregatorLogM << AggregatorLogM->ErrorCode(4218) 
+					<< "Aggregator : _StopProcess Error!!" << endl;	
+			}
+	 		nUdrCount++;
+	 		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "[Total Udr Count]:" << " " << nUdrCount << endl;	
+			break;
+		// 한도정보를 가진 UDR이 들어왔을때 처리. - 2000. 10. 31
+		// Access Request Result
+		case 0x81:
+			if( !AccessRequestResult( pUdrFormat, pSearchUdrFormat ) )
+			{
+				*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "Error Access Request Result Error!!" << endl;	
+			}
+			else
+			{
+				*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "Complete Access Request Result!!" << endl;	
+			}
+			break;
+		// Interim Account Request Result
+		case 0x82:
+			if( !InterimAccountRequestResult( pUdrFormat, pSearchUdrFormat ) )
+			{
+				*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "Error Interim Account Request Result!!" << endl;	
+			}
+			else
+			{
+				*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "Complete Interim Access Request Result!!" << endl;	
+			}
+			break;
+		default:
+			// SLA 통계-Reject UDR
+			AggregatorLogM->put_PerformanceData(FLAG_ACC,0,pUdrFormat->get_ItemHead()->get_nUdrFileSeq(),0,1,0);
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "different Udr Type Error !!" << pUdrFormat->get_ItemHead()->get_nUdrType() <<endl;	
+			break;
+	}	
+	pBtree->mem_unlock(); // MEMORY LOCK
+	// 정수값의 범위를 check.
+	if( nUdrCount ==  4294967294 )
+		nUdrCount = 0;
+	if( nSumAggregationUdr == 4294967294 )
+		nSumAggregationUdr=0;
+}
+//===============================================================
+// _StartProcess Method						   					=
+//  : START UDR이 들어왔을때 동작하는 Method			       		=
+// argument     :  pUdrFormat -> 처리하기 위해 들어온 UdrFormat	=
+// return value : 0-> success									=
+//                -1-> fail										=
+//																=
+//===============================================================
+int CAggregator::_StartProcess( UdrFormat* pUdrFormat )
+{
+	int			nLimitInfo;
+		
+	// 같은 Data가 존재한다면
+	if( pSearchUdrFormat != NULL )
+	{
+		// 이미 처리가 종료된 상태라면 
+		if( pSearchUdrFormat->get_ItemHead()->get_nUdrStatus() == 1)
+		{
+			// session ID가 같은 경우
+			if( !strncmp( pUdrFormat->get_ItemC()->get_strAccountSessionID(), pSearchUdrFormat->get_ItemC()->get_strAccountSessionID(),LEN_ACCOUNT_SESSION_ID ) )
+			{
+				if(AGGREGATOR_DEBUG)
+				{
+					// SLA 통계-Reject UDR
+					AggregatorLogM->put_PerformanceData(FLAG_ACC,0,pUdrFormat->get_ItemHead()->get_nUdrFileSeq(),0,1,0);
+					*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+						<< "START -> DATA EXIST -> UDRSTATUS=1(end) -> SAME SessionID" << endl;	
+				}
+				return 0;
+			}
+			// session ID가 다른 경우
+			else
+			{
+				// 정상data로 간주. 최초 Insert
+				tStartTime = pUdrFormat->get_ItemG()->get_nEndEventTime();
+				pUdrFormat->get_ItemG()->put_nStartEventTime( tStartTime );
+				
+				// 한도관리를 해야하는 UDR인지 판단한다.
+				nLimitInfo=TempLimitMan->CompareServiceType( pUdrFormat );
+				
+				// 한도관리 UDR이면 한도요청을 한다.
+				if( nLimitInfo )
+				{
+					if( TempLimitMan->LimitAccessRequest( pUdrFormat, nLimitInfo ) )
+					{
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+							<< "Limit Require Complete!!" << endl;	
+					}
+					else
+					{
+						*AggregatorLogM << AggregatorLogM->ErrorCode(4222) 
+							<< "Aggregator : Limit Require Fail!!!" << endl;	
+					}
+				}
+				/*
+				else
+				{
+					*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+							<< "Normal UDR " << endl;	
+				} 
+				*/
+				 if( UpdateAggregator( pUdrFormat ) )
+				 {
+				 	*AggregatorLogM << AggregatorLogM->ErrorCode(4224) 
+							<< "Aggregator START : UpdateAggregator Error!!!" << endl;	
+					 return -1;
+				 }
+				
+				if( AGGREGATOR_DEBUG )
+				{
+					*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+						<< "START -> DATA EXIST -> UDRSTATUS=1(end) -> Differ SessionID" << endl;	
+					*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+						<< "->Run: UpdateAggregator " << endl;	
+				}
+				 return 0;
+			} // else
+		} // if
+		// 현재 처리하고 있는 상태라면
+		else if( pSearchUdrFormat->get_ItemHead()->get_nUdrStatus() == 0 )
+		{
+			// session ID가 같은 경우
+			if( !strncmp( pUdrFormat->get_ItemC()->get_strAccountSessionID(), pSearchUdrFormat->get_ItemC()->get_strAccountSessionID(),LEN_ACCOUNT_SESSION_ID ) )
+			{
+				// 만약 새로들어온 시간이 기존에 있던 시간보다 작다면 
+				if( ( pUdrFormat->get_ItemG()->get_nEndEventTime() - pSearchUdrFormat->get_ItemG()->get_nEndEventTime() ) <= 0 )
+				{
+					if(AGGREGATOR_DEBUG)
+					{
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+							<< "START -> DATA EXIST -> UDRSTATUS=0 -> Same SessionID -> Small Event Time" << endl;	
+					}
+					return 0;
+				}
+				else
+				{
+					// 만약 Active_Time이 작다면 
+					// 비정상 DATA로 처리한다.
+					if( ( pUdrFormat->get_ItemG()->get_nActiveTime() - pSearchUdrFormat->get_ItemG()->get_nActiveTime() ) < 0 )
+					{
+						if(AGGREGATOR_DEBUG)
+						{
+							*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+								<< "START -> DATA EXIST -> UDRSTATUS=0 -> Same SessionID -> Big Event Time -> Small Active Time" << endl;	
+						}
+						return 0;
+					}
+					else
+					{
+						
+						// 예전 start event time을 보존.
+						tStartTime = pSearchUdrFormat->get_ItemG()->get_nStartEventTime();
+						pUdrFormat->get_ItemG()->put_nStartEventTime( tStartTime );
+						// 과거의 한도정보를 유지해 준다.
+						pUdrFormat->setLimitInfo( pSearchUdrFormat->get_LimitInfo() );
+						_RemainsItem( pSearchUdrFormat, pUdrFormat );
+		//				pUdrFormat->setItem( pUdrFormat->get_ItemG() );
+					
+						// Hand-Off로 간주해서 기존것과 합산한다.
+						if( UpdateAggregator( pUdrFormat ) )
+				 		{
+						    *AggregatorLogM << AggregatorLogM->ErrorCode(4224) 
+								<< "Aggregator START : UpdateAggregator Error!!!" << endl;	
+							return -1;
+				 		}
+
+						if(AGGREGATOR_DEBUG)
+						{
+							*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+								<< "START -> DATA EXIST -> UDRSTATUS=0 -> Same SessionID -> Big Event Time -> Big Active Time" << endl;	
+							*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+								<< "->Run: UpdateAggregator" << endl;			
+						}
+						return 0;
+					} // else
+				} // else							
+			}//  if
+			// session ID가 다른 경우
+			else
+			{
+				// 만약 새로들어온 시간이 기존에 있던 시간보다 작다면 
+				if( ( pUdrFormat->get_ItemG()->get_nEndEventTime() - pSearchUdrFormat->get_ItemG()->get_nEndEventTime() ) <= 0 )
+				{
+					if(AGGREGATOR_DEBUG)
+					{
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+							<< "START -> DATA EXIST -> UDRSTATUS=0 -> Differ SessionID ->Small Event Time" << endl;
+					}
+					return 0;
+				}
+				// end가 들어오지 않고 새로운 start가 시작된 data.
+				// 기존의 것을 내보낸후, 새로운 데이타를 다시 insert.
+				else
+				{
+					pSearchUdrFormat->get_ItemHead()->put_nUdrStatus(1);
+					
+					// 한도관리를 해야하는 UDR인지 판단한다.
+					// 기존의 것을 종료해야 한다.( pSearchUdrFormat )
+					nLimitInfo=TempLimitMan->CompareServiceType( pSearchUdrFormat );
+					 // 한도관리 UDR이면 Service End Request
+					if( nLimitInfo )
+					{
+						if( TempLimitMan->LimitServiceEndRequest( pSearchUdrFormat, pSearchUdrFormat, nLimitInfo ) )
+						{
+							*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+								<< "Limit Require Complete!!" << endl;
+						}	
+						else
+						{
+							*AggregatorLogM << AggregatorLogM->ErrorCode(4222) 
+								<< "Aggregator : Limit Require Fail!!!" << endl;
+						}
+					}
+					/*
+					else
+					{
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+							<< "Normal UDR " << endl;
+					}
+					*/
+				   while(1)
+				   {
+					   if(MqUdr->sendMsg(pSearchUdrFormat) == FLAG_MQ_IS_FULL)
+					   {
+					   	   *AggregatorLogM << AggregatorLogM->ErrorCode(4225) 
+								<< "Aggregator->Collector MSG Queue FULL!!" << endl;
+							usleep(100);
+						  // return -1;
+					   }
+					   else break;
+				   }
+					nSumAggregationUdr++;
+					*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+						<< "Sum Aggregation Udr Count => " << nSumAggregationUdr << endl;
+					//fAggregator.write( ( char * )pSearchUdrFormat, sizeof( UdrFormat ) );
+					//fAggregator.flush();
+					if( DeleteAggregator( pSearchUdrFormat ) )
+					{
+						*AggregatorLogM << AggregatorLogM->ErrorCode(4226) 
+								<< "Aggretator START : DeleteAggregator Error!!" << endl;
+						 return -1;
+					}
+					
+					tStartTime = pUdrFormat->get_ItemG()->get_nEndEventTime();
+					tStartTime -= pUdrFormat->get_ItemG()->get_nActiveTime();
+					pUdrFormat->get_ItemG()->put_nStartEventTime( tStartTime );
+					
+					nLimitInfo=TempLimitMan->CompareServiceType( pUdrFormat );
+					 // 한도관리 UDR이면 한도요청을 한다.
+					if( nLimitInfo )
+					{
+						if( TempLimitMan->LimitAccessRequest( pUdrFormat, nLimitInfo ) )
+						{
+							*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+								<< "Limit Require Complete!!" << endl;	
+						}	
+						else
+						{
+							*AggregatorLogM << AggregatorLogM->ErrorCode(4222) 
+								<< "Aggregator : Limit Require Fail!!!" << endl;	
+						} 
+					}
+					/*
+					else
+					{
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+							<< "Normal UDR " << endl;
+					}
+					*/
+					if( InsertAggregator( pUdrFormat ) )
+					{
+						*AggregatorLogM << AggregatorLogM->ErrorCode(4227) 
+							<< "Aggregator START : InsertAggregator Error" << endl;
+						return -1;
+					}
+					if(AGGREGATOR_DEBUG)
+					{
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+							<< "START -> DATA EXIST -> UDRSTATUS=0 -> Differ SessionID ->Big Event Time" << endl;
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+							<< "->Run: Send Old Data -> InsertAggregator" << endl;
+					}
+					return 0;
+				} // else
+			} // else
+		}// else if
+		// 잘못된 data가 들어온 경우
+		else
+		{
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+							<< "nUdrStatus data Error!!" << endl;
+			return -1;
+		}
+	} // if
+	// 같은 Data가 존재하지 않는다면
+	else
+	{
+		tStartTime = pUdrFormat->get_ItemG()->get_nEndEventTime();
+		pUdrFormat->get_ItemG()->put_nStartEventTime( tStartTime );
+		// 한도관리를 해야하는 UDR인지 판단한다.
+		nLimitInfo=TempLimitMan->CompareServiceType( pUdrFormat );
+		
+		 // 한도관리 UDR이면 한도요청을 한다.
+		if( nLimitInfo )
+		{
+			if( TempLimitMan->LimitAccessRequest( pUdrFormat, nLimitInfo ) )
+			{
+				*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "Limit Require Complete!!" << endl;	
+			}	
+			else
+			{
+				*AggregatorLogM << AggregatorLogM->ErrorCode(4222) 
+					<< "Aggregator : Limit Require Fail!!!" << endl;
+			} 
+		}
+		/*
+		else
+		{
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "Normal UDR " << endl;
+		}
+		*/
+		// 최초의 Data. 정상적으로 insert.
+		if( InsertAggregator( pUdrFormat ) )
+		{
+			*AggregatorLogM << AggregatorLogM->ErrorCode(4227) 
+					<< "Aggregator START : InsertAggregator Error" << endl;
+			return -1;
+		}
+		if(AGGREGATOR_DEBUG)
+		{
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "START -> DATA Not EXIST" << endl;
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "->Run: InsertAggregator" << endl;
+		}
+		return 0;
+	} // else
+}
+//===============================================================
+// _InterimProcess Method					   					=
+//  : INTERIM UDR이 들어왔을때 동작하는 Method			       		=
+// argument     :  pUdrFormat -> 처리하기 위해 들어온 UdrFormat	=
+// return value : 0-> success									=
+//                -1-> fail										=
+//																=
+//===============================================================
+int CAggregator::_InterimProcess( UdrFormat* pUdrFormat )
+{
+	int			nLimitInfo;
+	
+	// update하고자 하는 data가 존재한다면
+	if( pSearchUdrFormat != NULL )
+	{
+		// 이미 처리가 종료된 상태라면 
+		if( pSearchUdrFormat->get_ItemHead()->get_nUdrStatus() == 1)
+		{
+			// session ID가 같은 경우
+			if( !strncmp( pUdrFormat->get_ItemC()->get_strAccountSessionID(), pSearchUdrFormat->get_ItemC()->get_strAccountSessionID(),LEN_ACCOUNT_SESSION_ID ) )
+			{
+				// 만약 새로들어온 시간이 기존에 있던 시간보다 작다면 
+				if( ( pUdrFormat->get_ItemG()->get_nEndEventTime() - pSearchUdrFormat->get_ItemG()->get_nEndEventTime() ) <= 0 )
+				{
+					if(AGGREGATOR_DEBUG)
+					{
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+							<< "INTERIM -> DATA EXIST -> UDRSTATUS=1 -> Same SessionID -> Small Event time" << endl;
+					}
+					return 0;
+				}
+				else
+				{
+					// Active time 변화시, Dormant에서 Active로
+					// 신규 Aggregation을 시작
+					// 만약 Active_Time이 작다면 
+					// 비정상 DATA로 처리한다.
+					if( ( pUdrFormat->get_ItemG()->get_nActiveTime() - pSearchUdrFormat->get_ItemG()->get_nActiveTime() ) < 0 )
+					{
+						if(AGGREGATOR_DEBUG)
+						{
+							*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+								<< "INTERIM -> DATA EXIST -> UDRSTATUS=1 -> Same SessionID -> Big Event time -> Small Active Time" << endl;
+						}
+						return 0;
+					}
+					else
+					{
+						// 예전 start time을 가져온다.
+						// update해준다.
+						tStartTime = pSearchUdrFormat->get_ItemG()->get_nStartEventTime();
+						pUdrFormat->get_ItemG()->put_nStartEventTime( tStartTime );
+						
+						// 한도관리를 해야하는 UDR인지 판단한다.
+						nLimitInfo=TempLimitMan->CompareServiceType( pUdrFormat );
+						
+						// 과거의 정보를 유지해주는 모듈
+						_RemainsItem( pSearchUdrFormat, pUdrFormat );
+						
+						 // 한도관리 UDR이면 한도요청을 한다.
+						if( nLimitInfo )
+						{
+							if( TempLimitMan->LimitAccessRequest( pUdrFormat, nLimitInfo ) )
+							{
+								*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+									<< "Limit Require Complete!!" << endl;	
+							}	
+							else
+							{
+								*AggregatorLogM << AggregatorLogM->ErrorCode(4222) 
+									<< "Aggregator : Limit Require Fail!!!" << endl;
+							} 
+						}
+						/*
+						else
+						{
+							*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+								<< "Normal UDR " << endl;
+						}
+						*/
+						if( UpdateAggregator( pUdrFormat ) )
+				 		{
+							*AggregatorLogM << AggregatorLogM->ErrorCode(4224) 
+								<< "Aggregator : UpdateAggregator Error!!!" << endl;
+							 return -1;
+				 		}
+
+						if(AGGREGATOR_DEBUG)
+						{
+							*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+								<< "INTERIM -> DATA EXIST -> UDRSTATUS=1 -> Same SessionID -> Big Event Time -> Big Active Time" << endl;
+							*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+								<< "->Run: UpdateAggregator" << endl;
+						}
+						return 0;
+					} // else
+				} // else						
+			} // if
+			// session ID가 다른 경우
+			else
+			{
+				// 만약 새로들어온 시간이 기존에 있던 시간보다 작다면 
+				if( ( pUdrFormat->get_ItemG()->get_nEndEventTime() - pSearchUdrFormat->get_ItemG()->get_nEndEventTime() ) <= 0 )
+				{
+					if(AGGREGATOR_DEBUG)
+					{
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+								<< "INTERIM -> DATA EXIST -> UDRSTATUS=1 -> differ SessionID -> Small Event Time" << endl;
+					}
+					return 0;
+				}
+				else
+				{
+					// Start Udr 분실.
+					// 신규 Aggregation 시작
+					// 새로 들어온 end time을 start time으로 전환후,
+					// update해준다.
+					tStartTime = pUdrFormat->get_ItemG()->get_nEndEventTime();
+					tStartTime -= pUdrFormat->get_ItemG()->get_nActiveTime();
+					pUdrFormat->get_ItemG()->put_nStartEventTime( tStartTime );
+					// 한도관리를 해야하는 UDR인지 판단한다.
+					nLimitInfo=TempLimitMan->CompareServiceType( pUdrFormat );
+					
+					 // 한도관리 UDR이면 한도요청을 한다.
+					if( nLimitInfo )
+					{
+						if( TempLimitMan->LimitAccessRequest( pUdrFormat, nLimitInfo ) )
+						{
+							*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+								<< "Limit Require Complete!!" << endl;	
+						}	
+						else
+						{
+							*AggregatorLogM << AggregatorLogM->ErrorCode(4222) 
+								<< "Aggregator : Limit Require Fail!!!" << endl;
+						} 
+					}
+					/*
+					else
+					{
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+							<< "Normal UDR " << endl;
+					}
+					*/
+					if( UpdateAggregator( pUdrFormat ) )
+					{
+						*AggregatorLogM << AggregatorLogM->ErrorCode(4224) 
+								<< "Aggregator : UpdateAggregator Error!!!" << endl;
+						return -1;
+					}
+					if(AGGREGATOR_DEBUG)
+					{
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+								<< "INTERIM -> DATA EXIST -> UDRSTATUS=1 -> differ SessionID -> Big Event Time" << endl;
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+								<< "->Run: UpdateAggregator" << endl;
+					}
+					return 0;
+				} // else						
+			} // else
+		} // if
+		// 현재 처리하고 있는 상태라면
+		else if( pSearchUdrFormat->get_ItemHead()->get_nUdrStatus() == 0 )
+		{
+			// session ID가 같은 경우
+			if( !strncmp( pUdrFormat->get_ItemC()->get_strAccountSessionID(), pSearchUdrFormat->get_ItemC()->get_strAccountSessionID(),LEN_ACCOUNT_SESSION_ID ) )
+			{
+				// 만약 새로들어온 시간이 기존에 있던 시간보다 작다면 
+				if( ( pUdrFormat->get_ItemG()->get_nEndEventTime() - pSearchUdrFormat->get_ItemG()->get_nEndEventTime() ) < 0 )
+				{
+					if(AGGREGATOR_DEBUG)
+					{
+						// 이전 UDR로 간주.	
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+								<< "INTERIM -> DATA EXIST -> UDRSTATUS=0 -> Same SessionID ->Small Event Time" << endl;				
+					}
+					return 0;
+				}
+				else
+				{
+					// 정상처리 기존것과 합산한다.
+					// 만약 Active_Time이 작다면 
+					// 비정상 DATA로 처리한다.
+				 	if( ( pUdrFormat->get_ItemG()->get_nActiveTime() - pSearchUdrFormat->get_ItemG()->get_nActiveTime() ) < 0 )
+					{
+						if(AGGREGATOR_DEBUG)
+						{
+							*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+								<< "INTERIM -> DATA EXIST -> UDRSTATUS=0 -> Same SessionID -> Big Event Time -> Small Active Time" << endl;	
+						}
+						return 0;
+					}
+					else
+					{
+						// 예전 start time을 새로들어온 UDR의 start time에 넣어주고, 
+						// update해준다.
+						tStartTime = pSearchUdrFormat->get_ItemG()->get_nStartEventTime();
+						pUdrFormat->get_ItemG()->put_nStartEventTime( tStartTime );
+						
+						// 한도관리를 해야하는 UDR인지 판단한다.
+						// 먼저 과거의 service type과 비교.
+						TempLimitMan->CompareLimitInfo( pUdrFormat,pSearchUdrFormat );
+						nLimitInfo=TempLimitMan->CompareServiceType( pUdrFormat );
+						
+						// 과거의 정보를 유지해주는 모듈
+						_RemainsItem( pSearchUdrFormat, pUdrFormat );
+						
+						 // 한도관리 UDR이면 한도요청을 한다.
+						if( nLimitInfo )
+						{
+							if( TempLimitMan->LimitInterimAccountRequest( pUdrFormat, pSearchUdrFormat, nLimitInfo ) )
+							{
+								*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+									<< "Limit Require Complete!!" << endl;
+							}	
+							else
+							{
+								*AggregatorLogM << AggregatorLogM->ErrorCode(4222) 
+									<< "Aggregator : Limit Require Fail!!!" << endl;
+							} 
+						}
+						/*
+						else
+						{
+							*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+								<< "Normal UDR " << endl;
+						}
+						*/
+						if( UpdateAggregator( pUdrFormat ) )
+				 		{
+							*AggregatorLogM << AggregatorLogM->ErrorCode(4224) 
+								<< "Aggregator : UpdateAggregator Error!!!" << endl;
+							return -1;
+				 		}
+
+						if(AGGREGATOR_DEBUG)
+						{
+							*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+								<< "INTERIM -> DATA EXIST -> UDRSTATUS=0 -> Same SessionID -> Big Event Time -> Big Active Time" << endl;
+							*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+								<< "->Run: UpdateAggregator" << endl;
+						}
+						return 0;
+					} // else
+				} // else
+			} // if
+			// session ID가 다른 경우
+			else
+			{
+				// 만약 새로들어온 시간이 기존에 있던 시간보다 작다면 
+				if( ( pUdrFormat->get_ItemG()->get_nEndEventTime() - pSearchUdrFormat->get_ItemG()->get_nEndEventTime() ) <= 0 )
+				{
+					if(AGGREGATOR_DEBUG)
+					{
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+								<< "INTERIM -> DATA EXIST -> UDRSTATUS=0 -> Differ SessionID -> Small Event Time" << endl;
+					}
+					return 0;
+				}
+				// Aggregation Rule 수정 -> 2001. 01. 03
+				else
+				{
+					if(AGGREGATOR_DEBUG)
+					{
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+								<< "INTERIM -> DATA EXIST -> UDRSTATUS=0 -> Differ SessionID -> Big Event Time" << endl;
+					}
+					return 0;
+				}
+				// stop, start UDR 분실.
+				// 기존의 것을 내보낸후, 새로운 데이타를 다시 insert.
+				/*
+				else
+				{
+					pSearchUdrFormat->get_ItemHead()->put_nUdrStatus(1);
+					// 한도관리를 해야하는 UDR인지 판단한다.
+					nLimitInfo=TempLimitMan->CompareServiceType( pSearchUdrFormat );
+					 // 한도관리 UDR이면 Service End Request
+					if( nLimitInfo )
+					{
+						if( TempLimitMan->LimitServiceEndRequest( pSearchUdrFormat, pSearchUdrFormat, nLimitInfo ) )
+						{
+							*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+								<< "Limit Require Complete!!" << endl;
+						}	
+						else
+						{
+							*AggregatorLogM << AggregatorLogM->ErrorCode(4222) 
+								<< "Aggregator : Limit Require Fail!!!" << endl;
+						}
+					}
+					else
+					{
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+							<< "Normal UDR " << endl;
+					}
+				   	while(1)
+				   	{
+					    if(MqUdr->sendMsg(pSearchUdrFormat) == FLAG_MQ_IS_FULL)
+						{
+						    *AggregatorLogM << AggregatorLogM->ErrorCode(4225) 
+								<< "Aggregator->Collector MSG Queue FULL!!" << endl;
+							usleep(100);
+							//return -1;
+						}
+					    else break;
+				   	}
+					nSumAggregationUdr++;
+					*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+						<< "Sum Aggregation Udr Count => " << nSumAggregationUdr << endl;
+				//	fAggregator.write( ( char * )pSearchUdrFormat, sizeof( UdrFormat ) );
+				//	fAggregator.flush();
+					if( DeleteAggregator( pSearchUdrFormat ) )
+					{
+						 *AggregatorLogM << AggregatorLogM->ErrorCode(4226) 
+								<< "Aggretator : DeleteAggregator Error!!" << endl;
+						 return -1;
+					}
+					// 새로 들어온 end time을 start time으로 전환후,
+					// insert해준다.
+					tStartTime = pUdrFormat->get_ItemG()->get_nEndEventTime();
+					tStartTime -= pUdrFormat->get_ItemG()->get_nActiveTime();
+					pUdrFormat->get_ItemG()->put_nStartEventTime( tStartTime );
+					
+					nLimitInfo=TempLimitMan->CompareServiceType( pUdrFormat );
+					 // 한도관리 UDR이면 한도요청을 한다.
+					if( nLimitInfo)
+					{
+						if( TempLimitMan->LimitAccessRequest( pUdrFormat, nLimitInfo ) )
+						{
+							*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+								<< "Limit Require Complete!!" << endl;
+						}	
+						else
+						{
+							*AggregatorLogM << AggregatorLogM->ErrorCode(4222) 
+								<< "Aggregator : Limit Require Fail!!!" << endl;
+						} 
+					}
+					else
+					{
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+							<< "Normal UDR " << endl;
+					}
+					if( InsertAggregator( pUdrFormat ) )
+					{
+					 	*AggregatorLogM << AggregatorLogM->ErrorCode(4227) 
+							<< "Aggregator START : InsertAggregator Error" << endl;
+						return -1;
+					}
+					if(AGGREGATOR_DEBUG)
+					{
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+							<< "INTERIM -> DATA EXIST -> UDRSTATUS=0 -> Differ SessionID -> Big Event Time" << endl;
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+							<< "->Run: Send Old Data -> InsertAggregator" << endl;
+					}
+					return 0;
+				} */// else
+			} //else 
+		} // else if
+		// 잘못된 data가 들어온 경우
+		else
+		{
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "nUdrStatus data Error!!" << endl;
+			return -1;
+		}
+	} // if
+	// non-exist data
+	else
+	{
+		// start를 잃어버린 data로 간주한다.
+		// 새로 들어온 end time을 start time으로 전환후,
+		// insert해준다.
+		tStartTime = pUdrFormat->get_ItemG()->get_nEndEventTime();
+		tStartTime -= pUdrFormat->get_ItemG()->get_nActiveTime();
+		pUdrFormat->get_ItemG()->put_nStartEventTime( tStartTime );
+		// 한도관리를 해야하는 UDR인지 판단한다.
+		nLimitInfo=TempLimitMan->CompareServiceType( pUdrFormat );
+	
+		// 한도관리 UDR이면 한도요청을 한다.
+		if( nLimitInfo )
+		{
+			if( TempLimitMan->LimitAccessRequest( pUdrFormat, nLimitInfo ) )
+			{
+				*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "Limit Require Complete!!" << endl;
+			}	
+			else
+			{
+				*AggregatorLogM << AggregatorLogM->ErrorCode(4222) 
+					<< "Aggregator : Limit Require Fail!!!" << endl;
+			}
+		}
+		/*
+		else
+		{
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "Normal UDR " << endl;
+		}
+		*/
+		if( InsertAggregator( pUdrFormat ) )
+		{
+			 *AggregatorLogM << AggregatorLogM->ErrorCode(4227) 
+					<< "Aggregator START : InsertAggregator Error" << endl;
+			return -1;
+		}
+		if(AGGREGATOR_DEBUG)
+		{
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "INTERIM -> DATA Not EXIST" << endl;
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "->Run: InsertAggregator" << endl;
+		}
+		return 0;
+	} // else
+}
+//===============================================================
+// _StopProcess Method						   					=
+//  : STOP UDR이 들어왔을때 동작하는 Method				       		=
+// argument     :  pUdrFormat -> 처리하기 위해 들어온 UdrFormat	=
+// return value : 0-> success									=
+//                -1-> fail										=
+//																=
+//===============================================================
+int CAggregator::_StopProcess( UdrFormat* pUdrFormat )
+{
+	int			nLimitInfo;
+	
+	// delete하고자 하는 data가 존재한다면
+	if( pSearchUdrFormat != NULL )
+	{
+		// 이미 처리가 종료된 상태라면 
+		if( pSearchUdrFormat->get_ItemHead()->get_nUdrStatus() == 1)
+		{
+			// session ID가 같은 경우
+			if( !strncmp( pUdrFormat->get_ItemC()->get_strAccountSessionID(), pSearchUdrFormat->get_ItemC()->get_strAccountSessionID(),LEN_ACCOUNT_SESSION_ID ) )
+			{
+				if(AGGREGATOR_DEBUG)
+				{
+					*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+						<< "STOP -> DATA EXIST -> UDRSTATUS=1 -> Same SessionID ->Small Event Time" << endl;	
+				}
+				return 0;	
+			}
+			// session ID가 다른 경우
+			else
+			{
+				// 만약 새로들어온 시간이 기존에 있던 시간보다 작다면 
+				if( ( pUdrFormat->get_ItemG()->get_nEndEventTime() - pSearchUdrFormat->get_ItemG()->get_nEndEventTime() ) <= 0 )
+				{
+					if(AGGREGATOR_DEBUG)
+					{
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+							<< "STOP -> DATA EXIST -> UDRSTATUS=1 -> differ SessionID -> Small Event Time" << endl;	
+					}	
+
+					return 0;
+				}
+				else
+				{
+					// Start, Interim Udr 분실.
+					// 신규 session을 만들어서 종료.
+					tStartTime = pUdrFormat->get_ItemG()->get_nEndEventTime();
+					tStartTime -= pUdrFormat->get_ItemG()->get_nActiveTime();
+					pUdrFormat->get_ItemG()->put_nStartEventTime( tStartTime );
+					pUdrFormat->get_ItemHead()->put_nUdrStatus(1);
+					 // 한도관리를 해야하는 UDR인지 판단한다.
+					nLimitInfo=TempLimitMan->CompareServiceType( pUdrFormat );
+						
+				     // 한도관리 UDR이면 한도요청을 한다.
+					if( nLimitInfo )
+					{
+						// UDR의 LIMIT_INFO부분을 채워준다.
+						// Start에 해당하는 변수만.
+						pUdrFormat->get_LimitInfo()->put_nOperationID( 0 );
+						pUdrFormat->get_LimitInfo()->put_nSessionStartTime( pUdrFormat->get_ItemG()->get_nStartEventTime() );
+						pUdrFormat->get_LimitInfo()->put_nSessionEndTime( pUdrFormat->get_ItemG()->get_nEndEventTime() );
+						pUdrFormat->get_LimitInfo()->put_nSessionCount( 0 );
+						pUdrFormat->get_LimitInfo()->put_nLimitPrice( 0 );
+						pUdrFormat->get_LimitInfo()->put_nNtopFreeTime( 0 );
+						pUdrFormat->get_LimitInfo()->put_nRemain( 0 );
+						pUdrFormat->get_LimitInfo()->put_nQueryResult( 0 );
+						if( TempLimitMan->LimitServiceEndRequest( pUdrFormat, pUdrFormat, nLimitInfo ) )
+						{
+							*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+								<< "Limit Require Complete!!" << endl;
+						}	
+						else
+						{
+							*AggregatorLogM << AggregatorLogM->ErrorCode(4222) 
+								<< "Aggregator : Limit Require Fail!!!" << endl;
+						}
+					}
+					/*
+					else
+					{
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+							<< "Normal UDR " << endl;
+					}
+					*/
+					if( UpdateAggregator( pUdrFormat ) )
+					{
+						*AggregatorLogM << AggregatorLogM->ErrorCode(4224) 
+								<< "Aggregator : UpdateAggregator Error!!!" << endl;
+					    cout.flush();
+						return -1;
+					}
+				   	while(1)
+				   	{
+					    if(MqUdr->sendMsg(pUdrFormat) == FLAG_MQ_IS_FULL)
+						{
+						    *AggregatorLogM << AggregatorLogM->ErrorCode(4225) 
+								<< "Aggregator->Collector MSG Queue FULL!!" << endl;
+							usleep(100);
+							//return -1;
+						}
+					    else break;
+				   	}
+					nSumAggregationUdr++;
+					*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+						<< "Sum Aggregation Udr Count => " << nSumAggregationUdr << endl;
+					//fAggregator.write( ( char * )pUdrFormat, sizeof( UdrFormat ) );
+					//fAggregator.flush();
+
+					if(AGGREGATOR_DEBUG)
+					{
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+							<< "STOP -> DATA EXIST -> UDRSTATUS=1 -> differ SessionID-> Big Event Time" << endl;
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+							<< "->Run: UpdateAggregator -> Send Data" << endl;
+					}
+					return 0;
+				} // else						
+			} // else
+		} // if
+		// 현재 처리하고 있는 상태라면
+		else if( pSearchUdrFormat->get_ItemHead()->get_nUdrStatus() == 0 )
+		{
+			// session ID가 같은 경우
+			if( !strncmp( pUdrFormat->get_ItemC()->get_strAccountSessionID(), pSearchUdrFormat->get_ItemC()->get_strAccountSessionID(),LEN_ACCOUNT_SESSION_ID ) )
+			{
+				// 만약 새로들어온 시간이 기존에 있던 시간보다 작다면 
+				if( ( pUdrFormat->get_ItemG()->get_nEndEventTime() - pSearchUdrFormat->get_ItemG()->get_nEndEventTime() ) < 0 )
+				{
+					if(AGGREGATOR_DEBUG)
+					{
+						// 이전 UDR로 간주.
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+							<< "STOP -> DATA EXIST -> UDRSTATUS=0 -> Same SessionID -> Small Event Time" << endl;					
+					}
+					return 0;
+				}
+				// 정상처리 기존 session 종료.
+				else
+				{
+					// 만약 Active_Time이 작다면 
+					// 비정상 DATA로 처리한다.
+				 	if( ( pUdrFormat->get_ItemG()->get_nActiveTime() - pSearchUdrFormat->get_ItemG()->get_nActiveTime() ) < 0 )
+					{
+						if(AGGREGATOR_DEBUG)
+						{
+							*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+								<< "STOP -> DATA EXIST -> UDRSTATUS(0) -> Same SessionID->Big EVent time -> Small Active Time" << endl;
+						}
+						return 0;
+					}
+					else
+					{
+						// 끝난 data를 표시해주는 flag.
+						pUdrFormat->get_ItemHead()->put_nUdrStatus(1);
+						tStartTime = pSearchUdrFormat->get_ItemG()->get_nStartEventTime();
+						pUdrFormat->get_ItemG()->put_nStartEventTime( tStartTime );
+						
+					    // 한도관리를 해야하는 UDR인지 판단한다.
+					    // 먼저 과거의 service type과 비교.
+						TempLimitMan->CompareLimitInfo( pUdrFormat,pSearchUdrFormat );
+						nLimitInfo=TempLimitMan->CompareServiceType( pUdrFormat );
+						
+						// 과거의 정보를 유지해주는 모듈
+						_RemainsItem( pSearchUdrFormat, pUdrFormat );
+					     // 한도관리 UDR이면 한도요청을 한다.
+						if( nLimitInfo )
+						{
+							if( TempLimitMan->LimitServiceEndRequest( pUdrFormat, pSearchUdrFormat, nLimitInfo ) )
+							{
+								*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+									<< "Limit Require Complete!!" << endl;
+							}	
+							else
+							{
+								*AggregatorLogM << AggregatorLogM->ErrorCode(4222) 
+									<< "Aggregator : Limit Require Fail!!!" << endl;
+							}
+						}
+						/*
+						else
+						{
+							*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+								<< "Normal UDR " << endl;
+						}
+						*/
+					    if( UpdateAggregator( pUdrFormat ) )
+					    {
+							*AggregatorLogM << AggregatorLogM->ErrorCode(4224) 
+								<< "Aggregator : UpdateAggregator Error!!!" << endl;
+							return -1;
+				  	 	}
+				   		while(1)
+				   		{
+					    	if(MqUdr->sendMsg(pUdrFormat) == FLAG_MQ_IS_FULL)
+							{
+							    *AggregatorLogM << AggregatorLogM->ErrorCode(4225) 
+									<< "Aggregator->Collector MSG Queue FULL!!" << endl;
+								usleep(100);
+								//return -1;
+							}
+					    	else break;
+					   	}
+						nSumAggregationUdr++;
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+							<< "Sum Aggregation Udr Count => " << nSumAggregationUdr << endl;
+						//fAggregator.write( ( char * )pUdrFormat, sizeof( UdrFormat ) );
+						//fAggregator.flush();
+						// 끝난 data도 삭제하지않고 남겨둔다.
+
+						if(AGGREGATOR_DEBUG)
+						{
+							*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+								<< "STOP -> DATA EXIST -> UDRSTATUS=0 -> Same SessionID -> Big Event Time -> Big Active Time" << endl;
+							*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+								<< "->Run: UpdateAggregator -> Send Data" << endl;
+						}
+						return 0;
+					} // else
+				} // else	
+			} // if
+			// session ID가 다른 경우
+			else
+			{
+				// 만약 새로들어온 시간이 기존에 있던 시간보다 작다면 
+				if( ( pUdrFormat->get_ItemG()->get_nEndEventTime() - pSearchUdrFormat->get_ItemG()->get_nEndEventTime() ) <= 0 )
+				{
+					if(AGGREGATOR_DEBUG)
+					{
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+							<< "STOP -> DATA EXIST -> UDRSTATUS(0) -> differ SessionID-> Small Event Time" << endl;
+					}
+					return 0;
+				}
+				else
+				{
+					if(AGGREGATOR_DEBUG)
+					{
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+							<< "STOP -> DATA EXIST -> UDRSTATUS(0) -> differ SessionID -> Big Event Time" << endl;
+					}
+					return 0;
+				}
+				// stop, start, Interim UDR 분실.
+				// 기존의 것을 내보낸후, 새로운 데이타를 다시 insert후 종료시킨다.
+				// 무시한다. -> 2001. 01. 12
+				/*
+				else
+				{
+					// 기존 session 종료.
+					pSearchUdrFormat->get_ItemHead()->put_nUdrStatus(1);
+					 // 한도관리를 해야하는 UDR인지 판단한다.
+					nLimitInfo=TempLimitMan->CompareServiceType( pSearchUdrFormat );
+					
+				     // 한도관리 UDR이면 한도요청을 한다.
+					if( nLimitInfo )
+					{
+						if( TempLimitMan->LimitServiceEndRequest( pSearchUdrFormat, pSearchUdrFormat, nLimitInfo ) )
+						{
+							*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+								<< "Limit Require Complete!!" << endl;
+						}	
+						else
+						{
+							*AggregatorLogM << AggregatorLogM->ErrorCode(4222) 
+								<< "Aggregator : Limit Require Fail!!!" << endl;
+						}
+					}
+					else
+					{
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+							<< "Normal UDR " << endl;
+					}
+					
+				   	while(1)
+				   	{
+					    if(MqUdr->sendMsg(pSearchUdrFormat) == FLAG_MQ_IS_FULL)
+						{
+						    *AggregatorLogM << AggregatorLogM->ErrorCode(4225) 
+								<< "Aggregator->Collector MSG Queue FULL!!" << endl;
+							usleep(100);
+							//return -1;
+                        }
+					   	else break;
+				   	}
+					nSumAggregationUdr++;
+					*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+						<< "Sum Aggregation Udr Count => " << nSumAggregationUdr << endl;
+					//fAggregator.write( ( char * )pSearchUdrFormat, sizeof( UdrFormat ) );
+					//fAggregator.flush();
+					if( DeleteAggregator( pSearchUdrFormat ) )
+					{
+						  *AggregatorLogM << AggregatorLogM->ErrorCode(4226) 
+								<< "Aggretator : DeleteAggregator Error!!" << endl;
+						 return -1;
+					}
+					// 새로운 DATA를 Insert한후 종료.
+					pUdrFormat->get_ItemHead()->put_nUdrStatus(1);
+					tStartTime = pUdrFormat->get_ItemG()->get_nEndEventTime();
+					tStartTime -= pUdrFormat->get_ItemG()->get_nActiveTime();
+					pUdrFormat->get_ItemG()->put_nStartEventTime( tStartTime );
+					
+					nLimitInfo=TempLimitMan->CompareServiceType( pUdrFormat );
+				     // 한도관리 UDR이면 한도요청을 한다.
+					if( nLimitInfo )
+					{
+						//UDR의 LIMIT_INFO부분을 채워준다.
+						// Start에 해당하는 변수만.
+						pUdrFormat->get_LimitInfo()->put_nOperationID( 0 );
+						pUdrFormat->get_LimitInfo()->put_nSessionStartTime( pUdrFormat->get_ItemG()->get_nStartEventTime() );
+						pUdrFormat->get_LimitInfo()->put_nSessionEndTime( pUdrFormat->get_ItemG()->get_nEndEventTime() );
+						pUdrFormat->get_LimitInfo()->put_nSessionCount( 0 );
+						pUdrFormat->get_LimitInfo()->put_nLimitPrice( 0 );
+						pUdrFormat->get_LimitInfo()->put_nNtopFreeTime( 0 );
+						pUdrFormat->get_LimitInfo()->put_nRemain( 0 );
+						pUdrFormat->get_LimitInfo()->put_nQueryResult( 0 );
+						if( TempLimitMan->LimitServiceEndRequest( pUdrFormat, pUdrFormat, nLimitInfo ) )
+						{
+							*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+								<< "Limit Require Complete!!" << endl;
+						}	
+						else
+						{
+							*AggregatorLogM << AggregatorLogM->ErrorCode(4222) 
+								<< "Aggregator : Limit Require Fail!!!" << endl;
+						}
+					}
+					else
+					{
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+							<< "Normal UDR " << endl;
+					}
+					
+					if( InsertAggregator( pUdrFormat ) )
+					{
+					 	*AggregatorLogM << AggregatorLogM->ErrorCode(4227) 
+							<< "Aggregator START : InsertAggregator Error" << endl;
+						return -1;
+					}
+				   	while(1)
+				   	{
+					    if(MqUdr->sendMsg(pUdrFormat) == FLAG_MQ_IS_FULL)
+						{
+						    *AggregatorLogM << AggregatorLogM->ErrorCode(4225) 
+								<< "Aggregator->Collector MSG Queue FULL!!" << endl;
+							usleep(100);
+							//return -1;
+						}
+					   	else break;
+				   	}
+					nSumAggregationUdr++;
+					*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+						<< "Sum Aggregation Udr Count => " << nSumAggregationUdr << endl;
+					//fAggregator.write( ( char * )pUdrFormat, sizeof( UdrFormat ) );
+					//fAggregator.flush();
+
+					if(AGGREGATOR_DEBUG)
+					{
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+							<< "STOP -> DATA EXIST -> UDRSTATUS(0) -> differ SessionID -> Big Event Time" << endl;
+						*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+							<< "->Run: Send Old Data -> InsertAggregator -> Send New Data" << endl;
+					}
+					return 0;
+				} // else
+				*/
+			} // else
+		} // else if
+	} // if
+	// non-exist data
+	else
+	{
+		// 신규 session을 만들어 insert한후, 
+		// flag를 setting하고 종료시킨다.
+		// 추후에 이미 처리된 후에 들어오는 STOP는 
+		// active time과 interval을 비교하여 처리한다. 
+		pUdrFormat->get_ItemHead()->put_nUdrStatus(1);
+		tStartTime = pUdrFormat->get_ItemG()->get_nEndEventTime();
+		tStartTime -= pUdrFormat->get_ItemG()->get_nActiveTime();
+		pUdrFormat->get_ItemG()->put_nStartEventTime( tStartTime );
+		 // 한도관리를 해야하는 UDR인지 판단한다.
+		nLimitInfo=TempLimitMan->CompareServiceType( pUdrFormat );
+				
+		// 한도관리 UDR이면 한도요청을 한다.
+		if( nLimitInfo )
+		{
+			//UDR의 LIMIT_INFO부분을 채워준다.
+			// Start에 해당하는 변수만.
+			pUdrFormat->get_LimitInfo()->put_nOperationID( 0 );
+			pUdrFormat->get_LimitInfo()->put_nSessionStartTime( pUdrFormat->get_ItemG()->get_nStartEventTime() );
+			pUdrFormat->get_LimitInfo()->put_nSessionEndTime( pUdrFormat->get_ItemG()->get_nEndEventTime() );
+			pUdrFormat->get_LimitInfo()->put_nSessionCount( 0 );
+			pUdrFormat->get_LimitInfo()->put_nLimitPrice( 0 );
+			pUdrFormat->get_LimitInfo()->put_nNtopFreeTime( 0 );
+			pUdrFormat->get_LimitInfo()->put_nRemain( 0 );
+			pUdrFormat->get_LimitInfo()->put_nQueryResult( 0 );
+			if( TempLimitMan->LimitServiceEndRequest( pUdrFormat, pUdrFormat, nLimitInfo ) )
+			{
+				*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "Limit Require Complete!!" << endl;
+			}	
+			else
+			{
+				*AggregatorLogM << AggregatorLogM->ErrorCode(4222) 
+					<< "Aggregator : Limit Require Fail!!!" << endl;
+			}
+		}
+		/*
+		else
+		{
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "Normal UDR " << endl;
+		}
+		*/
+		if( InsertAggregator( pUdrFormat ) )
+		{
+		 	*AggregatorLogM << AggregatorLogM->ErrorCode(4227) 
+				<< "Aggregator START : InsertAggregator Error" << endl;
+			return -1;
+		}
+	   	while(1)
+	   	{
+		    if(MqUdr->sendMsg(pUdrFormat) == FLAG_MQ_IS_FULL)
+			{
+			     *AggregatorLogM << AggregatorLogM->ErrorCode(4225) 
+					<< "Aggregator->Collector MSG Queue FULL!!" << endl;
+				usleep(100);
+				//return -1;
+			}
+		   	else break;
+	   	}
+		nSumAggregationUdr++;
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+			<< "Sum Aggregation Udr Count => " << nSumAggregationUdr << endl;
+		//fAggregator.write( ( char * )pUdrFormat, sizeof( UdrFormat ) );
+		//fAggregator.flush();
+
+		if(AGGREGATOR_DEBUG)
+		{
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "STOP -> DATA Not EXIST" << endl;
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "->Run: InsertAggregator -> Send New Data" << endl;
+		}
+		return 0;
+	} // else
+}
+//===============================================================
+// AccessRequestResult Method				   					=
+//  : SCP로부터 한도정보요청에 대한 응답이 왔을때 처리하는 Method  		=
+// argument     :  pUdrFormat -> 처리하기 위해 들어온 UdrFormat	=
+//				   pSearchUdrFormat -> 이전에 MDB에 있던 DATA		=
+// return value : 1-> success									=
+//                0-> fail										=
+//																=
+//===============================================================
+int	CAggregator::AccessRequestResult( UdrFormat* pUdrFormat, UdrFormat* pSearchUdrFormat )
+{
+	int 		nNewOperationID;
+	int 		nLastOperationID;
+	int		 	nTempNewPrice;
+	int 		nTempNewTime;
+	UdrFormat*	pTempUdrFormat;
+	
+	// 임시 저장공간을 할당한다.
+	pTempUdrFormat = new UdrFormat;
+	
+	if( 1 )
+	{
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+			<< "============ 가입자 정보조회 결과 ===========" <<  endl;
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "MsId=" << pUdrFormat->get_ItemA()->get_unMsId() <<endl;
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "nOperationID=" << pUdrFormat->get_LimitInfo()->get_nOperationID() <<endl;
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "strAccountSessionID=" << pUdrFormat->get_ItemC()->get_strAccountSessionID() <<endl;
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "strCorrelationID=" << pUdrFormat->get_ItemC()->get_strCorrelationID() <<endl;
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "한도잔액=" << pUdrFormat->get_LimitInfo()->get_nLimitPrice() <<endl;
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "N-top 무료사용시간=" << pUdrFormat->get_LimitInfo()->get_nNtopFreeTime() <<endl;
+	}	
+	if( 0 )
+	{
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+			<< "============ 과거 정보조회 결과 ===========" <<  endl;
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "MsId=" << pSearchUdrFormat->get_ItemA()->get_unMsId() <<endl;
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "nOperationID=" << pSearchUdrFormat->get_LimitInfo()->get_nOperationID() <<endl;
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "strAccountSessionID=" << pSearchUdrFormat->get_ItemC()->get_strAccountSessionID() <<endl;
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "현재 strlen=" << strlen( pUdrFormat->get_ItemC()->get_strAccountSessionID() ) <<endl;
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "과거 strlen=" << strlen( pSearchUdrFormat->get_ItemC()->get_strAccountSessionID() ) <<endl;
+		
+	}	
+	nNewOperationID = pUdrFormat->get_LimitInfo()->get_nOperationID();
+	nLastOperationID = pSearchUdrFormat->get_LimitInfo()->get_nOperationID();
+	
+	if( nNewOperationID > nLastOperationID )
+	{
+		*AggregatorLogM << AggregatorLogM->ErrorCode(4206) 
+				<< "Error Operation ID!!" << endl;
+		return 0;
+	}
+	
+	// Account Session ID가 같을때만 update한다.
+	// 과거의 값은 유지시키고, 특정값만을 update시킨다.
+	if(  !memcmp( pUdrFormat->get_ItemC()->get_strAccountSessionID(), 			\
+				  pSearchUdrFormat->get_ItemC()->get_strAccountSessionID(), 	\
+//				  LEN_ACCOUNT_SESSION_ID ) )
+				  strlen( pSearchUdrFormat->get_ItemC()->get_strAccountSessionID() ) ) )
+	{
+		if( 1 )
+		{
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< " 한도정보 Update 수행." <<  endl;
+		}	
+		// 응답된 한도금액이 0이하일때 Service STOP요청을 한다.
+		// 2001. 01. 11
+		if( pUdrFormat->get_LimitInfo()->get_nLimitPrice() == 0 )
+		{
+			// Service Stop Request
+			if( !TempLimitMan->MakeAndSendRequest( pUdrFormat, 2 ) )
+			{
+				*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+						<< "Error Make And Send Request!!" << endl;
+				return 0;
+			}
+		//	return 1;
+		}
+		memcpy( pTempUdrFormat, pSearchUdrFormat, sizeof( UdrFormat ) );
+		pTempUdrFormat->get_LimitInfo()->put_nLimitPrice( pUdrFormat->get_LimitInfo()->get_nLimitPrice() );
+		pTempUdrFormat->get_LimitInfo()->put_nNtopFreeTime( pUdrFormat->get_LimitInfo()->get_nNtopFreeTime() );
+		pTempUdrFormat->get_LimitInfo()->put_nQueryResult( 1 );
+		// Memroy DB와 file을 동시에 update하기 위하여 .....
+		if( UpdateAggregator( pTempUdrFormat ) )
+		{
+			*AggregatorLogM << AggregatorLogM->ErrorCode(4224) 
+				<< "Aggregator : UpdateAggregator Error!!!" << endl;
+			return 0;
+	 	}
+	 	if( 1 )
+		{
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "============ UPDATE된 결과 ===========" <<  endl;
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "한도잔액=" << pTempUdrFormat->get_LimitInfo()->get_nLimitPrice() <<endl;
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "N-top 무료사용시간=" << pTempUdrFormat->get_LimitInfo()->get_nNtopFreeTime() <<endl;
+		}
+ 	}
+ 	else
+ 	{
+ 		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< " Account Session ID가 다름." <<  endl;
+ 	}
+	
+	delete pTempUdrFormat;
+	return 1;
+}
+//===============================================================
+// InterimAccountRequestResult Method		   					=
+//  : SCP로부터 중간정산요청에 대한 응답이 왔을때 처리하는 Method  		=
+// argument     :  pUdrFormat -> 처리하기 위해 들어온 UdrFormat	=
+//				   pSearchUdrFormat -> 이전에 MDB에 있던 DATA		=
+// return value : 1-> success									=
+//                0-> fail										=
+//																=
+//===============================================================
+int	CAggregator::InterimAccountRequestResult( UdrFormat* pUdrFormat, UdrFormat* pSearchUdrFormat )
+{
+	int 		nNewOperationID;
+	int 		nLastOperationID;
+	UdrFormat*	pTempUdrFormat;
+	
+	// 임시 저장공간을 할당한다.
+	pTempUdrFormat = new UdrFormat;
+
+	if( 1 )
+	{
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+			<< "============가입자요금 중간정산 결과===========" <<  endl;
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+			<< "MsId=" << pUdrFormat->get_ItemA()->get_unMsId() <<endl;
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+			<< "nOperationID=" << pUdrFormat->get_LimitInfo()->get_nOperationID() <<endl;
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+			<< "strAccountSessionID=" << pUdrFormat->get_ItemC()->get_strAccountSessionID() <<endl;
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+			<< "strCorrelationID=" << pUdrFormat->get_ItemC()->get_strCorrelationID() <<endl;
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+			<< "한도잔액=" << pUdrFormat->get_LimitInfo()->get_nLimitPrice() <<endl;
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+			<< "N-top 무료사용시간=" << pUdrFormat->get_LimitInfo()->get_nNtopFreeTime() <<endl;
+		
+	}	
+	
+	nNewOperationID = pUdrFormat->get_LimitInfo()->get_nOperationID();
+	nLastOperationID = pSearchUdrFormat->get_LimitInfo()->get_nOperationID();
+	
+	if(  nLastOperationID < nNewOperationID )
+	{
+		*AggregatorLogM << AggregatorLogM->ErrorCode(4206) 
+				<< "Error Operation ID!!" << endl;
+		return 0;
+	}
+	else if( nLastOperationID = nNewOperationID )
+	{
+			// 과거의 값은 유지시키고, 특정값만을 update시킨다.
+		memcpy( pTempUdrFormat, pSearchUdrFormat, sizeof( UdrFormat ) );
+		pTempUdrFormat->get_LimitInfo()->put_nLimitPrice( pUdrFormat->get_LimitInfo()->get_nLimitPrice() );
+		pTempUdrFormat->get_LimitInfo()->put_nNtopFreeTime( pUdrFormat->get_LimitInfo()->get_nNtopFreeTime() );
+		pTempUdrFormat->get_LimitInfo()->put_nQueryResult( 1 );
+		// Memroy DB와 file을 동시에 update하기 위하여 .....
+		if( UpdateAggregator( pTempUdrFormat ) )
+		{
+			*AggregatorLogM << AggregatorLogM->ErrorCode(4224) 
+				<< "Aggregator : UpdateAggregator Error!!!" << endl;
+			return 0;
+	 	}
+		if( 1 )
+		{
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "============ UPDATE된 결과 ===========" <<  endl;
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "한도잔액=" << pTempUdrFormat->get_LimitInfo()->get_nLimitPrice() <<endl;
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "N-top 무료사용시간=" << pTempUdrFormat->get_LimitInfo()->get_nNtopFreeTime() <<endl;
+		}
+	}
+	else
+	{
+		*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "passing UDR!!" << endl;
+	}
+	
+	delete pTempUdrFormat;
+	return 1;
+}
+//===============================================================
+// _RemainsItem Method		   									=
+//  : 과거의 정보를 유지해야 하는 부분을 유지해 주는 Method	 		=
+// argument     :  pUdrFormat -> 처리하기 위해 들어온 UdrFormat	=
+//				   pSearchUdrFormat -> 이전에 MDB에 있던 DATA		=
+// return value : None											=
+//																=
+//===============================================================
+void CAggregator::_RemainsItem( UdrFormat* pSearchUdrFormat, UdrFormat* pUdrFormat )
+{
+	F_TYPE*          pItemF;
+	int				 nReleaseIndicator;
+	A_INT_TYPE*      pSearchItemA;
+	B_TYPE*          pSearchItemB;
+	C_TYPE*          pSearchItemC;
+	D_TYPE*          pSearchItemD;
+	E_TYPE*          pSearchItemE;
+	F_TYPE*          pSearchItemF;
+
+	pSearchItemA=pSearchUdrFormat->get_ItemA();
+	pSearchItemB=pSearchUdrFormat->get_ItemB();
+	pSearchItemC=pSearchUdrFormat->get_ItemC();
+	pSearchItemD=pSearchUdrFormat->get_ItemD();
+	pSearchItemE=pSearchUdrFormat->get_ItemE();
+	pSearchItemF=pSearchUdrFormat->get_ItemF();
+
+
+	pItemF=pUdrFormat->get_ItemF();
+    nReleaseIndicator=pItemF->get_nReleaseIndicator();
+	pSearchItemF->put_nReleaseIndicator( nReleaseIndicator );
+
+	pUdrFormat->setItem( pSearchItemA );
+	pUdrFormat->setItem( pSearchItemB );
+	pUdrFormat->setItem( pSearchItemC );
+	pUdrFormat->setItem( pSearchItemD );
+	pUdrFormat->setItem( pSearchItemE );
+	pUdrFormat->setItem( pSearchItemF );
+}
+//===============================================================
+// InsertAggregator Method					   					=
+//  : 실제 Insert Transaction을 호출하는 Method			  		=
+// argument     :  pUdrFormat -> 처리하기 위해 들어온 UdrFormat	=
+// return value : 0-> success									=
+//                -1-> fail										=
+//																=
+//===============================================================
+int CAggregator::InsertAggregator( UdrFormat* pUdrFormat )
+{
+	if( TransactOfAggregate->insertshm( pUdrFormat ) )
+	{
+		*AggregatorLogM << AggregatorLogM->ErrorCode(4209) 
+			<< "insertshm:_TransactionInsert Error!!" << endl;	
+		return -1;
+	}
+	return 0;
+}
+//===============================================================
+// DeleteAggregator Method					   					=
+//  :  실제 Delete Transaction을 호출하는 Method			  		=
+// argument     :  pUdrFormat -> 처리하기 위해 들어온 UdrFormat	=
+// return value : 0-> success									=
+//                -1-> fail										=
+//																=
+//===============================================================
+int CAggregator::DeleteAggregator( UdrFormat* pUdrFormat )
+{
+	if( TransactOfAggregate->deleteshm( pUdrFormat ) == -1 )
+	{
+		*AggregatorLogM << AggregatorLogM->ErrorCode(4210) 
+			<< "deleteshm:_TransactionDelete Error!!" << endl;	
+		return -1;
+	}
+	return 0;
+}
+//===============================================================
+// UpdateAggregator Method					   					=
+//  : 실제 Update Transaction을 호출하는 Method			  		=
+// argument     :  pUdrFormat -> 처리하기 위해 들어온 UdrFormat	=
+// return value : 0-> success									=
+//                -1-> fail										=
+//																=
+//===============================================================
+int CAggregator::UpdateAggregator( UdrFormat* pUdrFormat )
+{
+	if( TransactOfAggregate->updateshm( pUdrFormat ) )
+	{
+		*AggregatorLogM << AggregatorLogM->ErrorCode(4208) 
+			<< "updateshm:_TransactionUpdate Error!!" << endl;	
+		return -1;
+	}
+	return 0;
+}
+
+int main(int argc, char* argv[])
+{
+	UdrFormat   	stUdr;
+	CAggregator* 	pAggregator;
+	
+
+	if( argc != 7 )
+	{
+		cout << "Usage Aggregator [SysId][SerId][GroupId][ProcessId][SerialNumber][Remark]" << endl;
+		exit( 1 );
+	}
+	
+	SystemId=atoi(argv[1]);
+	ServiceId=atoi(argv[2]);
+	GroupId=atoi(argv[3]);
+	ProcessType=atoi(argv[4]);
+	PserialNo=atoi(argv[5]);
+	PreMark=atoi(argv[6]);
+	
+	
+	AggregatorLogM	= new SendLogManage(SystemId,ServiceId,GroupId ,ProcessType ,PserialNo, PreMark );
+	AggregatorLogM->put_EventHistData(FLAG_START, FLAG_PROC_START);
+	
+	//signal(SIGNULL,sigCapture);	//0
+	signal(SIGHUP,sigCapture);
+	signal(SIGINT,sigCapture);
+	signal(SIGQUIT,sigCapture);
+	signal(SIGKILL,sigCapture);
+	signal(SIGTERM,sigCapture);
+	signal(SIGSTOP,sigCapture);
+	signal(SIGTSTP,sigCapture);
+	signal(SIGCONT,sigCapture);	//26
+	signal(SIGUSR1,sigCapture);
+	
+	ReadAggregator = new MessageQueue<UdrFormat>(SystemId,ServiceId,GroupId ,ProcessType ,PserialNo ,10 ,1000);
+	MqUdr = new MessageQueue<UdrFormat>(SystemId,ServiceId,5,2,0,10,1000 );
+	mqSCP = new MessageQueue<SCPFormatAgg>(SystemId,ServiceId,4,1,0,10,1000 );
+	mqPMS = new MessageQueue<MsgPmsStatus>(SystemId, 0,1,1,0,10, 1000);
+	WritePMSMQ(FLAG_PROC_START);
+	// 앞으로 number error check를 해야 하고
+	// 중복check도 해야 합니다.
+	pAggregator = new CAggregator( SystemId,ServiceId,GroupId,ProcessType,PserialNo,PreMark );
+   
+    while(1)
+	{
+		
+		memset((char*)&stUdr, NULL, sizeof(UdrFormat));
+		
+	    if (ReadAggregator->recvMsg(&stUdr) == FLAG_MQ_IS_EMPTY)
+	    {
+	//    	*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+	//			<< "==Recv=NO DATA IN MessageQueue=====" << endl;
+		    usleep(10);
+		}
+		else 
+		{
+			//	MakeLimitUdr( &stUdr );
+			*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "==============START   Aggregator==============" << endl;
+			pAggregator->Aggregator( &stUdr );
+	    	*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+				<< "==============End     Aggregator==============" << endl;
+		}
+	}
+	
+	*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+			<< "End Aggregator Process!!" << endl;
+	delete ReadAggregator;
+	delete MqUdr;
+	delete mqSCP;
+	delete pAggregator;
+	delete mqPMS;
+	AggregatorLogM->put_EventHistData(FLAG_END, 0);
+	delete AggregatorLogM;
+	return 0;
+}
+//===============================================================
+// WritePMSMQ Method		     			   					=
+//  : PMS에게 Process의 상태를 보고하기 위한 Method					=
+//	                                    						=
+// argument     :  sigNo -> Signal Number						=
+// return value : None											=
+//																=
+//===============================================================
+void WritePMSMQ(int sigNo )
+{
+	int 			i=0;
+	char 			PMSMQ_NO[2];
+	MsgPmsStatus	OneRec(MSG_STATUS, SystemId, ServiceId, GroupId, ProcessType, PserialNo, PreMark);
+
+	
+	sprintf(PMSMQ_NO, "%d", SystemId);
+	OneRec.set_nStatus(sigNo);
+	
+	while(1)
+	{
+		i++;
+		if (mqPMS->sendMsg(&OneRec) == FLAG_MQ_IS_FULL)
+		{
+			cout << "[ERROR] PMSMQ " << PMSMQ_NO << " IS FULL sleep(1)...!"	<< endl;
+			sleep(1);
+			if (i >= 10)
+			{
+				kill(0,SIGINT);
+			}
+		}else break;
+	}
+}
+//===============================================================
+// sigCapture Method		     			   					=
+//  : Process에서 signal capture	하는 Method      				=
+//	                                    						=
+// argument     :  sigNo -> Signal Number						=
+// return value : None											=
+//																=
+//===============================================================
+void sigCapture(int sigNo )
+{
+	cout << "SIGNAL :: Aggregator" << PserialNo << "Process End " << endl;
+	delete ReadAggregator;
+	delete MqUdr;
+	delete mqSCP;
+	
+
+	switch(sigNo)
+	{
+		case SIGINT :
+		case SIGQUIT :
+		case SIGKILL :
+		case SIGTERM :
+				*AggregatorLogM << AggregatorLogM->ErrorCode(4213) 
+					<< "Aggregator Process Killed!! " <<endl;
+				WritePMSMQ(FLAG_PROC_KILL);//-1//프로세스 비정상 stop (killed)
+				AggregatorLogM->put_EventHistData(FLAG_END, -1);
+				delete AggregatorLogM;
+				delete mqPMS;
+				exit(-1);
+				break;
+		case SIGUSR1:
+				*AggregatorLogM << AggregatorLogM->ErrorCode(0) 
+					<< "Aggregator Process Normal Stop!! " <<endl;
+				WritePMSMQ(FLAG_PROC_TERM);//0//프로세스정상stop (Client업무명령)
+				AggregatorLogM->put_EventHistData(FLAG_END, 0);
+				delete AggregatorLogM;
+				delete mqPMS;
+				exit(0);
+				break;
+		default:
+				*AggregatorLogM << AggregatorLogM->ErrorCode(4213) 
+					<< "Aggregator Process Killed2!! " <<endl;
+				WritePMSMQ(FLAG_PROC_KILL);//-1//프로세스 비정상 stop (killed)
+				AggregatorLogM->put_EventHistData(FLAG_END, -1);
+				delete AggregatorLogM;
+				delete mqPMS;
+				exit(-1);
+				break;
+	}
+}
+
+
+

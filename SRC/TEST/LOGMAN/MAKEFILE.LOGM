@@ -1,0 +1,23 @@
+include /home1/uda/UDA_bak/common/env_uda.mk
+
+LIBUDR = libuda.a
+MYOBJPATH = /home1/uda/cwkwon/BAK
+
+EXE = logmessage1
+OBJS = logmessage1.o $(UDALINKLIBES)
+
+all : $(EXE)
+
+$(EXE) : $(OBJS)
+	$(CC) -o $@ $(OBJS) $(PROLDLIBS) $(UDALINKLIBES)
+
+install : $(EXE)
+	$(INSTALL2) $(EXE) $(COMMBINPATH)/
+	rm -rf $(EXE) *.o core 
+
+clean :	
+	rm -rf $(EXE) *.o core 
+	touch *.cpp
+
+
+

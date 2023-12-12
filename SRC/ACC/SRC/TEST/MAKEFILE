@@ -1,0 +1,23 @@
+include $(HOME)/common/env_proc_32.mk
+include $(HOME)/common/env_uda.mk
+LOCALFLAGS=-D_DEBUG_ -D_UDA1_ -Aa -I$(HOME)/src/ACC/INCLUDE
+
+EXE = UdrReader
+OBJS = UdrReader.o $(UDALINKLIBES)
+
+all : $(EXE)
+
+$(EXE) : $(OBJS)
+	$(CC) -o $@ $(OBJS) $(CFLAGS) $(PROLDLIBS) $(UDALIBES) $(UDALINKLIBES) 
+
+install : $(EXE)
+	$(INSTALL2) $(EXE) $(COMMBINPATH)/
+	rm -f $(EXE) *.o *.lis core 
+
+clean :	
+	rm -f $(EXE) *.o *.lis core 
+	touch *.pc
+
+
+
+

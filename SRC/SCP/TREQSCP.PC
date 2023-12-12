@@ -1,0 +1,278 @@
+#include "TReqScp.hpp"
+#include <SendLogManage.hpp>
+
+extern 	SendLogManage*	LogM;
+
+#define SQLCA_STORAGE_CLASS extern
+EXEC    SQL     INCLUDE SQLCA;
+
+EXEC SQL BEGIN DECLARE SECTION;
+static char			 SysDate[8+1];		
+static unsigned int  nTid;				
+static int			 nCode;				
+static char			 Msid[15+1];			
+static unsigned int  nOper_Id;			
+static char			 Account_Id[8+1];
+static char			 Correl_Id[8+1];
+static unsigned int  nStart_Time;
+static unsigned int  nEnd_Time;
+static unsigned int  nLimit_Money;
+static unsigned int  nTop_Use;
+static unsigned int  nServiceId;
+static unsigned int  nCgClass;
+static unsigned int  nPacket1;
+static unsigned int  nPacket2;
+static unsigned int  nPacket3;
+static unsigned int  nUseMoney;
+EXEC SQL END DECLARE SECTION;
+
+
+//------------------------------------------------------------------------
+TReqScp::TReqScp()
+{
+	DBerror = clsDbConnect.connect();
+	if(DBerror < 0)
+	{
+		cout << "[SCHANNEL] DB Connect Failure  [" << DBerror << "] : " << endl;
+		*LogM << "[SCHANNEL] DB Connect Failure  [" << DBerror << "] : " <<  LogM->ErrorCode(8220) << endl;
+	} else *LogM << "[SCHANNEL] DB Connect Success " << LogM->ErrorCode(0) << endl;
+}
+
+
+
+//------------------------------------------------------------------------
+TReqScp::~TReqScp()
+{
+	if(DBerror) return;
+	clsDbConnect.disconnect();	
+}
+
+
+//------------------------------------------------------------------------
+char* TReqScp::Get_Day(void)
+{
+	//cout << "[TREQSCP] SysDate : " << SysDate << endl;
+	return SysDate;	
+}
+
+
+//------------------------------------------------------------------------	
+unsigned long TReqScp::Get_Tid(void)
+{
+	//cout << "[TREQSCP] nTid : " << nTid << endl;
+	return nTid;	
+	
+}
+
+		
+//------------------------------------------------------------------------	
+int TReqScp::Get_MaxTid(void)
+{
+	if(DBerror) return 0;
+	
+	EXEC SQL 	SELECT max(tid) into :nTid
+				FROM t_req_scp
+				WHERE sys_date =:SysDate;
+	
+	if (sqlca.sqlcode != 0) 
+	{
+		cout << "[TREQSCP] Get_MaxTid ERROR : " << sqlca.sqlcode << endl;
+		*LogM << "[TREQSCP] Get_MaxTid ERROR : " <<  sqlca.sqlcode  <<  LogM->ErrorCode(0) << endl;
+		nTid=0;
+	}
+	
+	cout << "[TREQSCP] Get_MaxTid : " << nTid << endl;
+	return nTid;
+}
+
+
+
+
+//------------------------------------------------------------------------
+int	TReqScp::Add_ScpRecord(SCPFormatAgg Aggrec)
+{	
+	if(DBerror) return 0;
+	
+	//-------------------------------------변수할당 -----------------
+	int			nRet;
+	time_t		Time;	
+	struct  tm *Tm;
+	
+	time(&Time);	
+	Tm = localtime(&Time);	
+	sprintf(SysDate, "%04d%02d%02d",Tm->tm_year+1900, Tm->tm_mon+1, Tm->tm_mday);
+	
+	sprintf(Msid, "%ld", Aggrec.get_ItemA2()->get_Min());
+	if(strlen(Msid)==9) sprintf(Msid, "0%-14ld", Aggrec.get_ItemA2()->get_Min());
+	else sprintf(Msid, "%-15ld", Aggrec.get_ItemA2()->get_Min());
+			
+	nCode=Aggrec.get_ItemA2()->get_Key();
+	nOper_Id=Aggrec.get_ItemB()->get_OperId();
+	memcpy(Account_Id, Aggrec.get_ItemB()->get_AccSessionId(), 8);  
+	Account_Id[9]=NULL;
+	memcpy(Correl_Id, Aggrec.get_ItemB()->get_CorreId(), 8);		
+	Correl_Id[9]=NULL;
+	nStart_Time = Aggrec.get_ItemC()->get_StartT();
+	nEnd_Time = Aggrec.get_ItemC()->get_EndT();
+	nLimit_Money = Aggrec.get_ItemD()->get_LimitT();
+	nTop_Use = Aggrec.get_ItemD()->get_NTuseT();
+	nServiceId = Aggrec.get_ItemE()->get_ServiceId();
+	nCgClass = Aggrec.get_ItemE()->get_CgClass(); 
+	nPacket1 = Aggrec.get_ItemE()->get_PacketN1();
+	nPacket2 = Aggrec.get_ItemE()->get_PacketN2(); 
+	nPacket3 = Aggrec.get_ItemE()->get_PacketN3(); 
+	nUseMoney = Aggrec.get_ItemE()->get_UseMoney();
+	
+	nTid=Get_MaxTid()+1;
+	//-------------------------------------변수할당 -----------------
+	
+	cout << "[TREQSCP] [INSERT] T_REQ_SCP : " << SysDate << ": " << nTid << endl;
+	*LogM << "[TREQSCP] [INSERT] T_REQ_SCP : " << SysDate << " : " << nTid << LogM->ErrorCode(0) << endl;
+	
+	EXEC SQL INSERT INTO t_req_scp(sys_date, tid, code, msid, oper_id, 
+									account_id, correl_id, start_time, end_time,
+									limit_money, ntop_use, serviceid, cgclass, packet1, packet2, packet3, usemoney)
+					values(:SysDate, :nTid, :nCode, :Msid, :nOper_Id, :Account_Id,
+							:Correl_Id, :nStart_Time, :nEnd_Time, :nLimit_Money, :nTop_Use, :nServiceId, :nCgClass, :nPacket1, :nPacket2, :nPacket3, :nUseMoney);
+							
+	if (sqlca.sqlcode == 0)  EXEC SQL COMMIT WORK;
+	else
+	{
+		cout << "[TREQSCP] [INSERT] T_REQ_SCP ERROR : " << (int)sqlca.sqlcode << endl;
+		*LogM << "[TREQSCP] [INSERT] T_REQ_SCP ERROR : " << (int)sqlca.sqlcode <<  LogM->ErrorCode(0) << endl;
+		EXEC SQL ROLLBACK;
+		return 0;
+	}
+	return 1;
+}
+
+
+
+//------------------------------------------------------------------------
+int	TReqScp::Get_ScpRecord(SCPFormat *Scprec, char *day, unsigned long n)
+{
+	if(DBerror) return 0;
+	
+	cout << "[TREQSCP] Get_ScpRecord()  : " << day << " : " << n << endl;
+	//*LogM << "[TREQSCP] Get_ScpRecord() : " << day << " : " << n << LogM->ErrorCode(0) << endl;
+	
+	int		recFind=0;
+	
+	strcpy(SysDate, day);
+	
+	for(nTid=n+1; nTid < n+3; nTid++)
+	{
+		
+		EXEC SQL SELECT sys_date, tid, code, msid, oper_id, 
+						account_id, correl_id, start_time, end_time,
+						limit_money, ntop_use, serviceid, cgclass, packet1, packet2, packet3, usemoney
+				INTO	:SysDate, :nTid, :nCode, :Msid, :nOper_Id, :Account_Id,
+						:Correl_Id, :nStart_Time, :nEnd_Time, :nLimit_Money, :nTop_Use,
+						:nServiceId, :nCgClass, :nPacket1, :nPacket2, :nPacket3, :nUseMoney
+			 	FROM 	t_req_scp
+			 	WHERE 	sys_date=:SysDate and tid=:nTid;
+			 	
+		if(sqlca.sqlcode == 0 || sqlca.sqlcode == -1405) 
+		{
+			//cout << "[TREQSCP] FIND : " << SysDate << " : " << nTid << endl;
+			recFind=1;
+			break;
+		}//else cout << "[TREQSCP] Not FIND : " << sqlca.sqlcode << ": " << SysDate << " : " << nTid << endl;
+	}
+	
+	
+	if(!recFind)
+	{
+		int			nRet;
+		time_t		Time;	
+		struct  tm *Tm;
+	
+		time(&Time);	
+		Tm = localtime(&Time);	
+		sprintf(SysDate, "%04d%02d%02d",Tm->tm_year+1900, Tm->tm_mon+1, Tm->tm_mday);	
+		if(!strncmp(SysDate, day, 8)) return 0;	// 일자가 오늘일자이면 No Data
+	
+		nTid=1;
+		EXEC SQL SELECT sys_date, tid, code, msid, oper_id, 
+						account_id, correl_id, start_time, end_time,
+						limit_money, ntop_use, serviceid, cgclass, packet1, packet2, packet3, usemoney
+			 	INTO	:SysDate, :nTid, :nCode, :Msid, :nOper_Id, :Account_Id,
+						:Correl_Id, :nStart_Time, :nEnd_Time, :nLimit_Money, :nTop_Use,
+						:nServiceId, :nCgClass, :nPacket1, :nPacket2, :nPacket3, :nUseMoney
+			 	FROM 	t_req_scp
+			 	WHERE 	sys_date=:SysDate and tid=:nTid;
+			 	
+		if(sqlca.sqlcode != 0 && sqlca.sqlcode != -1405)  
+		{
+			//cout << "[TREQSCP] Not FIND : " << sqlca.sqlcode << ": " << SysDate << " : " << nTid << endl;
+			return 0;	// No Data
+		}//else cout << "[TREQSCP] FIND : " << SysDate << " : " << nTid << endl;
+	}
+			 
+	
+	Scprec->get_ItemA()->set_Key(nCode);
+	Scprec->get_ItemA()->set_MSID(Msid);
+	
+	Scprec->get_ItemB()->set_OperId(nOper_Id);
+	Scprec->get_ItemB()->set_AccSessionId(Account_Id);
+	Scprec->get_ItemB()->set_CorreId(Correl_Id);
+	
+	Scprec->get_ItemC()->set_StartT(nStart_Time);
+	Scprec->get_ItemC()->set_EndT(nEnd_Time);
+	
+	Scprec->get_ItemD()->set_LimitT(nLimit_Money);
+	Scprec->get_ItemD()->set_NTuseT(nTop_Use);
+	
+	Scprec->get_ItemE()->set_ServiceId(nServiceId);
+	Scprec->get_ItemE()->set_CgClass(nCgClass);
+	Scprec->get_ItemE()->set_PacketN1(nPacket1);
+	Scprec->get_ItemE()->set_PacketN2(nPacket2);
+	Scprec->get_ItemE()->set_PacketN3(nPacket3);
+	Scprec->get_ItemE()->set_UseMoney(nUseMoney);
+	
+	/*
+	cout << "[TREQSCP] nCgClass : " << nCgClass <<  endl;
+	cout << "[TREQSCP] nPacket1 : " << nPacket1 <<  endl;
+	cout << "[TREQSCP] nPacket2 : " << nPacket2 <<  endl;
+	cout << "[TREQSCP] nPacket3 : " << nPacket3 <<  endl;
+	cout << "[TREQSCP] nUseMoney : " << nUseMoney <<  endl;
+	*/
+	
+	return 1;
+}
+
+
+
+
+
+//--------------------------------------------------------------------
+/*
+int main(int argc, char *argv[])
+{
+	
+	if(argc<6) 
+	{
+		cout << " Usage:" << argv[0] << "[systemid] [serviceid] [groupid] [processtype] [serialno] [remarks]" << endl;
+		exit(1);
+	}
+	
+	int			nRet;
+	DbConnect	clsDbConnect;
+
+	nRet = clsDbConnect.connect();
+	if (nRet < 0)
+	{
+		cout << "DB Connect Failure [" << nRet << "]" << endl;
+		return nRet;
+	}else cout << "DB Connect Success " << endl;
+	
+	
+	
+	TReqScp EventHst(atoi(argv[1]),atoi(argv[2]),atoi(argv[3]),atoi(argv[4]),atoi(argv[5]), atoi(argv[6]));
+	EventHst.Set_TReqScp(4, 0, 0, "aaaaaaaaaaaaaaaaaaaaa");
+	EventHst.Set_TReqScp(4, 1, 1, "bbbbbbbbbbbbbbbbbbbbb");
+	
+	clsDbConnect.disconnect();
+	exit(1);
+}
+*/

@@ -1,0 +1,19 @@
+include $(HOME)/src/SCP/lucent/ama/env_uda.mk
+
+#MFLAGS=-D_SVC1
+
+EXE = lucentif_s
+OBJS = lucent_ifs.o  
+
+all : $(EXE)
+
+$(EXE) : $(OBJS)
+	$(CC) -o $@ $(OBJS) $(PROLDLIBS) $(UDALINKLIBES) $(AMALINKLIBES) -lnsl -ldld
+
+install : $(EXE)
+	$(INSTALL2) $(EXE) $(COMMBINPATH)/
+	rm -rf $(EXE) *.o core 
+
+clean :	
+	rm -rf $(EXE) *.o core 
+	touch *.cpp

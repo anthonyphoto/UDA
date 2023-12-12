@@ -1,0 +1,225 @@
+/*
+ * $Log: TMetaAction.hpp $
+ * Revision 0.9.0  2001/04/13 16:05:00  dongcheol
+ * table name : output field list  table id : t_meta_action
+ * Revision 0.9.1  ...
+ *
+ */
+
+#include "../INCLUDE/TMetaAction.hpp"
+
+//#define SQLCA_STORAGE_CLASS extern
+EXEC SQL INCLUDE    SQLCA;
+
+#define ORACA_STORAGE_CLASS extern
+EXEC SQL INCLUDE    ORACA;
+
+EXEC ORACLE OPTION (ORACA=YES);
+EXEC ORACLE OPTION (RELEASE_CURSOR=YES);
+
+
+namespace acc {
+
+TMetaAction::TMetaAction() : MAPPING_NAME_    (LEN_MAPPING_NAME     , 0x00), 
+                             VER_             (LEN_VER              , 0x00), 
+                             SEQ_NO_          (LEN_SEQ_NO           , 0x00), 
+                             IN_FIELD_NAME_   (LEN_IN_FIELD_NAME    , 0x00), 
+                             IN_FIELD_LENGTH_ (LEN_IN_FIELD_LENGTH  , 0x00), 
+                             IN_FIELD_OFFSET_ (LEN_IN_FIELD_OFFSET  , 0x00), 
+                             OUT_FIELD_NAME_  (LEN_OUT_FIELD_NAME   , 0x00), 
+                             OUT_FIELD_LENGTH_(LEN_OUT_FIELD_LENGTH , 0x00), 
+                             OUT_FIELD_OFFSET_(LEN_OUT_FIELD_OFFSET , 0x00),  
+                             ACTION_CODE_     (LEN_ACTION_CODE      , 0x00), 
+                             SUB_ACTION_CODE_ (LEN_SUB_ACTION_CODE  , 0x00), 
+                             DATA_TYPE_       (LEN_DATA_TYPE        , 0x00) {
+} 
+
+TMetaAction::~TMetaAction() { ; }
+
+void  TMetaAction::setMappingName   (const string& str) { MAPPING_NAME_     = str; }
+void  TMetaAction::setVer           (const string& str) { VER_              = str; }
+void  TMetaAction::setSeqNo         (const string& str) { SEQ_NO_           = str; }
+void  TMetaAction::setInFieldName   (const string& str) { IN_FIELD_NAME_    = str; }
+void  TMetaAction::setInFieldLength (const string& str) { IN_FIELD_LENGTH_  = str; }
+void  TMetaAction::setInFieldOffset (const string& str) { IN_FIELD_OFFSET_  = str; }
+void  TMetaAction::setOutFieldName  (const string& str) { OUT_FIELD_NAME_   = str; }
+void  TMetaAction::setOutFieldLength(const string& str) { OUT_FIELD_LENGTH_ = str; }
+void  TMetaAction::setOutFieldOffset(const string& str) { OUT_FIELD_OFFSET_ = str; }
+void  TMetaAction::setActionCode    (const string& str) { ACTION_CODE_      = str; }
+void  TMetaAction::setSubActionCode (const string& str) { SUB_ACTION_CODE_  = str; }
+void  TMetaAction::setDataType      (const string& str) { DATA_TYPE_        = str; }
+
+const string&  TMetaAction::getMappingName   () const { return MAPPING_NAME_    ; }
+const string&  TMetaAction::getVer           () const { return VER_             ; }
+const string&  TMetaAction::getSeqNo         () const { return SEQ_NO_          ; }
+const string&  TMetaAction::getInFieldName   () const { return IN_FIELD_NAME_   ; }
+const string&  TMetaAction::getInFieldLength () const { return IN_FIELD_LENGTH_ ; }
+const string&  TMetaAction::getInFieldOffset () const { return IN_FIELD_OFFSET_ ; }
+const string&  TMetaAction::getOutFieldName  () const { return OUT_FIELD_NAME_  ; }
+const string&  TMetaAction::getOutFieldLength() const { return OUT_FIELD_LENGTH_; }
+const string&  TMetaAction::getOutFieldOffset() const { return OUT_FIELD_OFFSET_; }
+const string&  TMetaAction::getActionCode    () const { return ACTION_CODE_     ; }
+const string&  TMetaAction::getSubActionCode () const { return SUB_ACTION_CODE_ ; }
+const string&  TMetaAction::getDataType      () const { return DATA_TYPE_       ; }
+
+
+void TMetaAction::saveTextOfSQL() {
+    oraca.orastxtf = ORASTFANY;  
+}
+
+void TMetaAction::select(vector<TMetaAction>& tbl) throw (CSQLException, bad_exception) {
+
+    EXEC SQL BEGIN DECLARE SECTION;
+
+        typedef struct _meta_action {
+            VARCHAR  MAPPING_NAME     [LEN_MAPPING_NAME     + 1]; 
+            VARCHAR  VER              [LEN_VER              + 1]; 
+            VARCHAR  SEQ_NO           [LEN_SEQ_NO           + 1]; 
+            VARCHAR  IN_FIELD_NAME    [LEN_IN_FIELD_NAME    + 1]; 
+            VARCHAR  IN_FIELD_LENGTH  [LEN_IN_FIELD_LENGTH  + 1]; 
+            VARCHAR  IN_FIELD_OFFSET  [LEN_IN_FIELD_OFFSET  + 1]; 
+            VARCHAR  OUT_FIELD_NAME   [LEN_OUT_FIELD_NAME   + 1]; 
+            VARCHAR  OUT_FIELD_LENGTH [LEN_OUT_FIELD_LENGTH + 1]; 
+            VARCHAR  OUT_FIELD_OFFSET [LEN_OUT_FIELD_OFFSET + 1]; 
+            VARCHAR  ACTION_CODE      [LEN_ACTION_CODE      + 1]; 
+            VARCHAR  SUB_ACTION_CODE  [LEN_SUB_ACTION_CODE  + 1]; 
+            VARCHAR  DATA_TYPE        [LEN_DATA_TYPE        + 1]; 
+        } meta_action_type;
+    
+        meta_action_type buf_rec;
+ 
+        // key values
+        char mappingname[LEN_MAPPING_NAME + 1];
+        char ver        [LEN_VER          + 1];
+
+    EXEC SQL END DECLARE SECTION;
+
+    // clear value to host variable
+    memset(reinterpret_cast<char*>(&buf_rec), 0x00, sizeof(buf_rec));
+
+    // always save text of sql statement
+    saveTextOfSQL();
+
+    // move key value to host variable
+    // memcpy((char*)buf_rec.MAPPING_NAME.arr, getMappingName().data(), getMappingName().length());
+    // memcpy((char*)buf_rec.VER.arr         , getVer().data()        , getVer().length()        );
+    memset(mappingname, 0x00, sizeof(mappingname));
+    memset(ver        , 0x00, sizeof(ver)        );
+    strcpy(mappingname, getMappingName().c_str());
+    strcpy(ver        , getVer().c_str()        );
+
+    buf_rec.MAPPING_NAME.len = strlen((char*)buf_rec.MAPPING_NAME.arr); 
+    buf_rec.VER.len          = strlen((char*)buf_rec.VER.arr         ); 
+
+    buf_rec.MAPPING_NAME.arr [buf_rec.MAPPING_NAME.len] = '\0'; 
+    buf_rec.VER.arr          [buf_rec.VER.len         ] = '\0'; 
+
+    // cursor declare section
+    EXEC SQL DECLARE CURSOR_META_ACTION_SEL CURSOR FOR 
+             SELECT  mapping_name            ,    
+                     ver                     ,         
+                     seq_no                  ,
+                     NVL(in_field_name  ,' '),
+                     NVL(in_field_length , 0),
+                     NVL(in_field_offset , 0),
+                     NVL(out_field_name ,' '),
+                     NVL(out_field_length, 0),
+                     NVL(out_field_offset, 0),
+                     NVL(action_code    ,' '),
+                     NVL(sub_action_code,' '),
+                     NVL(data_type      ,' ')
+             FROM    t_meta_action
+             WHERE   mapping_name = :mappingname
+               AND   ver          = :ver
+             ORDER BY mapping_name, ver, seq_no;
+
+    EXEC SQL OPEN CURSOR_META_ACTION_SEL;
+
+    if (sqlca.sqlcode != 0) { throw CSQLException("TMetaAction::select(vector<TMetaAction>&), can't open cursor"); }
+
+    // loop until the NOT FOUND condition is detected
+    while (1) {
+
+        //memset(reinterpret_cast<char*>(&buf_rec), 0x00, sizeof(buf_rec));
+
+        EXEC SQL FETCH CURSOR_META_ACTION_SEL
+                 INTO  :buf_rec.MAPPING_NAME    ,
+                       :buf_rec.VER             ,
+                       :buf_rec.SEQ_NO          ,
+                       :buf_rec.IN_FIELD_NAME   ,
+                       :buf_rec.IN_FIELD_LENGTH ,
+                       :buf_rec.IN_FIELD_OFFSET ,
+                       :buf_rec.OUT_FIELD_NAME  ,
+                       :buf_rec.OUT_FIELD_LENGTH,
+                       :buf_rec.OUT_FIELD_OFFSET,
+                       :buf_rec.ACTION_CODE     ,
+                       :buf_rec.SUB_ACTION_CODE ,
+                       :buf_rec.DATA_TYPE;       
+
+        // in this set NVL into type char and int
+        // null-terminate the array before output
+        buf_rec.MAPPING_NAME.arr     [buf_rec.MAPPING_NAME.len    ] = '\0';
+        buf_rec.VER.arr              [buf_rec.VER.len             ] = '\0';
+        buf_rec.SEQ_NO.arr           [buf_rec.SEQ_NO.len          ] = '\0';
+        buf_rec.IN_FIELD_NAME.arr    [buf_rec.IN_FIELD_NAME.len   ] = '\0';
+        buf_rec.IN_FIELD_LENGTH.arr  [buf_rec.IN_FIELD_LENGTH.len ] = '\0';
+        buf_rec.IN_FIELD_OFFSET.arr  [buf_rec.IN_FIELD_OFFSET.len ] = '\0';
+        buf_rec.OUT_FIELD_NAME.arr   [buf_rec.OUT_FIELD_NAME.len  ] = '\0';
+        buf_rec.OUT_FIELD_LENGTH.arr [buf_rec.OUT_FIELD_LENGTH.len] = '\0';
+        buf_rec.OUT_FIELD_OFFSET.arr [buf_rec.OUT_FIELD_OFFSET.len] = '\0';
+        buf_rec.ACTION_CODE.arr      [buf_rec.ACTION_CODE.len     ] = '\0';
+        buf_rec.SUB_ACTION_CODE.arr  [buf_rec.SUB_ACTION_CODE.len ] = '\0';
+        buf_rec.DATA_TYPE.arr        [buf_rec.DATA_TYPE.len       ] = '\0';
+
+        // break the loop when all data have been retrieved
+        if (sqlca.sqlcode == 1403) break;
+        if (sqlca.sqlcode != 0) { throw CSQLException("TMetaAction::select(vector<TMetaAction>&), can't fetch cursor"); }
+
+
+#ifdef _DEBUG_
+        cout << (char*)buf_rec.MAPPING_NAME.arr     << " / "
+             << (char*)buf_rec.VER.arr              << " / "
+             << (char*)buf_rec.SEQ_NO.arr           << " / "
+             << (char*)buf_rec.IN_FIELD_NAME.arr    << " / "
+             << (char*)buf_rec.IN_FIELD_LENGTH.arr  << " / "
+             << (char*)buf_rec.IN_FIELD_OFFSET.arr  << " / "
+             << (char*)buf_rec.OUT_FIELD_NAME.arr   << " / "
+             << (char*)buf_rec.OUT_FIELD_LENGTH.arr << " / "
+             << (char*)buf_rec.OUT_FIELD_OFFSET.arr << " / "
+             << (char*)buf_rec.ACTION_CODE.arr      << " / "
+             << (char*)buf_rec.SUB_ACTION_CODE.arr  << " / "
+             << (char*)buf_rec.DATA_TYPE.arr        << endl
+             << "--------------------------------------------------------" << endl;                 
+#endif
+
+        auto_ptr<TMetaAction> selected(new TMetaAction());
+        string value;
+
+        selected->setMappingName   (value = (char*)buf_rec.MAPPING_NAME.arr    );
+        selected->setVer           (value = (char*)buf_rec.VER.arr             );
+        selected->setSeqNo         (value = (char*)buf_rec.SEQ_NO.arr          );
+        selected->setInFieldName   (value = (char*)buf_rec.IN_FIELD_NAME.arr   );
+        selected->setInFieldLength (value = (char*)buf_rec.IN_FIELD_LENGTH.arr );
+        selected->setInFieldOffset (value = (char*)buf_rec.IN_FIELD_OFFSET.arr );
+        selected->setOutFieldName  (value = (char*)buf_rec.OUT_FIELD_NAME.arr  );
+        selected->setOutFieldLength(value = (char*)buf_rec.OUT_FIELD_LENGTH.arr);
+        selected->setOutFieldOffset(value = (char*)buf_rec.OUT_FIELD_OFFSET.arr);
+        selected->setActionCode    (value = (char*)buf_rec.ACTION_CODE.arr     );
+        selected->setSubActionCode (value = (char*)buf_rec.SUB_ACTION_CODE.arr );
+        selected->setDataType      (value = (char*)buf_rec.DATA_TYPE.arr       );
+
+        // push to vector which is prepared selected result object
+        tbl.push_back((*selected));
+
+    } // end while
+
+#ifdef _DEBUG_
+    printf("\nQuery returned %d row%s.\n\n", sqlca.sqlerrd[2], (sqlca.sqlerrd[2] == 1) ? "" : "s");
+#endif
+
+    EXEC SQL CLOSE CURSOR_META_ACTION_SEL;
+
+    if (sqlca.sqlcode != 0) { throw CSQLException("TMetaAction::select(vector<TMetaAction>&), can't close cursor"); }
+}
+
+}; // end of namespace acc

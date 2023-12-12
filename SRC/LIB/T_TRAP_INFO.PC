@@ -1,0 +1,245 @@
+#define SQLCA_STORAGE_CLASS extern
+EXEC SQL INCLUDE    sqlca;
+
+// DECLARE SECTION을 hpp에 선언할때
+EXEC SQL INCLUDE "/home/uda1/include/t_trap_info.hpp";
+
+
+//----------------------------------------
+// Declare Host Variable
+
+EXEC SQL BEGIN DECLARE SECTION;
+	typedef struct    __TrapTbl
+	{
+		int         Trap_No;
+		VARCHAR     Trap_name		[64+1];
+		VARCHAR     Trap_Type		[20+1];
+		VARCHAR     Trap_desc		[128+1];
+	}TRAPTbl;
+
+    TRAPTbl*      m_TrapTbl;           // Action Table
+    int           m_nRecCount;          // Action Record Count
+
+EXEC SQL END     DECLARE SECTION;
+//----------------------------------------
+
+
+//------------------------------------------------------------------------------
+// 생성자
+t_trap_info::t_trap_info()
+{
+    m_nRecCount    = 0;
+    nFlag		   = 0;	
+
+}
+
+
+
+//------------------------------------------------------------------------------
+t_trap_info::~t_trap_info()
+{
+	if(nFlag == 1)
+	{
+		delete [] m_TrapTbl;
+		delete [] m_TrapInfo;
+	}	
+}	
+
+
+void t_trap_info::fetch_all()		 throw(char *)	//	pms 요청에 의한 수정 ( jsj 5. 25 )
+{
+   	nFlag = 1;
+    try
+    {
+        get_RecordCount();	// GET Total Record Count
+	    m_TrapTbl = new TRAPTbl[m_nRecCount+1]; // Allocate MetaTbl Buffer
+
+        init_TrapTbl();		// Initialize Buffer
+      
+        declare_Cursor();	// OPEN Cursor
+
+        open_Cursor();
+
+	    fetch_Data();		// FETCH Data
+    }
+    catch(char *strTemp)
+    {
+        char strErrMsg[400];
+        memset(strErrMsg , 0x00, 400);
+        strcpy(strErrMsg,strTemp);
+        SqlError(strTemp);
+    }
+
+	int i;
+	m_TrapInfo = new TRAPINFO[m_nRecCount+1];
+    for(i = 0; i <= m_nRecCount; i++)
+    	memset(&m_TrapInfo[i], 0x00, sizeof(TRAPINFO));
+	for(i = 0; i <= m_nRecCount; i++)
+	{
+    	m_TrapInfo[i].Trap_No =  m_TrapTbl[i].Trap_No;
+
+    	memcpy(m_TrapInfo[i].Trap_name	, m_TrapTbl[i].Trap_name.arr  	, sizeof(m_TrapTbl[i].Trap_name));
+    	memcpy(m_TrapInfo[i].Trap_Type  , m_TrapTbl[i].Trap_Type.arr	, sizeof(m_TrapTbl[i].Trap_Type));
+    	memcpy(m_TrapInfo[i].Trap_desc  , m_TrapTbl[i].Trap_desc.arr	, sizeof(m_TrapTbl[i].Trap_desc));
+    }	
+    	
+// 	cout << "[t_trap_info] Constructor Success " << endl;
+//	show_TrapInfoTable();
+}
+
+//------------------------------------------------------------------------------
+// [t_trap_info] table의 레코드개수만큼 만들어진 배열을 초기화한다.
+void t_trap_info::init_TrapTbl()
+{
+    int i;
+    for(i = 0; i <= m_nRecCount; i++)
+    	memset(&m_TrapTbl[i], 0x00, sizeof(TRAPTbl));
+}
+
+
+
+
+//------------------------------------------------------------------------------
+// [t_trap_info] table에서 레코드 개수를 가져온다.
+void t_trap_info::get_RecordCount()    throw(char *)
+{
+	EXEC SQL SELECT COUNT(*)
+    	     INTO  :m_nRecCount
+             FROM  T_TRAP_INFO;
+
+    if (sqlca.sqlcode != 0){
+   	 	strcpy(strSqlTemp,"!!!Error : [t_trap_info] table : Fail Get Record Count.");
+  		throw (char *)strSqlTemp;
+   	}	
+
+}
+
+
+
+
+//------------------------------------------------------------------------------
+void t_trap_info::declare_Cursor()    throw(char *)
+{
+    EXEC SQL DECLARE CUR_TABLE CURSOR FOR
+                SELECT      TRAP_NO,    
+                            TRAP_NAME,         
+                            nvl(TRAP_TYPE,' '),
+                            nvl(TRAP_DESC,' ')
+                FROM        T_TRAP_INFO;
+
+    if (sqlca.sqlcode != 0){
+	    strcpy(strSqlTemp,"!!!Error : [t_trap_info]] table : Fail Declare Cursor.");
+        throw (char *)strSqlTemp;
+    }    
+}
+
+
+
+
+//------------------------------------------------------------------------------
+void t_trap_info::open_Cursor()    throw(char *)
+{
+    EXEC SQL OPEN CUR_TABLE;
+
+    if (sqlca.sqlcode != 0){
+	    strcpy(strSqlTemp,"!!!Error : [t_trap_info] table : Fail Open Cursor.");
+        throw (char *)strSqlTemp;
+    }
+}
+
+
+
+
+//------------------------------------------------------------------------------
+void t_trap_info::close_Cursor()
+{
+    EXEC SQL CLOSE CUR_TABLE;
+}
+
+
+
+
+//------------------------------------------------------------------------------
+void t_trap_info::fetch_Data()    throw(char *)
+{
+    
+    for(int i = 0; i <= m_nRecCount; i++)
+    {
+        EXEC SQL FETCH CUR_TABLE INTO :m_TrapTbl[i];
+
+        // Type이 varchar2인 변수의 스트링 끝에 NULL 처리
+        m_TrapTbl[i].Trap_name.arr[m_TrapTbl[i].Trap_name.len] = NULL;
+        m_TrapTbl[i].Trap_Type.arr[m_TrapTbl[i].Trap_Type.len] = NULL;
+        m_TrapTbl[i].Trap_desc.arr[m_TrapTbl[i].Trap_desc.len] = NULL;
+        
+        if(sqlca.sqlcode == 1403){
+            close_Cursor();
+            break;
+        }
+        else if(sqlca.sqlcode != 0){
+            strcpy(strSqlTemp,"!!!Error : [t_trap_info] table : Fail Data fetch.");
+            close_Cursor();
+            throw (char *)strSqlTemp;
+        }
+    }
+    
+//    show_TrapTbl();	// [t_trap_info] table Display
+
+}
+
+int t_trap_info::SearchIndex(int nCode)
+{
+	for(int i = 0; i < m_nRecCount; i++)
+	{
+		if (nCode == m_TrapTbl[i].Trap_No)
+		{
+		   	return i;
+		}
+	   
+	}//for
+    return FAILACTION;
+}
+
+
+
+//------------------------------------------------------------------------------
+// [t_trap_info] Table의 내용을 Display하기 위한 함수
+void t_trap_info::show_TrapTbl()
+{
+	cout << "########### T_TRAP_INFO Table ###########" << endl;
+	cout << "All Record   Cnt           => " << m_nRecCount << endl;
+
+	cout << "======================================================================================" << endl;
+	cout << "Trap_No    Trap_name               Trap_Type                     Trap_desc" << endl;
+	cout << "--------------------------------------------------------------------------------------" << endl;
+	for(int c=0;c<m_nRecCount;c++)
+	{
+		printf(" %d 	%s	%s	%s\n",
+			                         m_TrapTbl[c].Trap_No,
+			                         m_TrapTbl[c].Trap_name.arr,
+			                         m_TrapTbl[c].Trap_Type.arr,
+			                         m_TrapTbl[c].Trap_desc.arr);
+	}
+	cout << "----------------------------------------------------------------------------------------------" << endl << endl;
+
+}
+//------------------------------------------------------------------------------
+// [t_meta_action] Table의 내용을 Display하기 위한 함수
+void t_trap_info::show_TrapInfoTable()
+{
+	cout << "########### T_TRAP_INFO Table ###########" << endl;
+	cout << "All Record   Cnt           => " << m_nRecCount << endl;
+
+	cout << "======================================================================================" << endl;
+	cout << "Trap_No    Trap_name               Trap_Type                     Trap_desc" << endl;
+	cout << "--------------------------------------------------------------------------------------" << endl;
+	for(int c=0;c<m_nRecCount;c++)
+	{
+		printf(" %d 	%s	%s	%s\n",
+			                         m_TrapTbl[c].Trap_No,
+			                         m_TrapTbl[c].Trap_name.arr,
+			                         m_TrapTbl[c].Trap_Type.arr,
+			                         m_TrapTbl[c].Trap_desc.arr);
+	}
+	cout << "----------------------------------------------------------------------------------------------" << endl << endl;
+}

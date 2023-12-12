@@ -1,0 +1,128 @@
+/******************************************************************
+* 파 일 명     : ShmInfo.pc	 			     					  *
+* 기   능                                                          *
+* :입력받은 형상구분으로 해당 shared memory key를 DB에서 가져온다.       *
+* 작 성 자     : 권 종 욱               		      				  *
+* first data  :  				  	     						  *
+* last updata : 2000. 12. 26  by 한 근 희   	 					  *
+* 관 련 화 일  : ShmInfo.hpp             							  *
+* program history                        						  *
+*  2000.12.26 -> 프로그램 주석추가        	 				 		  *
+* bug fix                        	     						  *
+*                         	        	 						  *
+******************************************************************/
+#include <ShmInfo.hpp>
+
+#define SQLCA_STORAGE_CLASS extern
+EXEC    SQL     INCLUDE SQLCA;
+
+EXEC SQL BEGIN DECLARE SECTION;
+    int		host_sys_id;
+    int		host_svc_id;
+    int		host_group_type;
+    int		host_proc_type;
+    int		host_proc_sn;
+    int		host_proc_remark;
+    char	proc_alias[9];
+    char	shmtype[3];
+    VARCHAR	keypath[33];
+    VARCHAR	vcKeyPath[33];
+    char	key[2];
+    int		rsize;
+    int		rcount;
+    int		shmid;
+    int		shmkey;
+    int		used_size;
+EXEC SQL END DECLARE SECTION;
+//===============================================================
+// get_t_shm_info Method				   						=
+//  : 입력받은 형상구분으로 해당 DB의 shared memory 정보를 가져온다.	=
+// argument     : None											=
+// return value : sql code										=
+//																=
+//===============================================================
+int ShmConfInfo::get_t_shm_info()
+{
+	int			nRet;
+
+	DbConnect	clsDbConnect;
+
+	nRet = clsDbConnect.connect();
+	if (nRet < 0)
+	{
+		cout << "DB Connect Failure [" << nRet << "]" << endl;
+		return nRet;
+	}
+
+	host_sys_id      = sys_id;
+	host_svc_id      = svc_id;
+	host_group_type  = group_type;
+	host_proc_type   = proc_type;
+	host_proc_sn     = proc_sn;
+	host_proc_remark = proc_remark;
+
+	cout << "******* proc_remark = " << proc_remark << endl;
+
+	EXEC SQL	SELECT	proc_alias,
+						shmtype,
+						keypath,
+						key,
+						rsize,
+						rcount,
+						shmid,
+						shmkey,
+						used_size
+				INTO
+						:proc_alias,
+						:shmtype,
+						:vcKeyPath,
+						:key,
+						:rsize,
+						:rcount,
+						:shmid,
+						:shmkey,
+						:used_size
+				FROM
+						t_shm_info
+				WHERE
+						sys_id		= :host_sys_id
+					AND	svc_id		= :host_svc_id
+					AND group_type	= :host_group_type
+					AND	proc_type	= :host_proc_type
+					AND proc_sn		= :host_proc_sn
+					AND	proc_remark	= :host_proc_remark;
+
+	if (sqlca.sqlcode == 0)
+	{
+		memcpy(keypath, vcKeyPath.arr, vcKeyPath.len);
+		keypath[vcKeyPath.len] = NULL;
+/*
+		cout << "proc_alias = " << proc_alias   << endl;
+		cout << "shmtype	= " << shmtype	    << endl;
+		cout << "keypath	= " << keypath		<< endl;
+		cout << "key	    = " << key	        << endl;
+		cout << "rsize		= " << rsize		<< endl;
+		cout << "rcount		= " << rcount		<< endl;
+		cout << "shmid		= " << shmid		<< endl;
+		cout << "shmkey		= " << shmkey		<< endl;
+		cout << "used_size  = " << used_size    << endl;
+*/
+	}
+	else
+	{
+		cout << "SQL Error : [" << sqlca.sqlcode << "]" << endl;
+		cout << "sys_id      = "	<< sys_id      << endl;
+		cout << "svc_id      = "	<< svc_id      << endl;
+		cout << "group_type  = "	<< group_type  << endl;
+		cout << "proc_type   = "	<< proc_type   << endl;
+		cout << "proc_sn     = "	<< proc_sn     << endl;
+		cout << "proc_remark = "	<< proc_remark << endl;
+	}
+
+	nRet = (int)sqlca.sqlcode;
+
+ 	clsDbConnect.disconnect();
+
+ 	return (nRet);
+}
+

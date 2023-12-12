@@ -1,0 +1,1770 @@
+shmInfo:nLRemark:3
+******* proc_remark = 3
+shmInfo:nLRemark:2
+******* proc_remark = 2
+shmInfo:nLRemark:1
+******* proc_remark = 1
+shmInfo:nLRemark:0
+******* proc_remark = 0
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002253 2000113021:48 21:48      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003565 2000120101:23 01:23      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004877 2000120104:59 04:59      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006127 2000120108:24 08:24      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001002 2000113018:22 18:22      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001023 2000113018:26 18:26      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001043 2000113018:29 18:29      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001064 2000113018:32 18:32      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001084 2000113018:36 18:36      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001105 2000113018:39 18:39      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001125 2000113018:43 18:43      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001146 2000113018:46 18:46      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001166 2000113018:49 18:49      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001187 2000113018:53 18:53      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001207 2000113018:56 18:56      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001228 2000113018:59 18:59      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001248 2000113019:03 19:03      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001269 2000113019:06 19:06      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001289 2000113019:10 19:10      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001310 2000113019:13 19:13      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001330 2000113019:16 19:16      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001351 2000113019:20 19:20      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001371 2000113019:23 19:23      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001392 2000113019:26 19:26      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001412 2000113019:30 19:30      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001433 2000113019:33 19:33      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001453 2000113019:36 19:36      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001474 2000113019:40 19:40      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001494 2000113019:43 19:43      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001501 20001128000000000000     1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001502 20001124000000000000     1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001515 2000113019:47 19:47      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001535 2000113019:50 19:50      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001556 2000113019:53 19:53      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001576 2000113019:57 19:57      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001597 2000113020:00 20:00      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001617 2000113020:03 20:03      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001638 2000113020:07 20:07      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001658 2000113020:10 20:10      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001679 2000113020:13 20:13      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001699 2000113020:17 20:17      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001720 2000113020:20 20:20      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001740 2000113020:24 20:24      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001761 2000113020:27 20:27      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001781 2000113020:30 20:30      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001802 2000113020:34 20:34      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001822 2000113020:37 20:37      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001843 2000113020:40 20:40      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001863 2000113020:44 20:44      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001884 2000113020:47 20:47      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001904 2000113020:51 20:51      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001925 2000113020:54 20:54      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001945 2000113020:57 20:57      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001966 2000113021:01 21:01      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192001986 2000113021:04 21:04      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002007 2000113021:07 21:07      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002027 2000113021:11 21:11      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002048 2000113021:14 21:14      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002068 2000113021:17 21:17      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002089 2000113021:21 21:21      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002109 2000113021:24 21:24      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002130 2000113021:28 21:28      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002150 2000113021:31 21:31      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002171 2000113021:34 21:34      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002191 2000113021:38 21:38      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002212 2000113021:41 21:41      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002232 2000113021:44 21:44      1                     
+==========================================
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>63
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002273 2000113021:51 21:51      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002294 2000113021:55 21:55      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002314 2000113021:58 21:58      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002335 2000113022:01 22:01      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002355 2000113022:05 22:05      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002376 2000113022:08 22:08      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002396 2000113022:11 22:11      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002417 2000113022:15 22:15      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002437 2000113022:18 22:18      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002458 2000113022:21 22:21      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002478 2000113022:25 22:25      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002499 2000113022:28 22:28      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002519 2000113022:32 22:32      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002540 2000113022:35 22:35      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002560 2000113022:38 22:38      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002581 2000113022:42 22:42      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002601 2000113022:45 22:45      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002622 2000113022:48 22:48      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002642 2000113022:52 22:52      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002663 2000113022:55 22:55      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002683 2000113022:58 22:58      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002704 2000113023:02 23:02      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002724 2000113023:05 23:05      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002745 2000113023:09 23:09      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002765 2000113023:12 23:12      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002786 2000113023:15 23:15      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002806 2000113023:19 23:19      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002827 2000113023:22 23:22      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002847 2000113023:25 23:25      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002868 2000113023:29 23:29      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002888 2000113023:32 23:32      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002909 2000113023:36 23:36      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002929 2000113023:39 23:39      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002950 2000113023:42 23:42      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002970 2000113023:46 23:46      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192002991 2000113023:49 23:49      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003011 2000113023:52 23:52      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003032 2000113023:56 23:56      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003052 2000113023:59 23:59      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003073 2000120100:02 00:02      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003093 2000120100:06 00:06      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003114 2000120100:09 00:09      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003134 2000120100:13 00:13      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003155 2000120100:16 00:16      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003175 2000120100:19 00:19      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003196 2000120100:23 00:23      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003216 2000120100:26 00:26      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003237 2000120100:29 00:29      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003257 2000120100:33 00:33      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003278 2000120100:36 00:36      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003298 2000120100:39 00:39      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003319 2000120100:43 00:43      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003339 2000120100:46 00:46      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003360 2000120100:50 00:50      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003380 2000120100:53 00:53      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003401 2000120100:56 00:56      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003421 2000120101:00 01:00      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003442 2000120101:03 01:03      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003462 2000120101:06 01:06      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003483 2000120101:10 01:10      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003503 2000120101:13 01:13      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003524 2000120101:17 01:17      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003544 2000120101:20 01:20      1                     
+==========================================
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>63
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003585 2000120101:27 01:27      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003606 2000120101:30 01:30      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003626 2000120101:33 01:33      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003647 2000120101:37 01:37      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003667 2000120101:40 01:40      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003688 2000120101:43 01:43      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003708 2000120101:47 01:47      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003729 2000120101:50 01:50      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003749 2000120101:54 01:54      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003770 2000120101:57 01:57      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003790 2000120102:00 02:00      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003811 2000120102:04 02:04      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003831 2000120102:07 02:07      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003852 2000120102:10 02:10      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003872 2000120102:14 02:14      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003893 2000120102:17 02:17      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003913 2000120102:20 02:20      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003934 2000120102:24 02:24      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003954 2000120102:27 02:27      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003975 2000120102:31 02:31      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192003995 2000120102:34 02:34      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004016 2000120102:37 02:37      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004036 2000120102:41 02:41      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004057 2000120102:44 02:44      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004077 2000120102:47 02:47      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004098 2000120102:51 02:51      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004118 2000120102:54 02:54      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004139 2000120102:58 02:58      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004159 2000120103:01 03:01      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004180 2000120103:04 03:04      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004200 2000120103:08 03:08      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004221 2000120103:11 03:11      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004241 2000120103:14 03:14      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004262 2000120103:18 03:18      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004282 2000120103:21 03:21      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004303 2000120103:24 03:24      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004323 2000120103:28 03:28      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004344 2000120103:31 03:31      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004364 2000120103:35 03:35      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004385 2000120103:38 03:38      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004405 2000120103:41 03:41      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004426 2000120103:45 03:45      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004446 2000120103:48 03:48      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004467 2000120103:51 03:51      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004487 2000120103:55 03:55      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004508 2000120103:58 03:58      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004528 2000120104:02 04:02      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004549 2000120104:05 04:05      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004569 2000120104:08 04:08      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004590 2000120104:12 04:12      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004610 2000120104:15 04:15      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004631 2000120104:18 04:18      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004651 2000120104:22 04:22      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004672 2000120104:25 04:25      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004692 2000120104:28 04:28      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004713 2000120104:32 04:32      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004733 2000120104:35 04:35      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004754 2000120104:39 04:39      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004774 2000120104:42 04:42      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004795 2000120104:45 04:45      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004815 2000120104:49 04:49      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004836 2000120104:52 04:52      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004856 2000120104:55 04:55      1                     
+==========================================
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>63
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004897 2000120105:02 05:02      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004918 2000120105:05 05:05      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004938 2000120105:09 05:09      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004959 2000120105:12 05:12      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192004979 2000120105:16 05:16      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005000 2000120105:19 05:19      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005020 2000120105:22 05:22      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005041 2000120105:26 05:26      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005061 2000120105:29 05:29      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005082 2000120105:32 05:32      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005102 2000120105:36 05:36      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005123 2000120105:39 05:39      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005143 2000120105:43 05:43      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005164 2000120105:46 05:46      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005184 2000120105:49 05:49      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005205 2000120105:53 05:53      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005225 2000120105:56 05:56      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005246 2000120105:59 05:59      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005266 2000120106:03 06:03      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005287 2000120106:06 06:06      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005307 2000120106:09 06:09      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005328 2000120106:13 06:13      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005348 2000120106:16 06:16      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005369 2000120106:20 06:20      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005389 2000120106:23 06:23      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005410 2000120106:26 06:26      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005430 2000120106:30 06:30      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005451 2000120106:33 06:33      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005471 2000120106:36 06:36      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005492 2000120106:40 06:40      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005512 2000120106:43 06:43      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005515 2000113017:01 17:01      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005533 2000120106:46 06:46      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005553 2000120106:50 06:50      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005574 2000120106:53 06:53      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005594 2000120106:57 06:57      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005615 2000120107:00 07:00      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005635 2000120107:03 07:03      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005656 2000120107:07 07:07      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005676 2000120107:10 07:10      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005697 2000120107:13 07:13      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005717 2000120107:17 07:17      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005720 2000113017:05 17:05      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005738 2000120107:20 07:20      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005758 2000120107:24 07:24      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005779 2000120107:27 07:27      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005799 2000120107:30 07:30      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005820 2000120107:34 07:34      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005840 2000120107:37 07:37      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005861 2000120107:40 07:40      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005881 2000120107:44 07:44      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005902 2000120107:47 07:47      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005922 2000120107:50 07:50      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005925 2000113017:10 17:10      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005943 2000120107:54 07:54      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005963 2000120107:57 07:57      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192005984 2000120108:01 08:01      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006004 2000120108:04 08:04      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006025 2000120108:07 08:07      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006045 2000120108:11 08:11      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006066 2000120108:14 08:14      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006086 2000120108:17 08:17      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006107 2000120108:21 08:21      1                     
+==========================================
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>63
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006130 2000113017:13 17:13      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006148 2000120108:27 08:27      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006168 2000120108:31 08:31      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006189 2000120108:34 08:34      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006209 2000120108:38 08:38      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006230 2000120108:41 08:41      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006250 2000120108:44 08:44      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006271 2000120108:48 08:48      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006291 2000120108:51 08:51      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006312 2000120108:54 08:54      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006332 2000120108:58 08:58      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006335 2000113017:16 17:16      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006353 2000120109:01 09:01      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006373 2000120109:05 09:05      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006394 2000120109:08 09:08      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006414 2000120109:11 09:11      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006435 2000120109:15 09:15      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006455 2000120109:18 09:18      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006476 2000120109:21 09:21      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006496 2000120109:25 09:25      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006517 2000120109:28 09:28      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006537 2000120109:31 09:31      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006540 2000113017:20 17:20      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006558 2000120109:35 09:35      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006578 2000120109:38 09:38      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006599 2000120109:42 09:42      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006619 2000120109:45 09:45      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006640 2000120109:48 09:48      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006660 2000120109:52 09:52      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006681 2000120109:55 09:55      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006701 2000120109:58 09:58      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006722 2000120110:02 10:02      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006742 2000120110:05 10:05      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006745 2000113017:23 17:23      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006763 2000120110:09 10:09      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006783 2000120110:12 10:12      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006804 2000120110:15 10:15      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006824 2000120110:19 10:19      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006845 2000120110:22 10:22      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006865 2000120110:25 10:25      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006886 2000120110:29 10:29      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006906 2000120110:32 10:32      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006927 2000120110:35 10:35      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006947 2000120110:39 10:39      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006950 2000113017:26 17:26      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006968 2000120110:42 10:42      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192006988 2000120110:46 10:46      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007009 2000120110:49 10:49      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007029 2000120110:52 10:52      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007050 2000120110:56 10:56      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007070 2000120110:59 10:59      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007091 2000120111:02 11:02      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007111 2000120111:06 11:06      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007132 2000120111:09 11:09      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007152 2000120111:12 11:12      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007155 2000113017:30 17:30      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007173 2000120111:16 11:16      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007193 2000120111:19 11:19      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007214 2000120111:23 11:23      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007234 2000120111:26 11:26      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007255 2000120111:29 11:29      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007275 2000120111:33 11:33      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007296 2000120111:36 11:36      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007316 2000120111:39 11:39      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007337 2000120111:43 11:43      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007357 2000120111:46 11:46      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007360 2000113017:33 17:33      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007378 2000120111:50 11:50      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007398 2000120111:53 11:53      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007419 2000120111:56 11:56      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007439 2000120112:00 12:00      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007460 2000120112:03 12:03      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007480 2000120112:06 12:06      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007501 2000120112:10 12:10      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007521 2000120112:13 12:13      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007542 2000120112:16 12:16      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007562 2000120112:20 12:20      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007565 2000113017:36 17:36      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007583 2000120112:23 12:23      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007603 2000120112:27 12:27      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007624 2000120112:30 12:30      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007644 2000120112:39 12:39      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007665 2000120112:39 12:39      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007685 2000120112:40 12:40      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007770 2000113017:40 17:40      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192007975 2000113017:43 17:43      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192008180 2000113017:47 17:47      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192008385 2000113017:50 17:50      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192008590 2000113017:53 17:53      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192008795 2000113017:57 17:57      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192009000 2000113018:00 18:00      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192009205 2000113018:06 18:06      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192009410 2000113018:09 18:09      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192009615 2000113018:16 18:16      1                     
+==========================================
+==========================================
+MsID       EventDate  EventTime  ServiceTypePricePlan  CustStatus 
+1192009820 2000113018:19 18:19      1                     
+==========================================
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>0
+Total Data Count ==>95
+Total Data Count ==>4

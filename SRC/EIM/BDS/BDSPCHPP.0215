@@ -1,0 +1,2901 @@
+#include <intndefs.hpp>
+#include <msgBDSC.hpp>
+#include <socketC.hpp>
+#include <fileSearchC.hpp>
+#include <signal.h>//signal
+//#include <TempMsgQ_new.hpp>
+#include <TempMsgQ_file.hpp>
+#include <MsgFormat.hpp>
+
+
+#include <ConfigFile.hpp>
+#include <BlockFile.hpp>
+
+char FILE_NAME_COL_BDS_UDR[50];
+
+char	FILE_NAME_BDS_UDR[50]	=	"/SVC1/BDS/BDS_UDR.";
+//char	FILE_NAME_BDS_UDR2		=	"/SVC2/BDS/BDS_UDR.";
+
+//	UDR File Information
+const char*	    PATH_NAME_BDS_FILE_CFG2			=   "/SVC2/DATA/BDS_FileConf.cfg";
+
+//	UDR File writing Information
+const char*	    PATH_NAME_BDS_FILE_INFO2			=   "/SVC2/DATA/BDS_FileInfo.cfg";
+
+//	BDS Interface writing Information
+const char*	    PATH_NAME_BDS_FILE_BLOCK_INFO2	=   "/SVC2/DATA/BDS_FileBlock.cfg";
+
+
+
+
+unsigned short		SRC_ID_SERVICE;//0x5544//UD
+unsigned short		SRC_ID_SYSTEM;//0x0001 0x0002//01 02
+unsigned int		UNSWITCHID;//0x55440001 UD01    0x55440002 UD02
+
+
+
+typedef unsigned short int US;
+typedef unsigned int       UN;
+
+/**********************컴파일시
+#define TRANSACTION_IDLE_TIME	90	// 서버와의 통신상태 check 경과 시간(초)
+#define RECONNECT_WAITING_TIME	5	// 서버에 재접속 요청 경과 시간(초)
+**********************/
+
+const US LINK_STATUS_CLOSED_ABNORMAL = 0;
+const US LINK_STATUS_READY           = 1;
+const US SOCK_FAIL					 =-2;
+const US SC                          = 1;
+const US FA                          =-1;
+const US REQUEST_RETRY_MAX           = 5;//BDS는 5회가 DEFAULT
+const US BDS_RECONNECT_INTERVAL      = 5;
+
+const US INTERVAL                    = 30;//180;//다음전송할 파일을 찾아보고 SEND OR SKIP한 시간이 기준시간(현재 180sec 3분) 이상이면
+const US STATUS_REQ_INTERVAL         = 3;//30;
+
+
+
+
+
+const unsigned short HEADER_LEN	                 =24;
+const unsigned short MAX_PACKET_LEN              = 32804;
+const unsigned short MAX_PACKET_LEN_BDS          = 32804;
+
+const int BILLDATA_EXIST     =1;
+const int BILLDATA_NOTEXIST	=0;
+
+
+#define CONTINOUS_SEND_START 1
+#define CONTINOUS_SEND_END   100
+
+//BDS_FileBlock.cfg
+#define BDS_FLAG_INITIAL 0xffffffff
+#define BDS_FLAG_USED    0
+
+#define SEARCH_BREAK 20
+
+
+extern SendLogManage	*logout;
+
+
+//전역으로 선언
+MessageQueue<MsgPmsStatus>  *_PMSMQ;
+
+
+class bdspC
+{
+
+private :
+	char			strBuf[MAX_PACKET_LEN];
+	//////char			*strBuf;
+	fileSearchC		*_filesearch;
+
+	unsigned short 	usRecv_MsgSeqNum;// Sequence nummber recv from BDS
+	unsigned short	usMsgSeqNum;     // Sequence nummber send to BDS
+
+	unsigned int Recv_unStartFileNo; //COLLECTION_START_INFO Recv StartFileNo
+	unsigned int Recv_unStartBlockNo;//COLLECTION_START_INFO Recv StartBlockNo
+
+	unsigned int unStartFileNo; //FileBlock.cfg  //Recv StartFileNo
+	unsigned int unStartBlockNo;//FileBlock.cfg  //Recv StartBlockNo
+	unsigned int unEndBlockNo;  //FileBlock.cfg  //Recv unEndBlockNo
+	unsigned int unFlag;        //FileBlock.cfg  //unFlag(0xffffffff:BDS_FLAG_INITIAL 0:BDS_FLAG_USED)
+	unsigned int unTimeInVal;   //FileBlock.cfg  //Recv unTimeInVal
+	unsigned int unMaxBillSize; //FileBlock.cfg  //Recv unMaxBillSize
+
+	unsigned int unSearchEndFileStartFileNo; //searchEndFile()  unSearchEndFileStartFileNo
+	unsigned int unSearchEndFileStartBlockNo;//searchEndFile()  unSearchEndFileStartBlockNo
+	unsigned int unSearchEndFileEndBlockNo;  //searchEndFile()  unSearchEndFileEndBlockNo
+
+
+	char strFileName[128];
+
+
+
+	time_t			gtimeForLastComm;
+	time_t			timeStart;
+	int				nTypeId;
+	int				gBillDataStartFlag;//BillDataStatFlag
+
+
+	char	strLogBuff[MAX_PACKET_LEN_BDS*5],strDumpLog[MAX_PACKET_LEN_BDS*5],strLogTmp[20];// for log
+	int nlogi;// for log
+	int nClear;
+
+	int				SystemId;
+	int				ServiceId;
+	int				GroupId;
+	int				ProcessType;
+	int				ProSerialNo;
+	int				ProReMark;		// 01('P') 02('S')
+
+
+public :
+	bdspPacketC		*_packet;
+	SockC 			*_socket;
+	
+	unsigned char  	fLinkStatus;     // Link Status
+	
+	/////////////////////BDSFileModule/////////////////////
+	CFileData	*_bdsfile;	
+
+	int gfdListenSock;//CreateTCPServer()의 fd //Local에서 사용
+	int gfdSock;//Accept된 fd //실제사용안함
+
+
+	bdspC(int systemid, int serviceid, int groupid, int processtype, int pserialno, int premark, char *ip, int port);
+	~bdspC( void );
+	int run( void );
+
+	int doCreateServer( void );
+	int doAccept( int fdListenSock );
+
+	int recvMsgFromBds(void);
+	int sendMsg2Bds(int nTypeId);
+
+
+/*V*/	void makeBillDataRepMsg();
+/*X*/	void makeStatusDataRep1Msg();
+/*X*/	void makeStatusDataRep2Msg();
+/*X*/	void makeStatusDataRep3Msg();
+/*X*/	void makeStatusDataRep4Msg();
+/*X*/	void makeStatusDataRep5Msg();
+/*V*/	void makeConfigResMsg();
+/*V*/	void makeConfigReqAckMsg();
+/*V*/	void makeCollectionStartInfoAckMsg();
+/*V*/	void makeTransConfigChangeReqAckMsg();
+/*V*/	void makeBillDataTransStartReqAckMsg();
+/*V*/	void makeDiskStatusReqAckMsg();
+/*X*/	void makeStatusReqMsg();
+/*V*/	void makeStatusReqAckMsg();
+/*V*/	void makeDisconnectReqMsg();
+
+
+	char * zero_itoa(int n, int width, char *s);
+	int  getDateNTime(char *buf);
+
+	int saveFileBlock(void);
+	int readFileBlock(void);
+
+	int searchBillData(void);
+
+	void searchEndFile(void);
+
+	void writePMSMQ(int sigNo);
+	
+	void printMsg( int nMsgType );
+	
+};
+
+
+
+/* ------------------------------------------------------------------------------------
+ *  Name     : bdspC
+ *  Argument :
+ *  Return   :
+ *  Purpose  : constructor
+--------------------------------------------------------------------------------------- */
+bdspC::bdspC(int systemid, int serviceid, int groupid, int processtype, int pserialno, int premark, char *ip, int port)
+{
+	#ifdef _DEBUG
+	////cout << " bdspC::bdspC() Constructor!!!!!!!!!!!" << endl;
+	#endif
+	_packet = new bdspPacketC();
+	_socket = new SockC( ip, port );
+	_filesearch = new fileSearchC();
+
+	SystemId = systemid;
+	ServiceId = serviceid;
+	GroupId = groupid;
+	ProcessType = processtype;
+	ProSerialNo = pserialno;
+	ProReMark = premark;
+
+	if(ServiceId==1)
+	{
+		/////////////////////BDSFileModule/////////////////////
+		_bdsfile = new CFileData(PATH_NAME_BDS_FILE_CFG);
+	}
+	else
+	{
+		FILE_NAME_BDS_UDR[4]=2;
+		/////////////////////BDSFileModule/////////////////////
+		_bdsfile = new CFileData(PATH_NAME_BDS_FILE_CFG2);
+	}	
+	
+	
+	//fLinkStatus 초기값은 0
+	fLinkStatus = LINK_STATUS_CLOSED_ABNORMAL;
+	gtimeForLastComm = 0;
+	nTypeId = 0;
+	//SeqNum 초기화
+	usMsgSeqNum = 0x0000;
+	gBillDataStartFlag = 0;
+	//DelayTime을 초기화 //임시
+	unTimeInVal = 30;//임시
+	
+
+}
+
+/* ------------------------------------------------------------------------------------
+ *  Name     : ~bdspC
+ *  Argument :
+ *  Return   :
+ *  Purpose  : destructor
+--------------------------------------------------------------------------------------- */
+bdspC::~bdspC( void )
+{
+	#ifdef _DEBUG
+	////cout << " bdspC::bdspC() Destructor!!!!!!!!!!!" << endl;
+	#endif
+	delete _packet;
+	delete _socket;
+	delete _filesearch;
+	
+	/////////////////////BDSFileModule/////////////////////
+	delete _bdsfile;
+	delete _PMSMQ;
+}
+
+int bdspC::run(void)
+{
+	int nSocketSts;
+	int i;
+	int j=0,k;
+	int n_firstcon;//초기접속Flow check count
+
+	time_t timeDelay;
+
+	_PMSMQ = new MessageQueue<MsgPmsStatus>(SystemId, 0, 1, 1, 0, 10, 1000);
+	writePMSMQ(FLAG_PROC_START);//1//프로세스 run
+
+	//EventHist정보 nFlag, 종료코드(단, 시작시는 0)
+	logout->put_EventHistData(FLAG_START, FLAG_PROC_START);
+
+
+	//서비스별로 SRC_ID_SERVICE를 셋팅한다
+	//서비스별로 SRC_ID_SYSTEM을 셋팅한다
+	//서비스별로 UNSWITCHID를 셋팅한다
+	switch(ServiceId)
+	{
+		case 1:
+			SRC_ID_SERVICE=0x5544;   //0x5544//UD
+			SRC_ID_SYSTEM=0x0001;    //0x0001 0x0002//01 02
+			UNSWITCHID=0x55440001;   //0x55440001 UD01    0x55440002 UD02
+			break;
+		case 2:             
+			SRC_ID_SERVICE=0x5544;   //0x5544//UD
+			SRC_ID_SYSTEM=0x0002;    //0x0001 0x0002//01 02
+			UNSWITCHID=0x55440002;   //0x55440001 UD01    0x55440002 UD02
+			break;
+		default:
+			//여기 에러 처리할것
+			*logout << logout->ErrorCode(0) << "[ERROR] SERVICE TYPE ERROR" << endl;
+			exit(-2);//프로세스 비정상 stop (Network or Parrm오류등 업무에러)
+			break;
+	}
+
+
+
+
+	//소켓생성
+	if ( doCreateServer() == SOCK_FAIL)//-2
+	{
+		//소켓생성실패시 5초대기
+		sleep(5);
+		//소켓생성 5회 재시도
+		for (i=1; i<=REQUEST_RETRY_MAX; i++ )
+		{
+			//소켓생성 성공시 break
+			if ( doCreateServer() == SC)//1
+			{
+				break;
+			}
+			//실패시 5초 대기 소켓생성재시도
+			sleep(5);
+		}
+		//소켓생성이 5회 모두 실패시 프로그램종료
+		if ( i == 6 ){
+			*logout << logout->ErrorCode(0) << "[ERROR] doCreateTCPServer() 5회실패 gfdListenSock=>" << gfdListenSock << endl;
+			*logout << logout->ErrorCode(8600) << "[ERROR] doCreateTCPServer() 5회실패 gfdListenSock=>" << gfdListenSock << endl;
+			writePMSMQ(FLAG_NW_ERROR);//-3//Network 비정상
+			
+			//EventHist정보 nFlag, 종료코드(단, 시작시는 0)
+			logout->put_EventHistData(FLAG_END, -2);
+			
+			exit(-2);//프로세스 비정상 stop (Network or Parrm오류등 업무에러)
+		}
+	}
+
+	//Accept
+	if ( doAccept(gfdListenSock) == SOCK_FAIL)//-2
+	{
+		//Accept실패시 5초대기
+		sleep(5);
+		//Accept 5회 재시도
+		for (i=1; i<=REQUEST_RETRY_MAX; i++ )
+		{
+			//Accept 성공시 break
+			if ( doAccept(gfdListenSock) == SC)//1
+			{
+				break;
+			}
+			//실패시 5초대기 Accept재시도
+			sleep(5);
+		}
+		//Accept가 3회 모두 실패시 프로그램종료
+		if ( i == 6 ){
+			*logout << logout->ErrorCode(0) << "[ERROR] doAccept() 5회실패  gfdSock=>" << gfdSock << endl;
+			*logout << logout->ErrorCode(8601) << "[ERROR] doAccept() 5회실패  gfdSock=>" << gfdSock << endl;
+			//Accept실패시 소켓3을 닫고 프로그램 종료
+			_socket->CloseTCPSock(gfdListenSock);
+			writePMSMQ(FLAG_NW_ERROR);//-3//Network 비정상
+			
+			//EventHist정보 nFlag, 종료코드(단, 시작시는 0)
+			logout->put_EventHistData(FLAG_END, -2);
+
+			exit(-2);//프로세스 비정상 stop (Network or Parrm오류등 업무에러)
+		}
+	}
+
+	n_firstcon=0;//초기접속Flow check count
+
+	// RECV/SEND MainLoop WHILE
+	while (1)
+	{
+
+		//StartTime설정
+		timeStart = time(NULL);
+
+		//소켓이 끊어지면 다시 Accept()
+		if ( fLinkStatus == LINK_STATUS_CLOSED_ABNORMAL)
+		{
+			*logout << logout->ErrorCode(0) << "[NOTICE] MainLoof() Accept재시도중....." << endl;
+			while( doAccept(gfdListenSock) != SC )
+			{
+				*logout << logout->ErrorCode(0) << "[NOTICE] MainLoof() Accept재시도중....." << endl;
+			}
+		}
+
+		if (fLinkStatus == LINK_STATUS_READY)
+		{
+			//RECV처리 루틴
+			nSocketSts = recvMsgFromBds();
+			//RECV 성공시
+			//performanceif ( nSocketSts == SC )
+				//performancecout << "[NOTICE] MainLoof() recvMsgFromBds() success!" << endl;
+			//RECV 실패시
+			//performanceelse if( nSocketSts == SOCKET_TIMEOUT )
+				//performancecout << "[NOTICE] MainLoof() recv socket time out! there is no data!" << endl;
+		}
+
+		//시간 //대기시간을 출력
+		//performancecout << "[NOTICE]  대기시간 : " << (timeStart-gtimeForLastComm) << endl;
+
+		//나중에 수정할것 - sleep()이면 receive가 안됨
+		//현재시간 - 최종보낸시간을 계산하여 unTimeInVal(현재 30초) 이하면 그만큼 딜레이한다.
+		timeDelay = timeStart - gtimeForLastComm;
+		if ( timeDelay < unTimeInVal )
+		{
+			timeDelay = timeDelay - 2;
+			//cout << "[NOTICE] MainLoof() sleep(" << timeDelay << ")....." << endl;
+			//////if (timeDelay > 0)
+				//////sleep(timeDelay);
+			//cout << "[NOTICE] MainLoof() sleep(2)" << endl;
+			//sleep(2);
+		}
+		//performancecout << "[NOTICE] MainLoof() usleep(0.1sec)" << endl;			
+		usleep(100);//0.1sec
+
+		
+		//performancecout << "[NOTICE] MainLoof() sleep(2)" << endl;
+		//시간 //대기시간이 STATUS_REQ_INTERVAL(현재 30초) 이상 데이타전송이 없으면 데이타를 전송한다
+		//시간 //현재시간 - 최종SEND시간 > 인터벌시간 ex)10:00:50 - 10:00:45
+		if((timeStart - gtimeForLastComm)> STATUS_REQ_INTERVAL)//ihy
+		{
+			n_firstcon++;//초기접속Flow check count
+			//데이타전송Flow일때 / BillDataStartFlag가 1일때만 데이타를 보낸다(초기접속Flow에만 BillDataStartFlag가 0)
+			if ( gBillDataStartFlag == 1 )
+			{
+				n_firstcon = 0;//정상접속이면 초기화한다 11.17
+				*logout << logout->ErrorCode(0) << "[NOTICE] searchBillData()" << endl;//ihy 10.07
+				//다음전송할 파일을 찾아보고 있으면 SEND
+				if ( (searchBillData() == BILLDATA_EXIST) && (fLinkStatus == LINK_STATUS_READY) )
+				{
+					if (sendMsg2Bds(BILL_DATA_REP)==SC);
+						//performancecout << "[NOTICE] MainLoof() sendMsg2Bds(BILL_DATA_REP) success!" << endl;
+					//performanceelse
+						//performancecout << "[ERROR] MainLoof() sendMsg2Bds(BILL_DATA_REP) fail!" << endl;
+				}
+				//다음전송할 파일을 찾아보고 없으면 SKIP
+				else
+				{
+					//다음전송할 파일을 찾아보고 없으면 SKIP
+					//performancecout << "[NOTICE] 다음전송할 파일을 찾아보고 없으면 SKIP" << endl;
+					//performancecout << "[NOTICE] sleep(2)..." << endl;
+					sleep(2);
+				}
+				
+				//다음전송할 파일을 찾아보고 SEND OR SKIP한 시간이 기준시간(현재 180sec 3분) 이상이면
+				timeDelay = timeStart - gtimeForLastComm;
+				if ( (timeDelay > INTERVAL) && (fLinkStatus == LINK_STATUS_READY) )//ihy
+				{
+					//performancecout << "[NOTICE] SEND OR SKIP한 시간 / 기준시간(현재 180sec 3분) : " << (timeStart-gtimeForLastComm) << endl;
+					if (sendMsg2Bds(STATUS_REQ) == SC);
+						//performancecout << "[NOTICE] sendMsg2Bds(STATUS_REQ) success!" << endl;
+					//performanceelse
+						//performancecout << "[ERROR] sendMsg2Bds(STATUS_REQ) fail!" << endl;
+				}
+				
+			}
+			else
+			{
+				//performancecout << "[NOTICE] In first connection flow => " << n_firstcon << ". sendMsg2Bds(BILL_DATA_REP) skip..." << endl;
+				//초기접속Flow check count가 20번이상이면 비정상 종료
+				if (n_firstcon>20)
+				{
+					*logout << logout->ErrorCode(0) << "[ERROR] first connection flow 20 times over!" << endl;
+					*logout << logout->ErrorCode(8602) << "[ERROR] first connection flow 20 times over!" << endl;
+					if (sendMsg2Bds(DISCONNECT_REQ) == SC)
+						//performancecout << "[NOTICE] sendMsg2Bds(DISCONNECT_REQ) success!" << endl;
+					//performanceelse
+						//performancecout << "[ERROR] sendMsg2Bds(DISCONNECT_REQ) fail!" << endl;
+					fLinkStatus == LINK_STATUS_CLOSED_ABNORMAL;
+					*logout << logout->ErrorCode(0) << "[NOTICE-----] after first connection flow 20 times over! disconnect socket by UDA!" << endl;
+					//비정상종료이므로 소켓4를 닫고 Accept상태
+					_socket->CloseTCPSock();
+					writePMSMQ(FLAG_NW_ERROR);//-3//Network 비정상
+				}
+			}
+		}
+
+
+	}//while(1)
+
+	return 1;
+
+}
+
+
+int bdspC::doCreateServer( void )
+{
+	//리턴 -1 or gfdListenSock
+	if( (gfdListenSock = _socket->CreateTCPServer()) == -1 )
+	{
+		*logout << logout->ErrorCode(0) << "[ERROR] CreateTCPServer()실패 -1 gfdListenSock=>" << gfdListenSock << endl;
+		*logout << logout->ErrorCode(8603) << "[ERROR] CreateTCPServer()실패 -1 gfdListenSock=>" << gfdListenSock << endl;
+		fLinkStatus = LINK_STATUS_CLOSED_ABNORMAL;
+		return (SOCK_FAIL);//-2
+	}
+	*logout << logout->ErrorCode(0) << "[NOTICE] doCreateServer() gfdListenSock=>" << gfdListenSock << endl;
+
+	return gfdListenSock;
+
+}
+
+int bdspC::doAccept( int fdListenSock )
+{
+
+
+	if ( (gfdSock=_socket->AcceptSocket(fdListenSock)) == -1 )//리턴 -1 or gfdSock
+	{
+		*logout << logout->ErrorCode(0) << "[ERROR] AcceptSocket()실패 -1 gfdSock=>" << gfdSock << endl;
+		*logout << logout->ErrorCode(8604) << "[ERROR] AcceptSocket()실패 -1 gfdSock=>" << gfdSock << endl;
+		fLinkStatus = LINK_STATUS_CLOSED_ABNORMAL;
+		//**********************************************
+		//여기 수정
+		/**********************************************/
+		
+		//ACCEPT실패시 소켓3을 종료
+		_socket->CloseTCPSock(gfdListenSock);
+		doCreateServer();
+		return (FA);
+		//**********************************************
+	}
+	
+	//SeqNum 초기화
+	usMsgSeqNum = 0x0000;
+
+	//Connection Flow 초기화//ihy 2000.10.09
+	gBillDataStartFlag = 0;
+	
+	*logout << logout->ErrorCode(0) << "[NOTICE] AcceptSocket() gfdSock=>" << gfdSock << endl;
+	//Accept까지 성공시 fLinkStatus = LINK_STATUS_READY
+	fLinkStatus = LINK_STATUS_READY;
+	writePMSMQ(FLAG_NW_NORMAL);//-4//Network 정상
+	return (SC);
+}
+
+
+int bdspC::recvMsgFromBds(void)
+{
+	int nSize,i;//debug
+	int nSockStatus;
+	unsigned int unMsgType;
+	int nBlockNoResult;
+
+	#ifdef _DEBUG
+	//performancecout << "[DEBUG] IN RECV ROUTINE START!!!!!!" << endl;
+	#endif
+
+
+	//받는 STRUCT를 초기화한다.
+	//memset(&_packet->stMsgh                    ,0x00,sizeof(MSGH                    ));
+	//memset(&_packet->stConfigReqAck            ,0x00,sizeof(CONFIGREQACK            ));
+	//memset(&_packet->stConfigRes               ,0x00,sizeof(CONFIGRES               ));
+	memset(&_packet->stConfigResAck            ,0x00,sizeof(CONFIGRESACK            ));
+	memset(&_packet->stCollectionStartInfo     ,0x00,sizeof(COLLECTIONSTARTINFO     ));
+	//memset(&_packet->stCollectionStartInfoAck  ,0x00,sizeof(COLLECTIONSTARTINFOACK  ));
+	memset(&_packet->stTransConfigChangeReq    ,0x00,sizeof(TRANSCONFIGCHANGEREQ    ));
+	//memset(&_packet->stTransConfigChangeReqAck ,0x00,sizeof(TRANSCONFIGCHANGEREQACK ));
+	memset(&_packet->stBillDataTransStartReq   ,0x00,sizeof(BILLDATATRANSSTARTREQ   ));
+	//memset(&_packet->stBillDataTransStartReqAck,0x00,sizeof(BILLDATATRANSSTARTREQACK));
+	//memset(&_packet->stBillDataRep             ,0x00,sizeof(BILLDATAREP             ));
+	memset(&_packet->stBillDataRepAck          ,0x00,sizeof(BILLDATAREPACK          ));
+	memset(&_packet->stDiskStatusReq           ,0x00,sizeof(DISKSTATUSREQ           ));
+	//memset(&_packet->stDiskStatusReqAck        ,0x00,sizeof(DISKSTATUSREQACK        ));
+	//memset(&_packet->stStatusDataRep1          ,0x00,sizeof(STATUSDATAREP1          ));
+	//memset(&_packet->stStatusDataRep2          ,0x00,sizeof(STATUSDATAREP2          ));
+	//memset(&_packet->stStatusDataRep3          ,0x00,sizeof(STATUSDATAREP3          ));
+	//memset(&_packet->stStatusDataRep4          ,0x00,sizeof(STATUSDATAREP4          ));
+	//memset(&_packet->stStatusDataRep5          ,0x00,sizeof(STATUSDATAREP5          ));
+
+
+	//받은 패킷의 헤더를 읽는다
+	//SOCKET_SUCCESS 1   SOCKET_FAILURE -1   SOCKET_TIMEOUT 0
+	nSockStatus = _socket->RecvSocketTimeoutEx(&_packet->stMsgh,sizeof(MSGH),0,300);
+	if ( nSockStatus < 0 )
+	{
+		perror("_socket->RecvSocketTimeout");
+		fLinkStatus = LINK_STATUS_CLOSED_ABNORMAL;
+		//비정상종료이므로 소켓4를 닫고 Accept상태
+		_socket->CloseTCPSock();//ihy 10.24
+		writePMSMQ(FLAG_NW_ERROR);//-3//Network 비정상
+		return(SOCK_FAIL);
+	}
+	else if ( nSockStatus == SOCKET_TIMEOUT )
+	{
+		//performancecout << "[NOTICE] recv socket time out! there is no data!" << endl;
+		return(SOCKET_TIMEOUT);
+	}
+
+	//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG
+	//디버그모드일때 receive한 헤더를 출력
+	#ifdef _DEBUGForLogHeader
+	memset(strLogBuff,0x00,sizeof(strLogBuff));
+    memset(strDumpLog,0x00,sizeof(strDumpLog));
+    memcpy(strDumpLog,(const void*)&_packet->stMsgh,sizeof(MSGH));
+    for (i = 0; i < sizeof(MSGH); i++)
+	{
+		if(isalpha(strDumpLog[i]) || isdigit(strDumpLog[i]))
+		{
+			sprintf(strLogTmp,"%c ", strDumpLog[i]);
+			strcat(strLogBuff,strLogTmp);
+		}
+		else
+		{
+			sprintf(strLogTmp,"0x%02x ",strDumpLog[i]);
+			strcat(strLogBuff,strLogTmp);
+
+		}
+	}
+	//performancecout << "\n\n";
+	//performancecout << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << endl;
+	//performancecout << "[DEBUG] [Received HEADER]" << endl;
+	//performancecout << "[" << strLogBuff << "]" <<endl;
+	//performancecout << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << endl;
+	#endif
+	//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG
+
+	//performancecout << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << endl;
+	_packet->printAll();
+	//performancecout << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << endl;
+
+	//받은 데이타의 메세지TYPE/메세지ID을 비교하여 처리
+	switch(_packet->getMsgType())
+	{
+		case MSG_TYPE_DATA_REQ://0x01
+			///////////////////////////////////////////////////
+			//0x01 0x0d CONFIG_REQ
+			//CONFIG_REQ면
+			///////////////////////////////////////////////////
+			if (_packet->getMsgId() == MSG_ID_SWITCH_CONFIG)
+			{
+				printMsg(CONFIG_REQ);
+				//performancecout << "\n\n";
+				//performancecout << "[NOTICE] Receive MSG_TYPE_DATA_REQ/MSG_ID_SWITCH_CONFIG(CONFIG_REQ)!" << endl;
+				if (sendMsg2Bds(CONFIG_REQ_ACK) == SC);
+					//performancecout << "[NOTICE] sendMsg2Bds(CONFIG_REQ_ACK) success!" << endl;
+				//performanceelse
+					//performancecout << "[ERROR] sendMsg2Bds(CONFIG_REQ_ACK) fail!" << endl;
+				if (sendMsg2Bds(CONFIG_RES) == SC);
+					//performancecout << "[NOTICE] sendMsg2Bds(CONFIG_RES) success!" << endl;
+				//performanceelse
+					//performancecout << "[ERROR] sendMsg2Bds(CONFIG_RES) fail!" << endl;
+				break;
+			}
+			///////////////////////////////////////////////////
+			//0x01 0x01 BILL_DATA_TRANS_START_REQ
+			//BILL_DATA_TRANS_START_REQ면
+			///////////////////////////////////////////////////
+			else if (_packet->getMsgId() == MSG_ID_NORMAL_BILL)
+			{
+				//performancecout << "\n\n";
+				//performancecout << "[NOTICE] Receive MSG_TYPE_DATA_REQ/MSG_ID_NORMAL_BILL(BILL_DATA_TRANS_START_REQ)!" << endl;
+				////nSockStatus = _socket->RecvSocketTimeout(&_packet->stBillDataTransStartReq,sizeof(BILLDATATRANSSTARTREQ),0,10);
+				nSockStatus = _socket->RecvSocketTimeout(&_packet->stBillDataTransStartReq,_packet->getMsgLen(),0,10);
+				//#ifdef _DEBUG
+				//performancecout << "\n\n\n";
+				//performancecout << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << endl;
+				//performancecout << "[받은 PACKET ]<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << endl;
+				printMsg(BILL_DATA_TRANS_START_REQ);
+				//performancecout << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << endl;
+				//performancecout << "\n\n\n";
+				//#endif
+				if (sendMsg2Bds(BILL_DATA_TRANS_START_REQ_ACK) == SC);
+					//performancecout << "[NOTICE] sendMsg2Bds(BILL_DATA_TRANS_START_REQ_ACK) success!" << endl;
+				//performanceelse
+					//performancecout << "[ERROR] sendMsg2Bds(BILL_DATA_TRANS_START_REQ_ACK) fail!" << endl;
+				//연결초기화Flow가 끝나면 실제 데이타전송Flow로 진행
+				gBillDataStartFlag = 1;
+				break;
+			}
+			///////////////////////////////////////////////////
+			//0x01 0x06 MD 또는 0x05 SW DISK_STATUS_REQ
+			//DISK_STATUS_REQ면
+			///////////////////////////////////////////////////
+			else if ( (_packet->getMsgId() == MSG_ID_MD_DISK_STATUS) ||
+				          (_packet->getMsgId() == MSG_ID_SWITCH_DISK_STATUS)    )
+			{
+				//performancecout << "\n\n";
+				//performancecout << "[NOTICE] Receive MSG_TYPE_DATA_REQ/MSG_ID_MD_DISK_STATUS(DISK_STATUS_REQ)!" << endl;
+				////nSockStatus = _socket->RecvSocketTimeout(&_packet->stDiskStatusReq,sizeof(DISKSTATUSREQ),0,10);
+				nSockStatus = _socket->RecvSocketTimeout(&_packet->stDiskStatusReq,_packet->getMsgLen(),0,10);
+				//#ifdef _DEBUG
+				//performancecout << "\n\n\n";
+				//performancecout << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << endl;
+				//performancecout << "[받은 PACKET ]<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << endl;
+				printMsg(DISK_STATUS_REQ);
+				//performancecout << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << endl;
+				//performancecout << "\n\n\n";
+				//#endif
+				if (sendMsg2Bds(DISK_STATUS_REQ_ACK) == SC);
+					//performancecout << "[NOTICE] sendMsg2Bds(DISK_STATUS_REQ_ACK) success!" << endl;
+				//performanceelse
+					//performancecout << "[ERROR] sendMsg2Bds(DISK_STATUS_REQ_ACK) fail!" << endl;
+				break;
+			}
+			///////////////////////////////////////////////////
+			//0x01 0x0a MD 또는 0x0b SW STATUS_REQ
+			//STATUS_REQ면
+			///////////////////////////////////////////////////
+			else if ( (_packet->getMsgId() == MSG_ID_MD_STATUS) ||
+			          (_packet->getMsgId() == MSG_ID_SWITCH_STATUS) )
+			{
+				//performancecout << "\n\n";
+				//performancecout << "[NOTICE] Receive MSG_TYPE_DATA_REQ/MSG_ID_MD_STATUS(STATUS_REQ)!" << endl;
+				printMsg(STATUS_REQ);
+				if (sendMsg2Bds(STATUS_REQ_ACK) == SC);
+					//performancecout << "[NOTICE] sendMsg2Bds(STATUS_REQ_ACK) success!" << endl;
+				//performanceelse
+					//performancecout << "[ERROR] sendMsg2Bds(STATUS_REQ_ACK) fail!" << endl;
+				break;
+			}
+
+			//헤더오류면
+			else
+			{
+				*logout << logout->ErrorCode(0) << "[ERROR] IN RECV ROUTINE. 0x01 Invalid Type and ID : "
+				<< _packet->getMsgType() << " : " << _packet->getMsgId() << endl;
+				*logout << logout->ErrorCode(8605) << "[ERROR] IN RECV ROUTINE. 0x01 Invalid Type and ID : "
+				<< _packet->getMsgType() << " : " << _packet->getMsgId() << endl;
+				#ifdef _DEBUG
+				_packet->printAll();
+				#endif
+				break;
+			}
+			break;
+		case MSG_TYPE_DATA_RES_ACK://0x04
+			///////////////////////////////////////////////////
+			//0x04 0x1d CONFIG_RES_ACK
+			//CONFIG_RES_ACK면
+			///////////////////////////////////////////////////
+			if (_packet->getMsgId() == MSG_ID_SWITCH_CONFIG)
+			{
+				//performancecout << "\n\n";
+				//performancecout << "[NOTICE] Receive MSG_TYPE_DATA_RES_ACK/MSG_ID_SWITCH_CONFIG(CONFIG_RES_ACK)!" << endl;
+				////nSockStatus = _socket->RecvSocketTimeout(&_packet->stConfigResAck,sizeof(CONFIGRESACK),0,10);
+				nSockStatus = _socket->RecvSocketTimeout(&_packet->stConfigResAck,_packet->getMsgLen(),0,10);
+				//#ifdef _DEBUG
+				//performancecout << "\n\n\n";
+				//performancecout << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << endl;
+				//performancecout << "[받은 PACKET ]<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << endl;
+				printMsg(CONFIG_RES_ACK);
+				//performancecout << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << endl;
+				//performancecout << "\n\n\n";
+				//#endif
+
+
+				//정상데이타 0x00
+				if (_packet->stConfigResAck.usStatus==0x00)
+				{
+					//UDA에서 정상적으로 CONFIG_RES_ACK를 수신하면
+				}
+				//비정상데이타 0x00이 아닐때
+				else
+				{
+					//UDA에서 정상적으로 CONFIG_RES_ACK를 수신하지못하면
+				}
+
+
+				break;
+			}
+			//헤더오류면
+			else
+			{
+				*logout << logout->ErrorCode(0) << "[ERROR] IN RECV ROUTINE. 0x04 Invalid Type and ID : "
+				<< _packet->getMsgType() << " : " << _packet->getMsgId() << endl;
+				*logout << logout->ErrorCode(8606) << "[ERROR] IN RECV ROUTINE. 0x04 Invalid Type and ID : "
+				<< _packet->getMsgType() << " : " << _packet->getMsgId() << endl;
+				#ifdef _DEBUG
+				_packet->printAll();
+				#endif
+				break;
+			}
+			break;
+		case MSG_TYPE_DATA_REP://0x0d
+			///////////////////////////////////////////////////
+			//0x0d 0x1b COLLECTION_START_INFO
+			//COLLECTION_START_INFO면
+			///////////////////////////////////////////////////
+			if (_packet->getMsgId() == MSG_ID_HOST_START_BILL_INFO)
+			{
+				//performancecout << "\n\n";
+				//performancecout << "[NOTICE] Receive MSG_TYPE_DATA_REP/MSG_ID_HOST_START_BILL_INFO(COLLECTION_START_INFO)!" << endl;
+				////nSockStatus = _socket->RecvSocketTimeout(&_packet->stCollectionStartInfo,sizeof(COLLECTIONSTARTINFO),0,500);//@@ihy
+				////nSockStatus = _socket->RecvSocketTimeout(&_packet->stCollectionStartInfo,20,0,10);//ihy
+				nSockStatus = _socket->RecvSocketTimeout(&_packet->stCollectionStartInfo,_packet->getMsgLen(),0,10);//ihy
+				//#ifdef _DEBUG
+				//performancecout << "\n\n\n";
+				//performancecout << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << endl;
+				//performancecout << "[받은 PACKET ]<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << endl;
+				printMsg(COLLECTION_START_INFO);
+				//performancecout << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << endl;
+				//performancecout << "\n\n\n";
+				//#endif
+
+				//%%%%%22222222222222222
+
+				//최종 보낸데이타의 정보를 읽는다
+					//0xffffffff까지 보냈을때 0x00000000으로 순환
+					//unStartFileNo  = 4294967295;//0xffffffff
+					//unStartBlockNo = 4294967295;//0xffffffff
+					//unEndBlockNo   = 4294967295;//0xffffffff
+					//unTimeInVal    = 900;       //DEFAULT 15분
+					//unMaxBillSize  = 1048576;   //1M
+				//unStartFileNo, unStartBlockNo, unEndBlockNo, unFlag(0xffffffff:BDS_FLAG_INITIAL 0:BDS_FLAG_USED), unTimeInVal, unMaxBillSize
+				readFileBlock();
+				//performancecout << "[NOTICE00----------->] readFileBlock()" << endl;
+
+				//BDS_UDR.seq의 마지막 파일 또는 SEARCH_BREAK만큼 파일을 찾아 정보를 사용.
+				searchEndFile();
+				
+				//#ifdef _DEBUG
+				*logout << logout->ErrorCode(0) << "==================================================" << endl;
+				*logout << logout->ErrorCode(0) << "[DEBUG] RECV COLLECTION_START_INFO() START" << endl;
+				*logout << logout->ErrorCode(0) << "======== readFileBlock() =========================" << endl;
+				*logout << logout->ErrorCode(0) << "[NOTICE] unStartFileNo =>" << unStartFileNo  << endl;
+				*logout << logout->ErrorCode(0) << "[NOTICE] unStartBlockNo=>" << unStartBlockNo << endl;
+				*logout << logout->ErrorCode(0) << "[NOTICE] unEndBlockNo  =>" << unEndBlockNo   << endl;
+				*logout << logout->ErrorCode(0) << "[NOTICE] unFlag        =>" << unFlag         << endl;
+				*logout << logout->ErrorCode(0) << "[NOTICE] unTimeInVal   =>" << unTimeInVal    << endl;
+				*logout << logout->ErrorCode(0) << "[NOTICE] unMaxBillSize =>" << unMaxBillSize  << endl;
+				*logout << logout->ErrorCode(0) << "======== searchEndFile() =========================" << endl;
+				*logout << logout->ErrorCode(0) << "[NOTICE] unSearchEndFileStartFileNo  =>" << unSearchEndFileStartFileNo  << endl;
+				*logout << logout->ErrorCode(0) << "[NOTICE] unSearchEndFileStartBlockNo =>" << unSearchEndFileStartBlockNo << endl;
+				*logout << logout->ErrorCode(0) << "[NOTICE] unSearchEndFileEndBlockNo   =>" << unSearchEndFileEndBlockNo   << endl;
+				*logout << logout->ErrorCode(0) << "==================================================" << endl;
+				//#endif
+
+				//0xffffffff까지 보냈을때 0x00000000으로 순환 또는 최초상태일때
+				//0xffffffff면 0x00000000으로 셋팅, 아니면 +1
+				//초기화/순환
+				if (unStartFileNo == 0xffffffff)
+					unStartFileNo = 0x00000000;
+				if (unStartBlockNo == 0xffffffff)
+					unStartBlockNo = 0x00000000;
+				if (unEndBlockNo == 0xffffffff)
+					unEndBlockNo = 0x00000000;
+
+				Recv_unStartFileNo  = _packet->stCollectionStartInfo.stSElement[0].unStartFileNo;
+				Recv_unStartBlockNo = _packet->stCollectionStartInfo.stSElement[0].unStartBlockNo;
+
+
+				//CONFIG_RES에 ALL 0xffffffff일때 (최초상태)
+				//           0                                     0
+				if ( (Recv_unStartFileNo == 0x00000000) && (Recv_unStartBlockNo == 0x00000000)   )
+				{
+					//정상처리 if SKIP후 sendMsg2Bds(COLLECTION_START_INFO_ACK)
+					//performancecout << "[NOTICE] CONFIG_RES에 ALL 0xffffffff일때 (최초상태)" << endl;
+					//performancecout << "[NOTICE] 정상처리 if SKIP후 sendMsg2Bds(COLLECTION_START_INFO_ACK)" << endl;
+				}
+				//CONFIG_RES에 0xffffffff, 0x????????, 0x????????, 0x????????일때 (0xffffffff까지 받은상태)
+				//                0                                                     0x????????
+				else if ( (Recv_unStartFileNo == 0x00000000) && (Recv_unStartBlockNo != 0x00000000)   )
+				{
+
+
+//************************************************************************************************************************
+//**********  새로수정 [[
+//************************************************************************************************************************
+					//CONFIG_RES에 0xffffffff일때 받은파일번호가 최종보낸파일번호와 같으면 정상
+					//       0x00000000         0xffffffff=>0x00000000 or 0x00002000
+					if (Recv_unStartFileNo == unStartFileNo)
+					{
+						//정상처리 if SKIP후 sendMsg2Bds(COLLECTION_START_INFO_ACK)
+						//performancecout << "[[NOTICE]CONFIG_RES에 0xffffffff, 0x????????, 0x????????, 0x????????일때 (0xffffffff까지 받은상태)" << endl;
+						//performancecout << "[[NOTICE] 정상처리 if SKIP후 sendMsg2Bds(COLLECTION_START_INFO_ACK)" << endl;
+					}
+					//CONFIG_RES에 0xffffffff일때 받은파일번호가 최종보낸파일번호와 다르면 비정상
+					else
+					{
+						//파일번호틀림 비정상처리 //DISCONNECT
+						*logout << logout->ErrorCode(0) << "[[ERROR] RECV COLLECTION_START_INFO() 파일번호틀림 비정상처리 //DISCONNECT" << endl;
+						*logout << logout->ErrorCode(8607) << "[[ERROR] RECV COLLECTION_START_INFO() 파일번호틀림 비정상처리 //DISCONNECT" << endl;
+						if (sendMsg2Bds(DISCONNECT_REQ) == SC);
+							//performancecout << "[[NOTICE] sendMsg2Bds(DISCONNECT_REQ) success!" << endl;
+						//performanceelse
+							//performancecout << "[[ERROR] sendMsg2Bds(DISCONNECT_REQ) fail!" << endl;
+						fLinkStatus == LINK_STATUS_CLOSED_ABNORMAL;
+						*logout << logout->ErrorCode(0) << "[[NOTICE-----] after RECV COLLECTION_START_INFO()! disconnect socket by UDA!" << endl;
+						//비정상종료이므로 소켓4를 닫고 Accept상태
+						_socket->CloseTCPSock();
+						writePMSMQ(FLAG_NW_ERROR);//-3//Network 비정상
+					}
+//************************************************************************************************************************
+//**********  새로수정 [[
+//************************************************************************************************************************
+
+
+				}
+				//CONFIG_RES에 0x????????, 0x????????, 0x????????, 0x????????
+				else
+				{
+					//받은파일번호가 최종보낸파일번호+1과 같으면 블럭번호비교
+					//       50                 50=49+1
+					if (Recv_unStartFileNo == unStartFileNo+1)
+					{
+						//정상처리
+						//         200               200=199+1
+						if (Recv_unStartBlockNo == unEndBlockNo+1)
+						{
+							//정상처리 if SKIP후 sendMsg2Bds(COLLECTION_START_INFO_ACK)
+							//performancecout << "[NOTICE] 받은파일번호가 최종보낸파일번호+1과 같으면 블럭번호비교" << endl;
+							//performancecout << "[NOTICE] 정상처리 if SKIP후 sendMsg2Bds(COLLECTION_START_INFO_ACK)" << endl;
+						}
+						//블럭번호틀림 비정상처리 //DISCONNECT
+						else
+						{
+							//블럭번호틀림 비정상처리 //DISCONNECT
+							*logout << logout->ErrorCode(0) << "[ERROR] RECV COLLECTION_START_INFO() 블럭번호틀림 비정상처리 //DISCONNECT" << endl;
+							*logout << logout->ErrorCode(8608) << "[ERROR] RECV COLLECTION_START_INFO() 블럭번호틀림 비정상처리 //DISCONNECT" << endl;
+							if (sendMsg2Bds(DISCONNECT_REQ) == SC);
+								//performancecout << "[NOTICE] sendMsg2Bds(DISCONNECT_REQ) success!" << endl;
+							//performanceelse
+								//performancecout << "[ERROR] sendMsg2Bds(DISCONNECT_REQ) fail!" << endl;
+							fLinkStatus == LINK_STATUS_CLOSED_ABNORMAL;
+							*logout << logout->ErrorCode(0) << "[NOTICE-----] after RECV COLLECTION_START_INFO()! disconnect socket by UDA!" << endl;
+							//비정상종료이므로 소켓4를 닫고 Accept상태
+							_socket->CloseTCPSock();
+							writePMSMQ(FLAG_NW_ERROR);//-3//Network 비정상
+						}
+					}
+					//받은파일번호가 최종보낸파일번호+1보다 작으면 에러
+					//            40                50=49+1
+					//파일번호작음 비정상처리 //DISCONNECT
+					else if (Recv_unStartFileNo < unStartFileNo+1)
+					{
+						//파일번호작음 비정상처리 //DISCONNECT
+						*logout << logout->ErrorCode(0) << "[ERROR] RECV COLLECTION_START_INFO() 파일번호작음 비정상처리 //DISCONNECT" << endl;
+						*logout << logout->ErrorCode(8609) << "[ERROR] RECV COLLECTION_START_INFO() 파일번호작음 비정상처리 //DISCONNECT" << endl;
+						if (sendMsg2Bds(DISCONNECT_REQ) == SC);
+							//performancecout << "[NOTICE] sendMsg2Bds(DISCONNECT_REQ) success!" << endl;
+						//performanceelse
+							//performancecout << "[ERROR] sendMsg2Bds(DISCONNECT_REQ) fail!" << endl;
+						fLinkStatus == LINK_STATUS_CLOSED_ABNORMAL;
+						*logout << logout->ErrorCode(0) << "[NOTICE-----] after RECV COLLECTION_START_INFO()! disconnect socket by UDA!" << endl;
+						//비정상종료이므로 소켓4를 닫고 Accept상태
+						_socket->CloseTCPSock();
+						writePMSMQ(FLAG_NW_ERROR);//-3//Network 비정상
+					}
+					//받은파일번호가 최종보낸파일번호+1보다 크면
+					//파일이 있는지 찾아보고 FileBlock.cfg를 저장하고 정상처리
+					//            60                50=49+1
+					else if (Recv_unStartFileNo > unStartFileNo+1)
+					{
+						//한계치이내(CONFIG_RES에서 응답한 범위이내)
+						//         60               60 or 100
+						if (Recv_unStartFileNo <= unSearchEndFileStartFileNo)
+						{
+							//받은파일번호를 최종보낸파일번호로 셋팅한다
+							unStartFileNo = Recv_unStartFileNo;
+							//BDS_UDA.받은파일번호 로 찾는다
+							memset(strFileName,0x00,sizeof(strFileName));
+							sprintf(strFileName, "%s%u",FILE_NAME_BDS_UDR,unStartFileNo);
+							//file을 찾아보고 있으면
+							if ( _filesearch->getFile(strFileName) == FILE_EXIST )
+							{
+								
+								
+								
+								//COLLECTION START INFO에서 BDS I/F가 보낸것보다 큰 파일번호를 요구하면
+								//BDS에서 처리한것처럼 처리
+								//ihy 10.09
+								/////////////////////BDSFileModule/////////////////////
+								//받은파일번호보다 1적은 파일을 읽는다
+								_bdsfile->read_BdsUdrData(Recv_unStartFileNo-1);
+
+								//받은파일번호보다 1적은 파일의 파일번호를 대치한다
+								unStartFileNo = Recv_unStartFileNo-1;
+								
+								//BDS_UDR.seq File에서읽은 get_unStartBlockSeq()를 unStartBlockNo에 저장한다
+								unStartBlockNo = _bdsfile->get_unStartBlockSeq();
+								//BDS_UDR.seq File에서읽은 unSearchEndFileEndBlockNo를 unEndBlockNo에 저장한다
+								unEndBlockNo = unSearchEndFileEndBlockNo;
+								
+								*logout << logout->ErrorCode(0) << "[DEBUG] COLLECTION_START_INFO에서 큰 파일번호를 요구한경우" << endl;
+								*logout << logout->ErrorCode(0) << "[NOTICE] unStartFileNo =>" << unStartFileNo << endl;
+								*logout << logout->ErrorCode(0) << "[NOTICE] unStartBlockNo=>" << unStartBlockNo << endl;
+								*logout << logout->ErrorCode(0) << "[NOTICE] unEndBlockNo  =>" << unEndBlockNo << endl;
+								*logout << logout->ErrorCode(0) << "[NOTICE] unFlag        =>" << unFlag << endl;
+								*logout << logout->ErrorCode(0) << "saveFileBlock()" << endl << endl;
+								
+								//FileBlock.cfg를 저장
+								saveFileBlock();
+
+							}
+							//file을 찾아보고 없으면 에러 //DISCONNECT
+							else
+							{
+								*logout << logout->ErrorCode(0) << "[ERROR] RECV COLLECTION_START_INFO() 한계치이내(CONFIG_RES에서 응답한 범위이내)" << endl;
+								*logout << logout->ErrorCode(8610) << "[ERROR] RECV COLLECTION_START_INFO() 한계치이내(CONFIG_RES에서 응답한 범위이내)" << endl;
+								*logout << logout->ErrorCode(0) << "[ERROR] RECV COLLECTION_START_INFO() [BDS_UDA.seq파일생성상태] 파일찾기실패 //DISCONNECT" << " : " << unStartFileNo << endl;
+								*logout << logout->ErrorCode(8611) << "[ERROR] RECV COLLECTION_START_INFO() [BDS_UDA.seq파일생성상태] 파일찾기실패 //DISCONNECT" << " : " << unStartFileNo << endl;
+								if (sendMsg2Bds(DISCONNECT_REQ) == SC);
+									//performancecout << "[NOTICE] sendMsg2Bds(DISCONNECT_REQ) success!" << endl;
+								//performanceelse
+									//performancecout << "[ERROR] sendMsg2Bds(DISCONNECT_REQ) fail!" << endl;
+								fLinkStatus == LINK_STATUS_CLOSED_ABNORMAL;
+								*logout << logout->ErrorCode(0) << "[NOTICE-----] after RECV COLLECTION_START_INFO()! disconnect socket by UDA!" << endl;
+								//비정상종료이므로 소켓4를 닫고 Accept상태
+								_socket->CloseTCPSock();
+								writePMSMQ(FLAG_NW_ERROR);//-3//Network 비정상
+							}
+						}
+						//한계치초과(CONFIG_RES에서 응답한 범위초과)면 에러 //DISCONNECT
+						else
+						{
+							*logout << logout->ErrorCode(0) << "[ERROR] RECV COLLECTION_START_INFO() [BDS_UDA.seq파일생성상태] 파일찾기실패 : " << unStartFileNo << endl;
+							*logout << logout->ErrorCode(8612) << "[ERROR] RECV COLLECTION_START_INFO() [BDS_UDA.seq파일생성상태] 파일찾기실패 : " << unStartFileNo << endl;
+							*logout << logout->ErrorCode(0) << "[ERROR] RECV COLLECTION_START_INFO() 한계치초과(CONFIG_RES에서 응답한 범위초과) //DISCONNECT" << endl;
+							*logout << logout->ErrorCode(8613) << "[ERROR] RECV COLLECTION_START_INFO() 한계치초과(CONFIG_RES에서 응답한 범위초과) //DISCONNECT" << endl;
+							if (sendMsg2Bds(DISCONNECT_REQ) == SC);
+								//performancecout << "[NOTICE] sendMsg2Bds(DISCONNECT_REQ) success!" << endl;
+							//performanceelse
+								//performancecout << "[ERROR] sendMsg2Bds(DISCONNECT_REQ) fail!" << endl;
+							fLinkStatus == LINK_STATUS_CLOSED_ABNORMAL;
+							*logout << logout->ErrorCode(0) << "[NOTICE-----] after RECV COLLECTION_START_INFO()! disconnect socket by UDA!" << endl;
+							//비정상종료이므로 소켓4를 닫고 Accept상태
+							_socket->CloseTCPSock();
+							writePMSMQ(FLAG_NW_ERROR);//-3//Network 비정상
+
+						}//if (Recv_unStartFileNo <= get_unFileSeq())
+							//한계치이내(CONFIG_RES에서 응답한 범위이내)
+							//else if//한계치초과(CONFIG_RES에서 응답한 범위초과)면 에러 //DISCONNECT
+					}//if (Recv_unStartFileNo == unStartFileNo+1)
+						//받은파일번호가 최종보낸파일번호+1과 같으면 블럭번호비교
+						//else if//받은파일번호가 최종보낸파일번호+1보다 작으면 에러
+						//else if//받은파일번호가 최종보낸파일번호+1보다 크면
+				}//if ( (Recv_unStartFileNo == 0x00000000) &&
+					//CONFIG_RES에 ALL 0xffffffff일때 (최초상태)
+					//else if//CONFIG_RES에 0xffffffff, 0x????????, 0x????????, 0x????????일때 (0xffffffff까지 받은상태)
+					//else if//CONFIG_RES에 0x????????, 0x????????, 0x????????, 0x????????
+
+				if (sendMsg2Bds(COLLECTION_START_INFO_ACK) == SC);
+					//performancecout << "[NOTICE] sendMsg2Bds(COLLECTION_START_INFO_ACK) success!" << endl;
+				//performanceelse
+					//performancecout << "[ERROR] sendMsg2Bds(COLLECTION_START_INFO_ACK) fail!" << endl;
+				break;
+			}
+			//헤더오류면
+			else
+			{
+				*logout << logout->ErrorCode(0) << "[ERROR] IN RECV ROUTINE. 0x0d Invalid Type and ID : "
+				<< _packet->getMsgType() << " : " << _packet->getMsgId() << endl;
+				*logout << logout->ErrorCode(8614) << "[ERROR] IN RECV ROUTINE. 0x0d Invalid Type and ID : "
+				<< _packet->getMsgType() << " : " << _packet->getMsgId() << endl;
+				#ifdef _DEBUG
+				_packet->printAll();
+				#endif
+				break;
+			}
+			break;
+		case MSG_TYPE_CHANGE_REQ://0x05
+			///////////////////////////////////////////////////
+			//0x05 0x16 MD 또는 0x15 SW TRANS_CONFIG_CHANGE_REQ
+			//TRANS_CONFIG_CHANGE_REQ면
+			///////////////////////////////////////////////////
+			if ( (_packet->getMsgId() == MSG_ID_MD_COLLECTION_CONFIG) ||
+			     (_packet->getMsgId() == MSG_ID_SWITCH_COLLECTION_CONFIG)    )
+			{
+				//performancecout << "\n\n";
+				//performancecout << "[NOTICE] Receive MSG_TYPE_CHANGE_REQ/MSG_ID_SWITCH_COLLECTION_CONFIG(TRANS_CONFIG_CHANGE_REQ)!" << endl;
+				////nSockStatus = _socket->RecvSocketTimeout(&_packet->stTransConfigChangeReq,sizeof(TRANSCONFIGCHANGEREQ),0,10);
+				nSockStatus = _socket->RecvSocketTimeout(&_packet->stTransConfigChangeReq,_packet->getMsgLen(),0,10);
+				//#ifdef _DEBUG
+				//performancecout << "\n\n\n";
+				//performancecout << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << endl;
+				//performancecout << "[받은 PACKET ]<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << endl;
+				printMsg(TRANS_CONFIG_CHANGE_REQ);
+				//performancecout << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << endl;
+				//performancecout << "\n\n\n";
+				//#endif
+
+				//TRANS_CONFIG_CHANGE_REQ에서 받은 내부타임값,MAX데이타사이즈을 저장한다.
+				//임시로 DelayTime을 (현재 30)으로 셋팅한다.
+				//unTimeInVal   = _packet->stTransConfigChangeReq.unTimeInVal;
+				unMaxBillSize = _packet->stTransConfigChangeReq.unMaxBillSize;
+
+
+				if (sendMsg2Bds(TRANS_CONFIG_CHANGE_REQ_ACK) == SC);
+					//performancecout << "[NOTICE] sendMsg2Bds(TRANS_CONFIG_CHANGE_REQ_ACK) success!" << endl;
+				//performanceelse
+					//performancecout << "[ERROR] sendMsg2Bds(TRANS_CONFIG_CHANGE_REQ_ACK) fail!" << endl;
+				break;
+			}
+			//헤더오류면
+			else
+			{
+				*logout << logout->ErrorCode(0) << "[ERROR] IN RECV ROUTINE. 0x05 Invalid Type and ID : "
+				<< _packet->getMsgType() << " : " << _packet->getMsgId() << endl;
+				*logout << logout->ErrorCode(8615) << "[ERROR] IN RECV ROUTINE. 0x05 Invalid Type and ID : "
+				<< _packet->getMsgType() << " : " << _packet->getMsgId() << endl;
+				#ifdef _DEBUG
+				_packet->printAll();
+				#endif
+				break;
+			}
+			break;
+		case MSG_TYPE_DATA_REP_ACK://0x0e
+			///////////////////////////////////////////////////
+			//0x0e 0x01 BILL_DATA_REP_ACK
+			//BILL_DATA_REP_ACK면
+			///////////////////////////////////////////////////
+			if (_packet->getMsgId() == MSG_ID_NORMAL_BILL)
+			{
+				//performancecout << "\n\n";
+				//performancecout << "[NOTICE] Receive MSG_TYPE_DATA_REP_ACK/MSG_ID_NORMAL_BILL(BILL_DATA_REP_ACK)!" << endl;
+				////nSockStatus = _socket->RecvSocketTimeout(&_packet->stBillDataRepAck,sizeof(BILLDATAREPACK),0,10);
+				nSockStatus = _socket->RecvSocketTimeout(&_packet->stBillDataRepAck,_packet->getMsgLen(),0,10);
+				//#ifdef _DEBUG
+				//performancecout << "\n\n\n";
+				//performancecout << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << endl;
+				//performancecout << "[받은 PACKET ]<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << endl;
+				printMsg(BILL_DATA_REP_ACK);
+				//performancecout << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << endl;
+				//performancecout << "\n\n\n";
+				//#endif
+
+				//정상데이타 0x00
+				if (_packet->stBillDataRepAck.usStatus==0x00)
+				{
+					//BDS에서 정상적으로 데이타가 수신완료되면 수신한
+					//unStartFileNo, unStartBlockNo, unEndBlockNo, unFlag(0xffffffff:BDS_FLAG_INITIAL 0:BDS_FLAG_USED), unTimeInVal, unMaxBillSize
+					//를 저장한다
+					//FileBlock.cfg를 저장
+					saveFileBlock();
+					//performancecout << "[NOTICE00@@@@@@@@@@@>] saveFileBlock()" << endl;
+				}
+				//비정상데이타 0x00이 아닐때
+				else
+				{
+					//BDS가 정상수신하지 못하면 이미 증가한 unStartFileNo를 -1한다 ?
+					//sendMsg2Bds(BILL_DATA_REP)시 이미 보낸 데이타를 재전송. MsgSeq는 증가됨.
+					//BDS에서 5번 시도후 접속을 끊는다 => 확인.
+					*logout << logout->ErrorCode(0) << "[ERROR] BDS abnormal received BILL_DATA!!!!!!" << endl;
+					*logout << logout->ErrorCode(8616) << "[ERROR] BDS abnormal received BILL_DATA!!!!!!" << endl;
+					//#ifdef _DEBUG
+					*logout << logout->ErrorCode(0) << "[DEBUG] recvMsgFromBds() BILL_DATA_REP_ACK" << endl;
+					*logout << logout->ErrorCode(0) << "[NOTICE]       _packet->stBillDataRepAck.usStatus=>" << _packet->stBillDataRepAck.usStatus << endl;
+					*logout << logout->ErrorCode(0) << "[NOTICE]       _packet->stBillDataRepAck.usReason=>" << _packet->stBillDataRepAck.usReason << endl;
+					*logout << logout->ErrorCode(0) << "[NOTICE] _packet->stBillDataRepAck.strDescription=>" << _packet->stBillDataRepAck.strDescription << endl;
+					//#endif
+					
+					//ihy 10.07
+					//비정상데이타 비정상처리 //DISCONNECT
+					*logout << logout->ErrorCode(0) << "[ERROR] BDS abnormal received BILL_DATA. 비정상처리 //DISCONNECT" << endl;
+					*logout << logout->ErrorCode(8617) << "[ERROR] BDS abnormal received BILL_DATA. 비정상처리 //DISCONNECT" << endl;
+					if (sendMsg2Bds(DISCONNECT_REQ) == SC);
+						//performancecout << "[NOTICE] sendMsg2Bds(DISCONNECT_REQ) success!" << endl;
+					//performanceelse
+						//performancecout << "[ERROR] sendMsg2Bds(DISCONNECT_REQ) fail!" << endl;
+					fLinkStatus == LINK_STATUS_CLOSED_ABNORMAL;
+					*logout << logout->ErrorCode(0) << "[NOTICE-----] BDS abnormal received BILL_DATA. disconnect socket by UDA!" << endl;
+					//비정상종료이므로 소켓4를 닫고 Accept상태
+					_socket->CloseTCPSock();
+					writePMSMQ(FLAG_NW_ERROR);//-3//Network 비정상
+				}
+				break;
+			}
+			///////////////////////////////////////////////////
+			//0x0e 0x05/0x0d/ox09/0x26/0x25 STATUS_DATA_REP_ACK
+			//STATUS_DATA_REP_ACK면
+			///////////////////////////////////////////////////
+			else if ( 	(_packet->getMsgId() == MSG_ID_SWITCH_DISK_STATUS) ||
+						(_packet->getMsgId() == MSG_ID_SWITCH_LOAD_STATUS) ||
+						(_packet->getMsgId() == MSG_ID_SWITCH_STATUS) ||
+						(_packet->getMsgId() == MSG_ID_SWITCH_COMM_STATUS) ||
+						(_packet->getMsgId() == MSG_ID_SWITCH_BILL_DATA_ERROR) )
+			{
+				//performancecout << "\n\n";
+				*logout << logout->ErrorCode(0) << "[NOTICE] Receive MSG_TYPE_DATA_REP_ACK/MSG_ID_SWITCH_*****_STATUS(STATUS_DATA_REP_ACK)!" << endl;
+				break;
+			}
+			//헤더오류면
+			else
+			{
+				*logout << logout->ErrorCode(0) << "[ERROR] IN RECV ROUTINE. 0x0e Invalid Type and ID : "
+				<< _packet->getMsgType() << " : " << _packet->getMsgId() << endl;
+				*logout << logout->ErrorCode(8618) << "[ERROR] IN RECV ROUTINE. 0x0e Invalid Type and ID : "
+				<< _packet->getMsgType() << " : " << _packet->getMsgId() << endl;
+				#ifdef _DEBUG
+				_packet->printAll();
+				#endif
+				break;
+			}
+			break;
+		case MSG_TYPE_DATA_RES://0x03
+			///////////////////////////////////////////////////
+			//0x03 0x0b STATUS_REQ_ACK
+			//STATUS_REQ_ACK면
+			///////////////////////////////////////////////////
+			if (_packet->getMsgId() == MSG_ID_HOST_STATUS)
+			{
+				//performancecout << "\n\n";
+				//performancecout << "[NOTICE] Receive MSG_TYPE_DATA_RES/MSG_ID_HOST_STATUS(STATUS_REQ_ACK)!" << endl;
+				printMsg(STATUS_REQ_ACK);
+				break;
+			}
+			//헤더오류면
+			else
+			{
+				*logout << logout->ErrorCode(0) << "[ERROR] IN RECV ROUTINE. 0x03 Invalid Type and ID : "
+				<< _packet->getMsgType() << " : " << _packet->getMsgId() << endl;
+				*logout << logout->ErrorCode(8619) << "[ERROR] IN RECV ROUTINE. 0x03 Invalid Type and ID : "
+				<< _packet->getMsgType() << " : " << _packet->getMsgId() << endl;
+				#ifdef _DEBUG
+				_packet->printAll();
+				#endif
+				break;
+			}
+			break;
+		case MSG_TYPE_CONTROL_REP://0x0f
+			///////////////////////////////////////////////////
+			//0x0f 0x24 DISCONNECT_REQ
+			//DISCONNECT_REQ면
+			///////////////////////////////////////////////////
+			if (_packet->getMsgId() == MSG_ID_DISCONNECT)
+			{
+				//performancecout << "\n\n";
+				//performancecout << "[NOTICE] Receive MSG_TYPE_CONTROL_REP/MSG_ID_DISCONNECT(DISCONNECT_REQ)!" << endl;
+				printMsg(DISCONNECT_REQ);
+				fLinkStatus = LINK_STATUS_CLOSED_ABNORMAL;
+				//비정상종료이므로 소켓4를 닫고 Accept상태
+				_socket->CloseTCPSock();//ihy 10.24
+				writePMSMQ(FLAG_NW_ERROR);//-3//Network 비정상
+				break;
+			}
+			//헤더오류면
+			else
+			{
+				*logout << logout->ErrorCode(0) << "[ERROR] IN RECV ROUTINE. 0x0f Invalid Type and ID : "
+				<< _packet->getMsgType() << " : " << _packet->getMsgId() << endl;
+				*logout << logout->ErrorCode(8620) << "[ERROR] IN RECV ROUTINE. 0x0f Invalid Type and ID : "
+				<< _packet->getMsgType() << " : " << _packet->getMsgId() << endl;
+				#ifdef _DEBUG
+				_packet->printAll();
+				#endif
+				break;
+			}
+			break;
+		default://Error
+			*logout << logout->ErrorCode(0) << "[ERROR] IN RECV ROUTINE. default Invalid Type and ID : "
+			<< _packet->getMsgType() << " : " << _packet->getMsgId() << endl;
+			*logout << logout->ErrorCode(8621) << "[ERROR] IN RECV ROUTINE. default Invalid Type and ID : "
+			<< _packet->getMsgType() << " : " << _packet->getMsgId() << endl;
+			#ifdef _DEBUG
+			_packet->printAll();
+			#endif
+			return(FA);
+			break;
+	}
+
+	#ifdef _DEBUG
+	//performancecout << "[DEBUG] IN RECV ROUTINE END!!!!!!" << endl;
+	//performancecout << "\n\n";
+	#endif
+
+	return(SC);
+}
+
+
+int bdspC::sendMsg2Bds(int nTypeId)
+{
+
+	int nSendLen=0;
+	int i;
+	int nSocketSts;
+	int nSendBytes;
+
+	#ifdef _DEBUG
+	//performancecout << "\n\n";
+	//performancecout << "[DEBUG] IN SEND ROUTINE START!!!!!!" << endl;
+	#endif
+
+	//일련번호가 0xffff이면 0x0000로 초기화
+	if ( usMsgSeqNum == 0xffff )
+	{
+		usMsgSeqNum = 0x0000;
+	}
+
+	//SEND전에 각각의 데이타를 생성하는 함수를 호출
+	//REQ만 일련번호를 증가한후 데이타를 생성한다.
+	//예외) CONFIG_REQ_ACK//CONFIG_RES는 받은 CONFIG_REQ의 일련번호를 사용
+
+	//BILL_DATA_REP //STATUS_DATA_REP1,2,3,4,5 //STATUS_REQ //DISCONNECT_REQ
+
+	//CONFIG_RES
+
+	//CONFIG_REQ_ACK //COLLECTION_START_INFO_ACK //TRANS_CONFIG_CHANGE_REQ_ACK
+	//BILL_DATA_TRANS_START_REQ_ACK //DISK_STATUS_REQ_ACK //STATUS_REQ_ACK
+	switch( nTypeId )
+	{
+		case BILL_DATA_REP:
+			usMsgSeqNum++;
+			makeBillDataRepMsg();
+			break;
+		case STATUS_DATA_REP1:
+			usMsgSeqNum++;
+			makeStatusDataRep1Msg();
+			break;
+		case STATUS_DATA_REP2:
+			usMsgSeqNum++;
+			makeStatusDataRep2Msg();
+			break;
+		case STATUS_DATA_REP3:
+			usMsgSeqNum++;
+			makeStatusDataRep3Msg();
+			break;
+		case STATUS_DATA_REP4:
+			usMsgSeqNum++;
+			makeStatusDataRep4Msg();
+			break;
+		case STATUS_DATA_REP5:
+			usMsgSeqNum++;
+			makeStatusDataRep5Msg();
+			break;
+		case STATUS_REQ:
+			usMsgSeqNum++;
+			makeStatusReqMsg();
+			break;
+		case DISCONNECT_REQ:
+			usMsgSeqNum++;
+			makeDisconnectReqMsg();
+			break;
+		/////////////////////////////////////////////////////////////
+		case CONFIG_RES:
+			makeConfigResMsg();
+			break;
+		/////////////////////////////////////////////////////////////
+		case CONFIG_REQ_ACK:
+			makeConfigReqAckMsg();
+			break;
+		case COLLECTION_START_INFO_ACK:
+			makeCollectionStartInfoAckMsg();
+			break;
+		case TRANS_CONFIG_CHANGE_REQ_ACK:
+			makeTransConfigChangeReqAckMsg();
+			break;
+		case BILL_DATA_TRANS_START_REQ_ACK:
+			makeBillDataTransStartReqAckMsg();
+			break;
+		case DISK_STATUS_REQ_ACK:
+			makeDiskStatusReqAckMsg();
+			break;
+		case STATUS_REQ_ACK:
+			makeStatusReqAckMsg();
+			break;
+		default://Error
+			*logout << logout->ErrorCode(0) << "[ERROR] IN SEND ROUTINE. Invalid nTypeId : " << nTypeId << endl;
+			*logout << logout->ErrorCode(8622) << "[ERROR] IN SEND ROUTINE. Invalid nTypeId : " << nTypeId << endl;
+			//////free(strBuf);
+			return(FA);
+	}
+
+	//SEND전에 헤더사이즈와 데이타부분이있는경우 데이타 사이즈를 계산한다
+	switch(nTypeId)
+	{
+		case TRANS_CONFIG_CHANGE_REQ:
+			nSendLen = sizeof(MSGH)+sizeof(TRANSCONFIGCHANGEREQ);
+			break;
+		case BILL_DATA_REP:
+			//nSendLen = sizeof(MSGH)+sizeof(BILLDATAREP);
+			nSendLen = sizeof(MSGH)+24+_bdsfile->get_unBlockCount()*_bdsfile->get_OneBlockSize();
+			break;
+		case STATUS_DATA_REP1:
+			nSendLen = sizeof(MSGH)+sizeof(STATUSDATAREP1);
+			break;
+		case STATUS_DATA_REP2:
+			nSendLen = sizeof(MSGH)+sizeof(STATUSDATAREP2);
+			break;
+		case STATUS_DATA_REP3:
+			nSendLen = sizeof(MSGH)+sizeof(STATUSDATAREP3);
+			break;
+		case STATUS_DATA_REP4:
+			nSendLen = sizeof(MSGH)+sizeof(STATUSDATAREP4);
+			break;
+		case STATUS_DATA_REP5:
+			nSendLen = sizeof(MSGH)+sizeof(STATUSDATAREP5);
+			break;
+		/////////////////////////////////////////////////////////////
+		case CONFIG_RES:
+			nSendLen = sizeof(MSGH)+sizeof(CONFIGRES);
+			break;
+		case CONFIG_REQ_ACK:
+			nSendLen = sizeof(MSGH)+sizeof(CONFIGREQACK);
+			break;
+		case COLLECTION_START_INFO_ACK:
+			nSendLen = sizeof(MSGH)+sizeof(COLLECTIONSTARTINFOACK);
+			break;
+		case TRANS_CONFIG_CHANGE_REQ_ACK:
+			nSendLen = sizeof(MSGH)+sizeof(TRANSCONFIGCHANGEREQACK);
+			break;
+		case BILL_DATA_TRANS_START_REQ_ACK:
+			nSendLen = sizeof(MSGH)+sizeof(BILLDATATRANSSTARTREQACK);
+			break;
+		default://STATUS_REQ //DISK_STATUS_REQ_ACK //STATUS_REQ_ACK //DISCONNECT
+			nSendLen = sizeof(MSGH);
+			break;
+	}
+
+
+	//BILL_DATA_REP //STATUS_DATA_REP1,2,3,4,5 //STATUS_REQ
+	//CONFIG_RES일때만
+
+	//CONFIG_REQ_ACK //COLLECTION_START_INFO_ACK //TRANS_CONFIG_CHANGE_REQ_ACK
+	//BILL_DATA_TRANS_START_REQ_ACK //DISK_STATUS_REQ_ACK //STATUS_DATA_REP_ACK	//STATUS_REQ_ACK
+	//DISCONNECT_REQ
+
+
+
+	//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG
+	//디버그모드일때 SEND한 HEADER+DATA를 출력
+	//ALL HEXA 출력
+	#ifdef _DEBUGForLogData
+	*logout << logout->ErrorCode(0) << "XXX" << endl;
+	memset(strLogBuff,0x00,sizeof(strLogBuff));
+    memset(strDumpLog,0x00,sizeof(strDumpLog));
+	memcpy(strDumpLog,(const void*)&strBuf,nSendLen);
+	for (nlogi = 0; nlogi < nSendLen; nlogi++)
+	{
+		/*
+		if(isalpha(strDumpLog[nlogi]) || isdigit(strDumpLog[nlogi]))
+		{
+			sprintf(strLogTmp,"%c ", strDumpLog[nlogi]);
+			strcat(strLogBuff,strLogTmp);
+		}
+		else
+		{
+		*/
+
+			sprintf(strLogTmp,"0x%02x ",strDumpLog[nlogi]);
+			strcat(strLogBuff,strLogTmp);
+		/*}*/
+
+	}
+	*logout << logout->ErrorCode(0) << "\n\n";
+	*logout << logout->ErrorCode(0) << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << endl;
+	*logout << logout->ErrorCode(0) << "[DEBUG] [sendMsg2Bds() HEADER+DATA]" << endl;
+	*logout << logout->ErrorCode(0) << "[DEBUG--------] SENDBYTES nlogi =>" << nlogi << "<=" << endl;
+	*logout << logout->ErrorCode(0) << "[" << strLogBuff << "]" <<endl;
+	*logout << logout->ErrorCode(0) << "[DEBUG--------] SENDBYTES nlogi =>" << nlogi << "<=" << endl;
+	*logout << logout->ErrorCode(0) << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << endl;
+	#endif
+	//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG
+
+
+
+
+	//SEND후 ACK룰 못받으면 5회 10초간격으로 동일 데이타를 전송
+	if ( (nTypeId == BILL_DATA_REP)    || (nTypeId == STATUS_DATA_REP1) ||
+	     (nTypeId == STATUS_DATA_REP2) || (nTypeId == STATUS_DATA_REP3) ||
+	     (nTypeId == STATUS_DATA_REP4) || (nTypeId == STATUS_DATA_REP5)	||
+	     (nTypeId == STATUS_REQ)       || (nTypeId == CONFIG_RES)
+	   )
+	{
+		for(i=1; i<=REQUEST_RETRY_MAX; i++ )
+		{
+			//보내는 데이타를 출력한다
+			//performancecout << "\n\n";
+			//performancecout << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << endl;
+			//performancecout << "//BILL_DATA_REP //STATUS_DATA_REP1,2,3,4,5 //STATUS_REQ //CONFIG_RES" << endl;
+			printMsg(nTypeId);
+			//performancecout << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << endl;
+
+			//실제 데이타를 보낸다/////////////////////////////////////////////
+			if ( nSendBytes = _socket->SendSocketTimeoutEx(strBuf, nSendLen, 0, 100) < nSendLen )//ihy
+			//////if (nSendBytes = _socket->user_writen(strBuf, nSendLen) < nSendLen)
+			{
+				*logout << logout->ErrorCode(0) << "[ERROR] SendSocket fail! socket closed abnomal! : " << i << " try"<< endl;
+				*logout << logout->ErrorCode(8623) << "[ERROR] SendSocket fail! socket closed abnomal! : " << i << " try"<< endl;
+				fLinkStatus == LINK_STATUS_CLOSED_ABNORMAL;
+				//비정상종료이므로 소켓4를 닫고 Accept상태
+				_socket->CloseTCPSock();
+				writePMSMQ(FLAG_NW_ERROR);//-3//Network 비정상
+				//////free(strBuf);
+				return(FA);
+			}
+			///////////////////////////////////////////////////////////////////
+			//performancecout << "\n\n";
+			//performancecout << "[NOTICE------------] nSendBytes =>" << nSendBytes << endl;
+			//performancecout << "[NOTICE------------] nSendLen =>" << nSendLen << endl;
+			//performancecout << "[NOTICE] sendMsg2Bds(" << nTypeId << ") success! 1" << endl;
+
+			//응답을 받는다
+			nSocketSts = recvMsgFromBds();
+			//타임아웃이면 10초기다린후 5번시도후 소켓을 닫고 for loop을 나감
+			if (nSocketSts==SOCKET_TIMEOUT)// no ack
+			{
+				*logout << logout->ErrorCode(0) << "sleep(10)......." << endl;
+				sleep(10);//10 sec waitting
+				if (i == 5)
+				{   //retry 5 times
+					if (sendMsg2Bds(DISCONNECT_REQ) == SC);
+						//performancecout << "[NOTICE] sendMsg2Bds(DISCONNECT_REQ) success!" << endl;
+					//performanceelse
+						//performancecout << "[ERROR] sendMsg2Bds(DISCONNECT_REQ) fail!" << endl;
+					fLinkStatus == LINK_STATUS_CLOSED_ABNORMAL;
+					*logout << logout->ErrorCode(0) << "[NOTICE-----] after 5time send! disconnect socket by UDA!" << endl;
+					//비정상종료이므로 소켓4를 닫고 Accept상태
+					_socket->CloseTCPSock();
+					writePMSMQ(FLAG_NW_ERROR);//-3//Network 비정상
+					break;
+				}
+			}
+			else if (nSocketSts==SOCK_FAIL)//socket closed abnormally
+			{
+				fLinkStatus == LINK_STATUS_CLOSED_ABNORMAL;
+				*logout << logout->ErrorCode(0) << "[NOTICE-----] send fail! disconnect socket by UDA!" << endl;
+				//비정상종료이므로 소켓4를 닫고 Accept상태
+				_socket->CloseTCPSock();
+				writePMSMQ(FLAG_NW_ERROR);//-3//Network 비정상
+			}
+/**********************************************************************************/
+			//recvMsgFromBds() => FA OR SC
+			//                       ==> Type,Id가틀리면
+
+			else
+			{
+				//시간 //최종 SEND한 시간을 저장?????????????
+				gtimeForLastComm = time(NULL);
+				break;
+				//SC returned
+			}
+
+/**********************************************************************************/
+
+		}// for
+	}
+	//TRANS_CONFIG_CHANGE_REQ //BILL_DATA_REP //STATUS_DATA_REP1,2,3,4,5 //STATUS_REQ
+	//CONFIG_RES일때만
+	//SEND후 ACK룰 못받으면 5회 10초간격으로 동일 데이타를 전송
+	//아니면 (//DISCONNECT_REQ //*****ACK)일때는 1회만 데이타를 전송
+	else
+	{
+		//보내는 데이타를 출력한다
+		//performancecout << "\n\n";
+		//performancecout << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << endl;
+		//performancecout << "//DISCONNECT_REQ //*****ACK" << endl;
+		printMsg(nTypeId);
+		//performancecout << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << endl;
+
+		//실제 데이타를 보낸다/////////////////////////////////////////////
+		if ( nSendBytes = _socket->SendSocketTimeoutEx(strBuf, nSendLen, 0, 100) < nSendLen )//ihy
+		//////if (nSendBytes = _socket->user_writen(strBuf, nSendLen) < nSendLen)
+		//if ( nSendBytes = _socket->SendSocket(strBuf, nSendLen, 0) < nSendLen )//ihy
+		//if ( _socket->SendSocket(strBuf, nSendLen, 0) < 0 )
+		{
+			*logout << logout->ErrorCode(0) << "[ERROR] SendSocket fail! socket closed abnomal!" << endl;
+			*logout << logout->ErrorCode(8624) << "[ERROR] SendSocket fail! socket closed abnomal!" << endl;
+			fLinkStatus == LINK_STATUS_CLOSED_ABNORMAL;
+			*logout << logout->ErrorCode(0) << "[NOTICE-----] send fail! disconnect socket by UDA!" << endl;
+			//비정상종료이므로 소켓4를 닫고 Accept상태
+			_socket->CloseTCPSock();
+			writePMSMQ(FLAG_NW_ERROR);//-3//Network 비정상
+			//////free(strBuf);
+			return(FA);
+		}
+		///////////////////////////////////////////////////////////////////
+		//performancecout << "\n\n";
+		//performancecout << "[NOTICE------------] nSendBytes =>" << nSendBytes << endl;
+		//performancecout << "[NOTICE------------] nSendLen =>" << nSendLen << endl;
+		//performancecout << "[NOTICE] sendMsg2Bds(" << nTypeId << ") success! 2" << endl;
+	}
+
+
+
+
+//여기다 DATA보내는곳
+
+
+
+	//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG
+	//디버그모드일때 SEND한 HEADER+DATA를 출력
+	//CHAR + HEXA 출력
+	#ifdef _DEBUGForLogData
+	*logout << logout->ErrorCode(0) << "YYY" << endl;
+	memset(strLogBuff,0x00,sizeof(strLogBuff));
+    memset(strDumpLog,0x00,sizeof(strDumpLog));
+	memcpy(strDumpLog,(const void*)&strBuf,nSendLen);
+	for (nlogi = 0; nlogi < nSendLen; nlogi++)
+	{
+		if(isalpha(strDumpLog[nlogi]) || isdigit(strDumpLog[nlogi]))
+		{
+			sprintf(strLogTmp,"%c ", strDumpLog[nlogi]);
+			strcat(strLogBuff,strLogTmp);
+		}
+		else
+		{
+			sprintf(strLogTmp,"0x%02x ",strDumpLog[nlogi]);
+			strcat(strLogBuff,strLogTmp);
+		}
+
+	}
+	*logout << logout->ErrorCode(0) << "\n\n";
+	*logout << logout->ErrorCode(0) << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << endl;
+	*logout << logout->ErrorCode(0) << "[DEBUG] [sendMsg2Bds() HEADER+DATA]" << endl;
+	*logout << logout->ErrorCode(0) << "[DEBUG--------] SENDBYTES nlogi =>" << nlogi << "<=" << endl;
+	*logout << logout->ErrorCode(0) << "[" << strLogBuff << "]" <<endl;
+	*logout << logout->ErrorCode(0) << "[DEBUG--------] SENDBYTES nlogi =>" << nlogi << "<=" << endl;
+	*logout << logout->ErrorCode(0) << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << endl;
+	#endif
+	//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG//LOG
+
+
+	#ifdef _DEBUG
+	//performancecout << "[DEBUG] IN SEND ROUTINE END!!!!!!" << endl;
+	//performancecout << "\n\n";
+	#endif
+
+	//시간 //최종 SEND한 시간을 저장
+	gtimeForLastComm = time(NULL);
+
+	//////free(strBuf);
+	return(SC);
+
+}
+
+void bdspC::makeConfigReqAckMsg()
+{
+	char strDescriptionNOERROR[9]   = "NO ERROR";
+	int strDescription_Length;
+
+	//header
+	_packet->setMsgVersionId(CURREMT_MSG_VER);
+	_packet->setSourceId(SRC_ID_SERVICE, SRC_ID_SYSTEM);
+	_packet->setDestId(DES_ID_SERVICE, DES_ID_SYSTEM);
+	_packet->setMsgSeqNum(_packet->getMsgSeqNum());
+	_packet->setMsgType(MSG_TYPE_DATA_REQ_ACK);
+	_packet->setMsgId(MSG_ID_SWITCH_CONFIG);
+	_packet->setMsgLen(sizeof(CONFIGREQACK));
+
+	//data area
+	_packet->stConfigReqAck.usStatus = 0x00;//0x00 SUCCESS
+	_packet->stConfigReqAck.usReason = 0x00;//0x00 No Error
+
+	strDescription_Length   = sizeof(strDescriptionNOERROR)-1;
+	memset(_packet->stConfigReqAck.strDescription, 0x20, sizeof(_packet->stConfigReqAck.strDescription));
+	memcpy(_packet->stConfigReqAck.strDescription, strDescriptionNOERROR,strDescription_Length);//임시
+
+
+	//strBuf CLEAR
+	memset(strBuf,0x00,MAX_PACKET_LEN);
+	//HEADER COPY
+	memcpy(strBuf,(const void *)&_packet->stMsgh,HEADER_LEN);
+	//DATA COPY
+	memcpy(&strBuf[HEADER_LEN],(const void *)&_packet->stConfigReqAck, sizeof(CONFIGREQACK));
+
+}
+
+void bdspC::makeConfigResMsg()
+{
+	int i;
+
+	//header
+	_packet->setMsgVersionId(CURREMT_MSG_VER);
+	_packet->setSourceId(SRC_ID_SERVICE, SRC_ID_SYSTEM);
+	_packet->setDestId(DES_ID_SERVICE, DES_ID_SYSTEM);
+	_packet->setMsgSeqNum(_packet->getMsgSeqNum());
+	_packet->setMsgType(MSG_TYPE_DATA_RES);
+	_packet->setMsgId(MSG_ID_SWITCH_CONFIG);
+	_packet->setMsgLen(sizeof(CONFIGRES));
+
+	memset(&_packet->stConfigRes, 0x00, sizeof(CONFIGRES));
+
+	//data area
+	_packet->stConfigRes.unMdId = UNSWITCHID;//= 0x55440001;//UD0001
+	_packet->stConfigRes.unSwitchCount = 1;//UDA FIX
+
+	_packet->stConfigRes.stRElement[0].unSwitchId = UNSWITCHID;//= 0x55440001;//UD0001
+	_packet->stConfigRes.stRElement[0].stFileNoRange.unStartFileNo   = 0xffffffff;//임시
+	_packet->stConfigRes.stRElement[0].stFileNoRange.unEndFileNo     = 0xffffffff;//임시
+	_packet->stConfigRes.stRElement[0].stBlockNoRange.unStartBlockNo = 0xffffffff;//임시
+	_packet->stConfigRes.stRElement[0].stBlockNoRange.unEndBlockNo   = 0xffffffff;//임시
+
+	//최종 보낸데이타의 정보를 읽는다
+		//0xffffffff까지 보냈을때 0x00000000으로 순환
+		//unStartFileNo  = 4294967295;//0xffffffff
+		//unStartBlockNo = 4294967295;//0xffffffff
+		//unEndBlockNo   = 4294967295;//0xffffffff
+		//unTimeInVal    = 900;       //DEFAULT 15분
+		//unMaxBillSize  = 1048576;   //1M
+	//unStartFileNo, unStartBlockNo, unEndBlockNo, unFlag(0xffffffff:BDS_FLAG_INITIAL 0:BDS_FLAG_USED), unTimeInVal, unMaxBillSize
+	readFileBlock();
+	//performancecout << "[NOTICE00===========>] readFileBlock()" << endl;
+
+
+	//BDS_UDR.seq의 마지막 파일 또는 SEARCH_BREAK만큼 파일을 찾아 정보를 사용.
+	searchEndFile();
+
+	//#ifdef _DEBUG
+	*logout << logout->ErrorCode(0) << "==================================================" << endl;
+	*logout << logout->ErrorCode(0) << "[DEBUG] makeConfigResMsg() START" << endl;
+	*logout << logout->ErrorCode(0) << "======== readFileBlock() =========================" << endl;
+	*logout << logout->ErrorCode(0) << "[NOTICE] unStartFileNo =>" << unStartFileNo  << endl;
+	*logout << logout->ErrorCode(0) << "[NOTICE] unStartBlockNo=>" << unStartBlockNo << endl;
+	*logout << logout->ErrorCode(0) << "[NOTICE] unEndBlockNo  =>" << unEndBlockNo   << endl;
+	*logout << logout->ErrorCode(0) << "[NOTICE] unFlag        =>" << unFlag         << endl;
+	*logout << logout->ErrorCode(0) << "[NOTICE] unTimeInVal   =>" << unTimeInVal    << endl;
+	*logout << logout->ErrorCode(0) << "[NOTICE] unMaxBillSize =>" << unMaxBillSize  << endl;
+	*logout << logout->ErrorCode(0) << "======== searchEndFile() =========================" << endl;
+	*logout << logout->ErrorCode(0) << "[NOTICE] unSearchEndFileStartFileNo  =>" << unSearchEndFileStartFileNo  << endl;
+	*logout << logout->ErrorCode(0) << "[NOTICE] unSearchEndFileStartBlockNo =>" << unSearchEndFileStartBlockNo << endl;
+	*logout << logout->ErrorCode(0) << "[NOTICE] unSearchEndFileEndBlockNo   =>" << unSearchEndFileEndBlockNo   << endl;
+	*logout << logout->ErrorCode(0) << "==================================================" << endl;
+	//#endif
+
+
+
+
+	//%%%%%11111111111111111111
+
+	//저장된보낸파일번호가 0xffffffff이고 Collector가저장한파일번호가 0xffffffff면
+	//[초기상태] OR [데이타전송상태0xffffffff 0x???????? 0x????????]
+	if ( (unStartFileNo == 0xffffffff) && (unSearchEndFileStartFileNo == 0xffffffff) )
+	{
+		//[초기상태]
+		/////////////////////CollectorModule/////////////////////
+		//if ( (unStartBlockNo == 0xffffffff) && (unEndBlockNo == 0xffffffff) )
+		if ( (unStartBlockNo == 0xffffffff) && (unEndBlockNo == 0xffffffff) && (unFlag == BDS_FLAG_INITIAL) )
+		{
+			//performancecout << "[NOTICE] makeConfigResMsg() [초기상태]" << endl;
+			_packet->stConfigRes.stRElement[0].stFileNoRange.unStartFileNo   = 0xffffffff;
+			_packet->stConfigRes.stRElement[0].stFileNoRange.unEndFileNo     = 0xffffffff;
+			_packet->stConfigRes.stRElement[0].stBlockNoRange.unStartBlockNo = 0xffffffff;
+			_packet->stConfigRes.stRElement[0].stBlockNoRange.unEndBlockNo   = 0xffffffff;
+		}
+		//[데이타전송상태0xffffffff 0x???????? 0x????????]
+		else if ( (unStartBlockNo != 0xffffffff) || (unEndBlockNo != 0xffffffff) || (unFlag != BDS_FLAG_INITIAL) )
+		{
+			//performancecout << "[NOTICE] makeConfigResMsg() [데이타전송상태]" << endl;
+			memset(strFileName,0x00,sizeof(strFileName));
+			sprintf(strFileName, "%s%u",FILE_NAME_BDS_UDR,unStartFileNo);
+			//file을 찾아보고 있으면
+			if ( _filesearch->getFile(strFileName) == FILE_EXIST )
+			{
+				*logout << logout->ErrorCode(0) << "[NOTICE] makeConfigResMsg() [데이타전송상태] 파일찾기성공 : " << unStartFileNo << endl;
+				//File에서 읽은 unEndBlockNo+1를 unStartBlockNo에 저장한다
+				unStartBlockNo = unEndBlockNo+1;
+				//BDS_UDR.seq File에서읽은 unSearchEndFileEndBlockNo를 unEndBlockNo에 저장한다
+				unEndBlockNo = unSearchEndFileEndBlockNo;
+
+				_packet->stConfigRes.stRElement[0].stFileNoRange.unStartFileNo   = unStartFileNo;
+				_packet->stConfigRes.stRElement[0].stFileNoRange.unEndFileNo     = unSearchEndFileStartFileNo;
+				_packet->stConfigRes.stRElement[0].stBlockNoRange.unStartBlockNo = unStartBlockNo;
+				_packet->stConfigRes.stRElement[0].stBlockNoRange.unEndBlockNo   = unSearchEndFileEndBlockNo;
+			}
+			//file을 찾아보고 없으면 에러
+			else
+			{
+				*logout << logout->ErrorCode(0) << "[ERROR] makeConfigResMsg() [데이타전송상태] 파일찾기실패 : " << unStartFileNo << endl;
+				*logout << logout->ErrorCode(8625) << "[ERROR] makeConfigResMsg() [데이타전송상태] 파일찾기실패 : " << unStartFileNo << endl;
+				_packet->stConfigRes.stRElement[0].stFileNoRange.unStartFileNo   = 0xffffffff;
+				_packet->stConfigRes.stRElement[0].stFileNoRange.unEndFileNo     = 0xffffffff;
+				_packet->stConfigRes.stRElement[0].stBlockNoRange.unStartBlockNo = 0xffffffff;
+				_packet->stConfigRes.stRElement[0].stBlockNoRange.unEndBlockNo   = 0xffffffff;
+			}
+		}
+		//(초기상태) (데이타전송상태0xffffffff 0x???????? 0x????????) 에러
+		else
+		{
+				*logout << logout->ErrorCode(0) << "[ERROR] makeConfigResMsg() [초기상태] [데이타전송상태] 에러" << endl;
+				*logout << logout->ErrorCode(8226) << "[ERROR] makeConfigResMsg() [초기상태] [데이타전송상태] 에러" << endl;
+				_packet->stConfigRes.stRElement[0].stFileNoRange.unStartFileNo   = 0xffffffff;
+				_packet->stConfigRes.stRElement[0].stFileNoRange.unEndFileNo     = 0xffffffff;
+				_packet->stConfigRes.stRElement[0].stBlockNoRange.unStartBlockNo = 0xffffffff;
+				_packet->stConfigRes.stRElement[0].stBlockNoRange.unEndBlockNo   = 0xffffffff;
+		}
+	}
+	//저장된보낸파일번호가 0xffffffff이고 Collector가저장한파일번호가 0xffffffff가아니면
+	//[BDS_UDA.seq파일생성상태]
+	else if ( (unStartFileNo == 0xffffffff) && (unFlag != BDS_FLAG_INITIAL) )
+	{
+		//0xffffffff까지 보냈을때 0x00000000으로 순환 또는 최초상태일때
+		//0xffffffff면 0x00000000으로 셋팅, 아니면 +1
+		//초기화/순환
+		if (unStartFileNo == 0xffffffff)
+			unStartFileNo = 0x00000000;
+		if (unStartBlockNo == 0xffffffff)
+			unStartBlockNo = 0x00000000;
+		if (unEndBlockNo == 0xffffffff)
+			unEndBlockNo = 0x00000000;
+
+		//BDS_UDA.0으로 찾는다
+		memset(strFileName,0x00,sizeof(strFileName));
+		sprintf(strFileName, "%s%u",FILE_NAME_BDS_UDR,unStartFileNo);
+		//file을 찾아보고 있으면
+		if ( _filesearch->getFile(strFileName) == FILE_EXIST )
+		{
+			*logout << logout->ErrorCode(0) << "[NOTICE] makeConfigResMsg() [BDS_UDA.seq파일생성상태] 파일찾기성공 : " << unStartFileNo << endl;
+			//BDS_UDR.seq File에서읽은 unSearchEndFileEndBlockNo를 unEndBlockNo에 저장한다
+			unEndBlockNo = unSearchEndFileEndBlockNo;
+
+			_packet->stConfigRes.stRElement[0].stFileNoRange.unStartFileNo   = unStartFileNo;
+			_packet->stConfigRes.stRElement[0].stFileNoRange.unEndFileNo     = unSearchEndFileStartFileNo;
+			_packet->stConfigRes.stRElement[0].stBlockNoRange.unStartBlockNo = unStartBlockNo;
+			_packet->stConfigRes.stRElement[0].stBlockNoRange.unEndBlockNo   = unSearchEndFileEndBlockNo;
+		}
+		//file을 찾아보고 없으면 에러
+		else
+		{
+			*logout << logout->ErrorCode(0) << "[ERROR] makeConfigResMsg() [BDS_UDA.seq파일생성상태] 파일찾기실패 : " << unStartFileNo << endl;
+			*logout << logout->ErrorCode(8227) << "[ERROR] makeConfigResMsg() [BDS_UDA.seq파일생성상태] 파일찾기실패 : " << unStartFileNo << endl;
+			_packet->stConfigRes.stRElement[0].stFileNoRange.unStartFileNo   = 0xffffffff;
+			_packet->stConfigRes.stRElement[0].stFileNoRange.unEndFileNo     = 0xffffffff;
+			_packet->stConfigRes.stRElement[0].stBlockNoRange.unStartBlockNo = 0xffffffff;
+			_packet->stConfigRes.stRElement[0].stBlockNoRange.unEndBlockNo   = 0xffffffff;
+		}
+
+
+	}
+	//저장된보낸파일번호가 0xffffffff가아니고 Collector가저장한파일번호가 0xffffffff가아니면
+	//[BDS_UDA.seq파일생성상태 / BDSIF데이타전송상태]
+	/////////////////////CollectorModule/////////////////////
+	//else if ( (unStartFileNo != 0xffffffff) && (get_unFileSeq() != 0xffffffff) )
+	else if ( (unStartFileNo != 0xffffffff) && (unFlag != BDS_FLAG_INITIAL) )
+	{
+		//0xffffffff까지 보냈을때 0x00000000으로 순환 또는 최초상태일때
+		//0xffffffff면 0x00000000으로 셋팅, 아니면 +1
+		//초기화/순환
+		unStartFileNo++;
+		if (unStartBlockNo == 0xffffffff)
+			unStartBlockNo = 0x00000000;
+		if (unEndBlockNo == 0xffffffff)
+			unEndBlockNo = 0x00000000;
+
+		//1) 저장된보낸파일번호가 0 , Collector가저장한파일번호가 0이면 unStartFileNo는 1. 즉,BDS_UDA.1을 찾는다
+		//2) 저장된보낸파일번호가 0 , Collector가저장한파일번호가 1이면 unStartFileNo는 1. 즉,BDS_UDA.1을 찾는다
+		memset(strFileName,0x00,sizeof(strFileName));
+		sprintf(strFileName, "%s%u",FILE_NAME_BDS_UDR,unStartFileNo);
+		//file을 찾아보고 있으면
+		if ( _filesearch->getFile(strFileName) == FILE_EXIST )
+		{
+			*logout << logout->ErrorCode(0) << "[NOTICE] makeConfigResMsg() [BDS_UDA.seq파일생성상태 / BDSIF데이타전송상태] 파일찾기성공 : " << unStartFileNo << endl;
+			//File에서 읽은 unEndBlockNo+1를 unStartBlockNo에 저장한다
+			unStartBlockNo = unEndBlockNo+1;
+			//BDS_UDR.seq File에서읽은 unSearchEndFileEndBlockNo를 unEndBlockNo에 저장한다
+			unEndBlockNo = unSearchEndFileEndBlockNo;
+
+			_packet->stConfigRes.stRElement[0].stFileNoRange.unStartFileNo   = unStartFileNo;
+			_packet->stConfigRes.stRElement[0].stFileNoRange.unEndFileNo     = unSearchEndFileStartFileNo;
+			_packet->stConfigRes.stRElement[0].stBlockNoRange.unStartBlockNo = unStartBlockNo;
+			_packet->stConfigRes.stRElement[0].stBlockNoRange.unEndBlockNo   = unSearchEndFileEndBlockNo;
+		}
+		//file을 찾아보고 없으면 Collector가 저장한 파일이 없음.
+		else
+		{
+			*logout << logout->ErrorCode(0) << "[NOTICE] makeConfigResMsg() [BDS_UDA.seq파일생성상태 / BDSIF데이타전송상태] 파일찾기실패 : " << unStartFileNo << endl;
+			*logout << logout->ErrorCode(0) << "[NOTICE] makeConfigResMsg() NO DATA... Collector가 저장한 파일이 없음..." << endl;
+		}
+		//CONFIG_RES에서 이미 증가한 unStartFileNo를 -1한다
+		unStartFileNo--;
+	}
+
+
+	//strBuf CLEAR
+	memset(strBuf,0x00,MAX_PACKET_LEN);
+	//HEADER COPY
+	memcpy(strBuf,(const void *)&_packet->stMsgh,HEADER_LEN);
+	//DATA COPY
+	memcpy(&strBuf[HEADER_LEN],(const void *)&_packet->stConfigRes, sizeof(CONFIGRES));
+
+
+}
+
+void bdspC::makeCollectionStartInfoAckMsg()
+{
+	int i;
+
+	//header
+	_packet->setMsgVersionId(CURREMT_MSG_VER);
+	_packet->setSourceId(SRC_ID_SERVICE, SRC_ID_SYSTEM);
+	_packet->setDestId(DES_ID_SERVICE, DES_ID_SYSTEM);
+	_packet->setMsgSeqNum(_packet->getMsgSeqNum());
+	_packet->setMsgType(MSG_TYPE_DATA_REP_ACK);
+	_packet->setMsgId(MSG_ID_HOST_START_BILL_INFO);
+	_packet->setMsgLen(sizeof(COLLECTIONSTARTINFOACK));
+
+	memset(&_packet->stCollectionStartInfoAck, 0x00, sizeof(COLLECTIONSTARTINFOACK));
+
+	//data area
+	_packet->stCollectionStartInfoAck.usStatus      = 0x00;//0x00 SUCCESS
+	_packet->stCollectionStartInfoAck.usReason      = 0x00;//0x00 No Error
+	_packet->stCollectionStartInfoAck.unMdId        = UNSWITCHID;//= 0x55440001;//UD0001
+	_packet->stCollectionStartInfoAck.unSwitchCount = 1;//UDA FIX
+	_packet->stCollectionStartInfoAck.stSElement[0].unSwitchId = UNSWITCHID;//= 0x55440001;//UD0001
+
+	//%%%%%333333333333333333
+	//CollectionStartInfo에서 받은 Recv_unStartFileNo,Recv_unStartBlockNo를 셋팅
+	_packet->stCollectionStartInfoAck.stSElement[0].unStartFileNo   = Recv_unStartFileNo;
+	_packet->stCollectionStartInfoAck.stSElement[0].unStartBlockNo   = Recv_unStartBlockNo;
+
+	//strBuf CLEAR
+	memset(strBuf,0x00,MAX_PACKET_LEN);
+	//HEADER COPY
+	memcpy(strBuf,(const void *)&_packet->stMsgh,HEADER_LEN);
+	//DATA COPY
+	memcpy(&strBuf[HEADER_LEN],(const void *)&_packet->stCollectionStartInfoAck, sizeof(COLLECTIONSTARTINFOACK));
+
+}
+
+void bdspC::makeTransConfigChangeReqAckMsg()
+{
+	char strDescriptionNOERROR[9]   = "NO ERROR";
+	int strDescription_Length;
+
+	//header
+	_packet->setMsgVersionId(CURREMT_MSG_VER);
+	_packet->setSourceId(SRC_ID_SERVICE, SRC_ID_SYSTEM);
+	_packet->setDestId(DES_ID_SERVICE, DES_ID_SYSTEM);
+	_packet->setMsgSeqNum(_packet->getMsgSeqNum());
+	_packet->setMsgType(MSG_TYPE_CHANGE_RES);//////
+	//////_packet->setMsgId(MSG_ID_SWITCH_COLLECTION_CONFIG);
+	_packet->setMsgId(MSG_ID_MD_COLLECTION_CONFIG);
+	_packet->setMsgLen(sizeof(TRANSCONFIGCHANGEREQACK));
+
+	//data area
+	_packet->stTransConfigChangeReqAck.usStatus      = 0x00;//0x00 SUCCESS
+	_packet->stTransConfigChangeReqAck.usReason      = 0x00;//0x00 No Error
+	_packet->stTransConfigChangeReqAck.unTimeInVal   = unTimeInVal;//받은 TimeInVal
+	_packet->stTransConfigChangeReqAck.unMaxBillSize = unMaxBillSize;//받은 MaxBillSize
+	strDescription_Length   = sizeof(strDescriptionNOERROR)-1;
+	memset(_packet->stTransConfigChangeReqAck.strDescription, 0x20, sizeof(_packet->stTransConfigChangeReqAck.strDescription));
+	memcpy(_packet->stTransConfigChangeReqAck.strDescription, strDescriptionNOERROR,strDescription_Length);//임시
+
+	//strBuf CLEAR
+	memset(strBuf,0x00,MAX_PACKET_LEN);
+	//HEADER COPY
+	memcpy(strBuf,(const void *)&_packet->stMsgh,HEADER_LEN);
+	//DATA COPY
+	memcpy(&strBuf[HEADER_LEN],(const void *)&_packet->stTransConfigChangeReqAck, sizeof(TRANSCONFIGCHANGEREQACK));
+
+}
+
+void bdspC::makeBillDataTransStartReqAckMsg()
+{
+	char strDescriptionNOERROR[9]   = "NO ERROR";
+	int strDescription_Length;
+	int i;
+
+	//header
+	_packet->setMsgVersionId(CURREMT_MSG_VER);
+	_packet->setSourceId(SRC_ID_SERVICE, SRC_ID_SYSTEM);
+	_packet->setDestId(DES_ID_SERVICE, DES_ID_SYSTEM);
+	_packet->setMsgSeqNum(_packet->getMsgSeqNum());
+	_packet->setMsgType(MSG_TYPE_DATA_RES);//////
+	_packet->setMsgId(MSG_ID_NORMAL_BILL);
+	_packet->setMsgLen(sizeof(BILLDATATRANSSTARTREQACK));
+
+	//data area
+	_packet->stBillDataTransStartReqAck.usStatus      = 0x00;//0x00 SUCCESS
+	_packet->stBillDataTransStartReqAck.usReason      = 0x00;//0x00 No Error
+	strDescription_Length   = sizeof(strDescriptionNOERROR)-1;
+	memset(_packet->stBillDataTransStartReqAck.strDescription, 0x20, sizeof(_packet->stBillDataTransStartReqAck.strDescription));
+	memcpy(_packet->stBillDataTransStartReqAck.strDescription, strDescriptionNOERROR,strDescription_Length);//임시
+
+	//strBuf CLEAR
+	memset(strBuf,0x00,MAX_PACKET_LEN);
+	//HEADER COPY
+	memcpy(strBuf,(const void *)&_packet->stMsgh,HEADER_LEN);
+	//DATA COPY
+	memcpy(&strBuf[HEADER_LEN],(const void *)&_packet->stBillDataTransStartReqAck, sizeof(BILLDATATRANSSTARTREQACK));
+
+}
+
+void bdspC::makeBillDataRepMsg()
+{
+
+	int i,j;
+
+	//header
+	_packet->setMsgVersionId(CURREMT_MSG_VER);
+	_packet->setSourceId(SRC_ID_SERVICE, SRC_ID_SYSTEM);
+	_packet->setDestId(DES_ID_SERVICE, DES_ID_SYSTEM);
+	_packet->setMsgSeqNum(usMsgSeqNum);
+	_packet->setMsgType(MSG_TYPE_DATA_REP);
+	_packet->setMsgId(MSG_ID_NORMAL_BILL);
+	//_packet->setMsgLen(sizeof(BILLDATAREP));
+
+	
+	//data area
+
+	//최종 보낸데이타의 정보를 읽는다
+		//0xffffffff까지 보냈을때 0x00000000으로 순환
+		//unStartFileNo  = 4294967295;//0xffffffff
+		//unStartBlockNo = 4294967295;//0xffffffff
+		//unEndBlockNo   = 4294967295;//0xffffffff
+		//unTimeInVal    = 900;       //DEFAULT 15분
+		//unMaxBillSize  = 1048576;   //1M
+	//unStartFileNo, unStartBlockNo, unEndBlockNo, unFlag(0xffffffff:BDS_FLAG_INITIAL 0:BDS_FLAG_USED), unTimeInVal, unMaxBillSize
+	readFileBlock();
+	//performancecout << "[NOTICE00~~~~~~~~~~~>] readFileBlock()" << endl;
+
+	//BDS_UDR.seq의 마지막 파일 또는 SEARCH_BREAK만큼 파일을 찾아 정보를 사용.
+	searchEndFile();
+
+
+	//#ifdef _DEBUG
+	*logout << logout->ErrorCode(0) << "==================================================" << endl;
+	*logout << logout->ErrorCode(0) << "[DEBUG] makeBillDataRepMsg() START" << endl;
+	*logout << logout->ErrorCode(0) << "======== readFileBlock() =========================" << endl;
+	*logout << logout->ErrorCode(0) << "[NOTICE] unStartFileNo =>" << unStartFileNo  << endl;
+	*logout << logout->ErrorCode(0) << "[NOTICE] unStartBlockNo=>" << unStartBlockNo << endl;
+	*logout << logout->ErrorCode(0) << "[NOTICE] unEndBlockNo  =>" << unEndBlockNo   << endl;
+	*logout << logout->ErrorCode(0) << "[NOTICE] unFlag        =>" << unFlag         << endl;
+	*logout << logout->ErrorCode(0) << "[NOTICE] unTimeInVal   =>" << unTimeInVal    << endl;
+	*logout << logout->ErrorCode(0) << "[NOTICE] unMaxBillSize =>" << unMaxBillSize  << endl;
+	*logout << logout->ErrorCode(0) << "======== searchEndFile() =========================" << endl;
+	*logout << logout->ErrorCode(0) << "[NOTICE] unSearchEndFileStartFileNo  =>" << unSearchEndFileStartFileNo  << endl;
+	*logout << logout->ErrorCode(0) << "[NOTICE] unSearchEndFileStartBlockNo =>" << unSearchEndFileStartBlockNo << endl;
+	*logout << logout->ErrorCode(0) << "[NOTICE] unSearchEndFileEndBlockNo   =>" << unSearchEndFileEndBlockNo   << endl;
+	*logout << logout->ErrorCode(0) << "==================================================" << endl;
+	//#endif
+
+
+//%%%%%444444444444444
+
+	//0xffffffff까지 보냈을때 0x00000000으로 순환 또는 최초상태일때
+	//0xffffffff면 0x00000000으로 셋팅, 아니면 +1
+	//초기화/순환
+	if (unStartFileNo == 0xffffffff)
+		unStartFileNo = 0x00000000;
+	else
+		unStartFileNo++;
+	//////??????unStartBlockNo %= 0xffffffff;
+	if (unStartBlockNo == 0xffffffff)
+		unStartBlockNo = 0x00000000;
+	if (unEndBlockNo == 0xffffffff)
+		unEndBlockNo = 0x00000000;
+
+	//저장된보낸파일번호가 0xffffffff면 BDS_UDA.0으로 찾는다
+	//저장된보낸파일번호가 0xffffffff이 아니면 +1값으로 찾는다
+	memset(strFileName,0x00,sizeof(strFileName));
+	sprintf(strFileName, "%s%u",FILE_NAME_BDS_UDR,unStartFileNo);
+	//file을 찾아보고 있으면
+	if ( _filesearch->getFile(strFileName) == FILE_EXIST )
+	{
+		*logout << logout->ErrorCode(0) << "[NOTICE] makeBillDataRepMsg() 파일찾기성공 : " << unStartFileNo << endl;
+*logout << logout->ErrorCode(0) <<  "strFileName : " << strFileName << endl;
+*logout << logout->ErrorCode(0) <<  "_bdsfile->read_BdsUdrData(unStartFileNo) : " << unStartFileNo << endl;
+		/////////////////////BDSFileModule/////////////////////
+*logout << logout->ErrorCode(0) <<  "_bdsfile->read_BdsUdrData(unStartFileNo) : " << _bdsfile->read_BdsUdrData(unStartFileNo) << endl;
+
+
+		_packet->stBillDataRep.unSwitchId   = UNSWITCHID;//= 0x55440001;//UD0001
+		_packet->stBillDataRep.usDataType   = 0x00;//0x00 DISK전송
+		_packet->stBillDataRep.usCdrSize    = 336;     //?336//UDR SIZE//?우선 336byte
+		_packet->stBillDataRep.unBlockSize  = 1024; //BLOCK SIZE//1024byte
+
+		_packet->stBillDataRep.unFileNo     = unStartFileNo;
+		//==============File Header=======================================
+		_packet->stBillDataRep.stBlockNoRange.unStartBlockNo = _bdsfile->get_unStartBlockSeq();
+		_packet->stBillDataRep.stBlockNoRange.unEndBlockNo   = _bdsfile->get_unEndBlockSeq();
+		//=================================================================
+
+*logout << logout->ErrorCode(0) <<  "_bdsfile->get_unStartBlockSeq() : " <<  _bdsfile->get_unStartBlockSeq() << endl;
+*logout << logout->ErrorCode(0) << "_bdsfile->get_unEndBlockSeq() : " <<  _bdsfile->get_unEndBlockSeq() << endl;
+		//BDS_UDR.seq File에서읽은 get_unStartBlockSeq()를 unStartBlockNo에 저장한다
+		unStartBlockNo = _bdsfile->get_unStartBlockSeq();
+		//BDS_UDR.seq File에서읽은 get_unEndBlockSeq()를 unEndBlockNo에 저장한다
+		unEndBlockNo = _bdsfile->get_unEndBlockSeq();
+
+		//memcpy(&_packet->stBillDataRep.strBillData,_bdsfile->get_strBillingData(),_bdsfile->get_nBillDataBlockLen());
+		memcpy(&_packet->stBillDataRep.strBillData,_bdsfile->get_strBillingData(),_bdsfile->get_unBlockCount()*_bdsfile->get_OneBlockSize());
+		/////////////////////BDSFileModule/////////////////////		
+		
+		
+		_packet->setMsgLen(_bdsfile->get_unBlockCount()*_bdsfile->get_OneBlockSize()+24);//ihy 10.30
+	}
+	//file을 찾아보고 없으면
+	else
+	{
+		//skip
+		*logout << logout->ErrorCode(0) << "[WARNNING] makeBillDataRepMsg() 파일찾기실패 : " << unStartFileNo << endl;
+		*logout << logout->ErrorCode(0) << "[WARNNING] makeBillDataRepMsg() NO DATA... Collector가 저장한 파일이 없음..." << endl;
+	}
+
+
+
+
+
+
+
+	//strBuf CLEAR
+	memset(strBuf,0x00,MAX_PACKET_LEN);
+	//HEADER COPY
+	memcpy(strBuf,(const void *)&_packet->stMsgh,HEADER_LEN);
+	//DATA COPY
+	//memcpy(&strBuf[HEADER_LEN],(const void *)&_packet->stBillDataRep, sizeof(BILLDATAREP));
+	memcpy(&strBuf[HEADER_LEN],(const void *)&_packet->stBillDataRep, _bdsfile->get_unBlockCount()*_bdsfile->get_OneBlockSize()+24);//ihy 10.31
+	
+
+
+
+
+}
+
+void bdspC::makeDiskStatusReqAckMsg()
+{
+	char strDescriptionNOERROR[9]   = "NO ERROR";
+	int strDescription_Length;
+	int i;
+
+	//header
+	_packet->setMsgVersionId(CURREMT_MSG_VER);
+	_packet->setSourceId(SRC_ID_SERVICE, SRC_ID_SYSTEM);
+	_packet->setDestId(DES_ID_SERVICE, DES_ID_SYSTEM);
+	_packet->setMsgSeqNum(_packet->getMsgSeqNum());
+	_packet->setMsgType(MSG_TYPE_DATA_RES);//0x03
+	_packet->setMsgId(MSG_ID_MD_DISK_STATUS);//0x06
+	//MD 또는 SW
+	//_packet->setMsgId(MSG_ID_SWITCH_DISK_STATUS);//0x05
+	_packet->setMsgLen(sizeof(DISKSTATUSREQACK));
+
+	//data area
+	//우선 에러코드에 0x00셋팅
+	//DiskCheck() 루틴이 들어가야할곳!!!!!!
+	_packet->stDiskStatusReqAck.usErrorCode   = 0x00;//0x00 No Error
+	
+	if (_packet->stDiskStatusReqAck.usErrorCode == 0x00 )
+	{
+		//HEADER-------------------------------------------------------------------
+		_packet->stDiskStatusReqAck.unMdId        = UNSWITCHID;//= 0x55440001;//UD0001
+		_packet->stDiskStatusReqAck.usStatus      = 0x00;//0x00 SUCCESS
+		_packet->stDiskStatusReqAck.usErrorCode   = 0x00;//0x00 No Error
+		strDescription_Length   = sizeof(strDescriptionNOERROR)-1;
+		memset(_packet->stDiskStatusReqAck.strDescription, 0x20, sizeof(_packet->stDiskStatusReqAck.strDescription));
+		memcpy(_packet->stDiskStatusReqAck.strDescription, strDescriptionNOERROR,strDescription_Length);//임시
+		_packet->stDiskStatusReqAck.unSwitchCount = 1;//UDA FIX
+
+		//ARRAY[0] HEADER와 동일 ----------------------------------------------------
+		i=0;
+		_packet->stDiskStatusReqAck.stDElement[i].unSwitchId  = UNSWITCHID;//= 0x55440001;//UD0001
+		_packet->stDiskStatusReqAck.stDElement[i].usStatus    = 0x00;//0x00 SUCCESS
+		_packet->stDiskStatusReqAck.stDElement[i].usErrorCode = 0x00;//0x00 No Error
+		memset(_packet->stDiskStatusReqAck.strDescription, 0x20, sizeof(_packet->stDiskStatusReqAck.strDescription));
+		memcpy(_packet->stDiskStatusReqAck.stDElement[i].strDescription, strDescriptionNOERROR,strDescription_Length);//임시
+
+		//ARRAY[1] ~ ARRAY[9] 초기화 ------------------------------------------------
+		for(i=1; i<10; i++)
+		{
+			_packet->stDiskStatusReqAck.stDElement[i].unSwitchId  =0;
+			_packet->stDiskStatusReqAck.stDElement[i].usStatus    =0;
+			_packet->stDiskStatusReqAck.stDElement[i].usErrorCode =0;
+			memset(_packet->stDiskStatusReqAck.strDescription, 0x20, sizeof(_packet->stDiskStatusReqAck.strDescription));
+			memcpy(_packet->stDiskStatusReqAck.stDElement[i].strDescription, strDescriptionNOERROR,strDescription_Length);//임시
+		}				
+	}
+	//에러유형에따라 다르게 처리 - 임시 재수정요망
+	else
+	{
+		strDescription_Length   = sizeof(strDescriptionNOERROR)-1;
+		memset(_packet->stDiskStatusReqAck.strDescription, 0x20, sizeof(_packet->stDiskStatusReqAck.strDescription));
+		memcpy(_packet->stDiskStatusReqAck.strDescription, strDescriptionNOERROR,strDescription_Length);//임시
+	}
+
+	//strBuf CLEAR
+	memset(strBuf,0x00,MAX_PACKET_LEN);
+	//HEADER COPY
+	memcpy(strBuf,(const void *)&_packet->stMsgh,HEADER_LEN);
+	//DATA COPY
+	memcpy(&strBuf[HEADER_LEN],(const void *)&_packet->stDiskStatusReqAck, sizeof(DISKSTATUSREQACK));
+
+}
+
+void bdspC::makeStatusDataRep1Msg()
+{
+
+}
+void bdspC::makeStatusDataRep2Msg()
+{
+
+}
+void bdspC::makeStatusDataRep3Msg()
+{
+
+}
+void bdspC::makeStatusDataRep4Msg()
+{
+
+}
+void bdspC::makeStatusDataRep5Msg()
+{
+
+}
+void bdspC::makeStatusReqMsg()
+{
+	//header
+	_packet->setMsgVersionId(CURREMT_MSG_VER);
+	_packet->setSourceId(SRC_ID_SERVICE, SRC_ID_SYSTEM);
+	_packet->setDestId(DES_ID_SERVICE, DES_ID_SYSTEM);
+	_packet->setMsgSeqNum(usMsgSeqNum);
+	_packet->setMsgType(MSG_TYPE_DATA_REQ);//0x01
+	_packet->setMsgId(MSG_ID_HOST_STATUS);//0x0B
+	_packet->setMsgLen(0x00000000);//DATA없음
+
+	//no data area
+	//strBuf CLEAR
+	memset(strBuf,0x00,MAX_PACKET_LEN);
+	//HEADER COPY
+	memcpy(strBuf,(const void *)&_packet->stMsgh,HEADER_LEN);
+
+}
+
+void bdspC::makeStatusReqAckMsg()
+{
+	//header
+	_packet->setMsgVersionId(CURREMT_MSG_VER);
+	_packet->setSourceId(SRC_ID_SERVICE, SRC_ID_SYSTEM);
+	_packet->setDestId(DES_ID_SERVICE, DES_ID_SYSTEM);
+	_packet->setMsgSeqNum(_packet->getMsgSeqNum());
+	_packet->setMsgType(MSG_TYPE_DATA_RES);//0x03
+	_packet->setMsgId(MSG_ID_MD_STATUS);//0x0A
+	//MD 또는 SW
+	//_packet->setMsgId(MSG_ID_SWITCH_STATUS);//0x09
+	_packet->setMsgLen(0x00000000);//DATA없음
+
+	//no data area
+	//strBuf CLEAR
+	memset(strBuf,0x00,MAX_PACKET_LEN);
+	//HEADER COPY
+	memcpy(strBuf,(const void *)&_packet->stMsgh,HEADER_LEN);
+
+}
+
+void bdspC::makeDisconnectReqMsg()
+{
+	//header
+	_packet->setMsgVersionId(CURREMT_MSG_VER);
+	_packet->setSourceId(SRC_ID_SERVICE, SRC_ID_SYSTEM);
+	_packet->setDestId(DES_ID_SERVICE, DES_ID_SYSTEM);
+	_packet->setMsgSeqNum(usMsgSeqNum);
+	_packet->setMsgType(MSG_TYPE_CONTROL_REP);
+	_packet->setMsgId(MSG_ID_DISCONNECT);
+	_packet->setMsgLen(0x00000000);//DATA없음
+
+	//no data area
+	//strBuf CLEAR
+	memset(strBuf,0x00,MAX_PACKET_LEN);
+	//HEADER COPY
+	memcpy(strBuf,(const void *)&_packet->stMsgh,HEADER_LEN);
+
+}
+
+
+
+////////////////////////////////////////////////////////////
+//function name : int searchBillData(void)
+//function desc : Collector가 생성한 파일이 있는지 검사
+//return value  : 보낼파일이 있으면 1 / 없으면 0 리턴
+////////////////////////////////////////////////////////////
+int bdspC::searchBillData(void)
+{
+	//최종 보낸데이타의 정보를 읽는다
+		//0xffffffff까지 보냈을때 0x00000000으로 순환
+		//unStartFileNo  = 4294967295;//0xffffffff
+		//unStartBlockNo = 4294967295;//0xffffffff
+		//unEndBlockNo   = 4294967295;//0xffffffff
+		//unTimeInVal    = 900;       //DEFAULT 15분
+		//unMaxBillSize  = 1048576;   //1M
+	//unStartFileNo, unStartBlockNo, unEndBlockNo, unFlag(0xffffffff:BDS_FLAG_INITIAL 0:BDS_FLAG_USED), unTimeInVal, unMaxBillSize
+	readFileBlock();
+	//performancecout << "[NOTICE00+++++++++++>] readFileBlock()" << endl;
+
+	//BDS_UDR.seq의 마지막 파일 또는 SEARCH_BREAK만큼 파일을 찾아 정보를 사용.
+	searchEndFile();
+	
+	
+	//#ifdef _DEBUG
+	*logout << logout->ErrorCode(0) << "==================================================" << endl;
+	*logout << logout->ErrorCode(0) << "[DEBUG] searchBillData() START" << endl;
+	*logout << logout->ErrorCode(0) << "======== readFileBlock() =========================" << endl;
+	*logout << logout->ErrorCode(0) << "[NOTICE] unStartFileNo =>" << unStartFileNo  << endl;
+	*logout << logout->ErrorCode(0) << "[NOTICE] unStartBlockNo=>" << unStartBlockNo << endl;
+	*logout << logout->ErrorCode(0) << "[NOTICE] unEndBlockNo  =>" << unEndBlockNo   << endl;
+	*logout << logout->ErrorCode(0) << "[NOTICE] unFlag        =>" << unFlag         << endl;
+	*logout << logout->ErrorCode(0) << "[NOTICE] unTimeInVal   =>" << unTimeInVal    << endl;
+	*logout << logout->ErrorCode(0) << "[NOTICE] unMaxBillSize =>" << unMaxBillSize  << endl;
+	*logout << logout->ErrorCode(0) << "======== searchEndFile() =========================" << endl;
+	*logout << logout->ErrorCode(0) << "[NOTICE] unSearchEndFileStartFileNo  =>" << unSearchEndFileStartFileNo  << endl;
+	*logout << logout->ErrorCode(0) << "[NOTICE] unSearchEndFileStartBlockNo =>" << unSearchEndFileStartBlockNo << endl;
+	*logout << logout->ErrorCode(0) << "[NOTICE] unSearchEndFileEndBlockNo   =>" << unSearchEndFileEndBlockNo   << endl;
+	*logout << logout->ErrorCode(0) << "==================================================" << endl;
+	//#endif
+
+
+//%%%%%5555555555555
+
+	//저장된보낸파일번호가 0xffffffff이고 Collector가저장한파일번호가 0xffffffff면
+	//[초기상태] OR [데이타전송상태0xffffffff 0x???????? 0x????????]
+	if ( (unStartFileNo == 0xffffffff) && (unSearchEndFileStartFileNo == 0xffffffff) )
+	{
+		//[초기상태]
+		/////////////////////CollectorModule/////////////////////
+		//if ( (unStartBlockNo == 0xffffffff) && (unEndBlockNo == 0xffffffff) )
+		if ( (unStartBlockNo == 0xffffffff) && (unEndBlockNo == 0xffffffff) && (unFlag == BDS_FLAG_INITIAL) )
+		{
+			*logout << logout->ErrorCode(0) << "[NOTICE] searchBillData() [초기상태]" << endl;
+			return BILLDATA_NOTEXIST;
+		}
+		//[데이타전송상태0xffffffff 0x???????? 0x????????]
+		else if ( (unStartBlockNo != 0xffffffff) || (unEndBlockNo != 0xffffffff) || (unFlag != BDS_FLAG_INITIAL) )
+		{
+			*logout << logout->ErrorCode(0) << "[NOTICE] searchBillData() [데이타전송상태]" << endl;
+			memset(strFileName,0x00,sizeof(strFileName));
+			sprintf(strFileName, "%s%u",FILE_NAME_BDS_UDR,unStartFileNo);
+			//file을 찾아보고 있으면
+			if ( _filesearch->getFile(strFileName) == FILE_EXIST )
+			{
+				*logout << logout->ErrorCode(0) << "[NOTICE] searchBillData() [데이타전송상태] 파일찾기성공 : " << unStartFileNo << endl;
+				return BILLDATA_EXIST;
+			}
+			//file을 찾아보고 없으면 에러
+			else
+			{
+				*logout << logout->ErrorCode(0) << "[ERROR] searchBillData() [데이타전송상태] 파일찾기실패 : " << unStartFileNo << endl;
+				*logout << logout->ErrorCode(8228) << "[ERROR] searchBillData() [데이타전송상태] 파일찾기실패 : " << unStartFileNo << endl;
+				return BILLDATA_NOTEXIST;
+			}
+		}
+		//(초기상태) (데이타전송상태0xffffffff 0x???????? 0x????????) 에러
+		else
+		{
+				*logout << logout->ErrorCode(0) << "[ERROR] searchBillData() [초기상태] [데이타전송상태] 에러" << endl;
+				*logout << logout->ErrorCode(8229) << "[ERROR] searchBillData() [초기상태] [데이타전송상태] 에러" << endl;
+				return BILLDATA_NOTEXIST;
+		}
+	}
+	//저장된보낸파일번호가 0xffffffff이고 Collector가저장한파일번호가 0xffffffff가아니면
+	//[BDS_UDA.seq파일생성상태]
+	else if ( (unStartFileNo == 0xffffffff) && (unFlag != BDS_FLAG_INITIAL) )
+	
+	{
+		//0xffffffff까지 보냈을때 0x00000000으로 순환 또는 최초상태일때
+		//0xffffffff면 0x00000000으로 셋팅, 아니면 +1
+		//초기화/순환
+		if (unStartFileNo == 0xffffffff)
+			unStartFileNo = 0x00000000;
+		if (unStartBlockNo == 0xffffffff)
+			unStartBlockNo = 0x00000000;
+		if (unEndBlockNo == 0xffffffff)
+			unEndBlockNo = 0x00000000;
+
+		//BDS_UDA.0으로 찾는다
+		memset(strFileName,0x00,sizeof(strFileName));
+		sprintf(strFileName, "%s%u",FILE_NAME_BDS_UDR,unStartFileNo);
+		//file을 찾아보고 있으면
+		if ( _filesearch->getFile(strFileName) == FILE_EXIST )
+		{
+			*logout << logout->ErrorCode(0) << "[NOTICE] searchBillData() [BDS_UDA.seq파일생성상태] 파일찾기성공 : " << unStartFileNo << endl;
+			return BILLDATA_EXIST;
+		}
+		//file을 찾아보고 없으면 에러
+		else
+		{
+			*logout << logout->ErrorCode(0) << "[ERROR] searchBillData() [BDS_UDA.seq파일생성상태] 파일찾기실패 : " << unStartFileNo << endl;
+			*logout << logout->ErrorCode(8230) << "[ERROR] searchBillData() [BDS_UDA.seq파일생성상태] 파일찾기실패 : " << unStartFileNo << endl;
+			return BILLDATA_NOTEXIST;
+		}
+
+
+	}
+	//저장된보낸파일번호가 0xffffffff가아니고 Collector가저장한파일번호가 0xffffffff가아니면
+	//[BDS_UDA.seq파일생성상태 / BDSIF데이타전송상태]
+	else if ( (unStartFileNo != 0xffffffff) && (unFlag != BDS_FLAG_INITIAL) )
+	{
+		//0xffffffff까지 보냈을때 0x00000000으로 순환 또는 최초상태일때
+		//0xffffffff면 0x00000000으로 셋팅, 아니면 +1
+		//초기화/순환
+		unStartFileNo++;
+		if (unStartBlockNo == 0xffffffff)
+			unStartBlockNo = 0x00000000;
+		if (unEndBlockNo == 0xffffffff)
+			unEndBlockNo = 0x00000000;
+
+		//1) 저장된보낸파일번호가 0 , Collector가저장한파일번호가 0이면 unStartFileNo는 1. 즉,BDS_UDA.1을 찾는다
+		//2) 저장된보낸파일번호가 0 , Collector가저장한파일번호가 1이면 unStartFileNo는 1. 즉,BDS_UDA.1을 찾는다
+		memset(strFileName,0x00,sizeof(strFileName));
+		sprintf(strFileName, "%s%u",FILE_NAME_BDS_UDR,unStartFileNo);
+		//file을 찾아보고 있으면
+		if ( _filesearch->getFile(strFileName) == FILE_EXIST )
+		{
+			*logout << logout->ErrorCode(0) << "[NOTICE] searchBillData() [BDS_UDA.seq파일생성상태 / BDSIF데이타전송상태] 파일찾기성공 : " << unStartFileNo << endl;
+			//이미 증가한 unStartFileNo를 -1한다
+			unStartFileNo--;
+			return BILLDATA_EXIST;
+		}
+		//file을 찾아보고 없으면 Collector가 저장한 파일이 없음.
+		else
+		{
+			*logout << logout->ErrorCode(0) << "[NOTICE] searchBillData() [BDS_UDA.seq파일생성상태 / BDSIF데이타전송상태] 파일찾기실패 : " << unStartFileNo << endl;
+			*logout << logout->ErrorCode(0) << "[NOTICE] searchBillData() NO DATA... Collector가 저장한 파일이 없음..." << endl;
+			//이미 증가한 unStartFileNo를 -1한다
+			unStartFileNo--;
+			return BILLDATA_NOTEXIST;
+		}
+	}
+
+
+	return BILLDATA_NOTEXIST;
+}
+
+
+
+
+
+//unStartFileNo, unStartBlockNo, unEndBlockNo, unFlag(0xffffffff:BDS_FLAG_INITIAL 0:BDS_FLAG_USED), unTimeInVal, unMaxBillSize
+int bdspC::saveFileBlock(void)
+{
+
+
+
+	//성능정보 nFlag, nDataType(0:AIF~AGG,1:COL~BDS), nFileNo, unUdrCnt, nQueryCnt)
+	logout->put_PerformanceData(FLAG_START, 1, unStartFileNo, 0, 0, 0);
+
+	//unFlag를 BDS_FLAG_USED로 저장한다
+	unFlag = BDS_FLAG_USED;
+	
+	memset(strFileName,0x00,sizeof(strFileName));
+	if(ServiceId==1)
+	{
+		sprintf(strFileName, PATH_NAME_BDS_FILE_BLOCK_INFO);
+	}
+	else
+	{
+		sprintf(strFileName, PATH_NAME_BDS_FILE_BLOCK_INFO2);
+	}
+
+	BdsFileBlock aaa(strFileName);
+	aaa.setFileNo(unStartFileNo);
+	aaa.setStartBlockNo(unStartBlockNo);
+	aaa.setEndBlockNo(unEndBlockNo);
+	aaa.setFlag(unFlag);
+	aaa.setTimeInVal(unTimeInVal);
+	aaa.setMaxBillSize(unMaxBillSize);
+	aaa.write_BdsFileBlock();
+
+
+	//성능정보 nFlag, nDataType(0:AIF~AGG,1:COL~BDS), nFileNo, unUdrCnt, nQueryCnt)
+	logout->put_PerformanceData(FLAG_END, 1, unStartFileNo, 0, 0, 0);
+
+	return(1);
+
+
+
+
+/*
+	FILE *fp;
+
+	//unFlag를 BDS_FLAG_USED로 저장한다
+	unFlag = BDS_FLAG_USED;
+	
+	memset(strFileName,0x00,sizeof(strFileName));
+	if(SystemId==1)
+	{
+		sprintf(strFileName, PATH_NAME_BDS_FILE_BLOCK_INFO);
+	}
+	else
+	{
+		sprintf(strFileName, PATH_NAME_BDS_FILE_BLOCK_INFO2);
+	}
+	if ((fp = fopen(strFileName, "w")) == NULL) {
+		perror("fopen failed saveFileBlock():");
+		return(-1);
+	}
+
+	if( fprintf(fp, "%u %u %u %u %u %u\n", unStartFileNo, unStartBlockNo, unEndBlockNo, unFlag, unTimeInVal, unMaxBillSize) < 0 )
+		perror("fail saveFileBlock():");
+	fclose(fp);
+	if(chmod(strFileName, 00666) < 0) {
+		*logout << logout->ErrorCode(0) << "[ERROR] chmod failed saveFileBlock() " << strFileName <<endl;
+		return(-1);
+	}
+	return(1);
+*/	
+}
+
+
+//unStartFileNo, unStartBlockNo, unEndBlockNo, unFlag(0xffffffff:BDS_FLAG_INITIAL 0:BDS_FLAG_USED), unTimeInVal, unMaxBillSize
+int bdspC::readFileBlock(void)
+{
+
+	memset(strFileName,0x00,sizeof(strFileName));
+	if(ServiceId==1)
+	{
+		sprintf(strFileName, PATH_NAME_BDS_FILE_BLOCK_INFO);
+	}
+	else
+	{
+		sprintf(strFileName, PATH_NAME_BDS_FILE_BLOCK_INFO2);
+	}
+
+	BdsFileBlock aaa(strFileName);
+	aaa.read_BdsFileBlock();
+	unStartFileNo  = aaa.getFileNo();
+	unStartBlockNo = aaa.getStartBlockNo();
+	unEndBlockNo   = aaa.getEndBlockNo();
+	unFlag         = aaa.getFlag();
+	unTimeInVal    = aaa.getTimeInVal();
+	unMaxBillSize  = aaa.getMaxBillSize();
+	
+	return(1);
+
+
+
+/*
+	FILE	*fp;
+	time_t	tTime;
+	struct tm	*tp;
+
+	memset(strFileName,0x00,sizeof(strFileName));
+	if(SystemId==1)
+	{
+		sprintf(strFileName, PATH_NAME_BDS_FILE_BLOCK_INFO);
+	}
+	else
+	{
+		sprintf(strFileName, PATH_NAME_BDS_FILE_BLOCK_INFO2);
+	}
+
+	if ( (fp = fopen(strFileName, "r")) == NULL )
+	{
+		*logout << logout->ErrorCode(0) << "[ERROR] fopen failed readFileBlock()" << strFileName <<endl;
+		return(-1);
+	}
+	if( fscanf(fp, "%u %u %u %u %u %u", &unStartFileNo, &unStartBlockNo, &unEndBlockNo, &unFlag, &unTimeInVal, &unMaxBillSize) < 0 )
+	{
+		perror("fscanf(readFileBlock):");
+		//최초 데이타없음 상태일때
+		unStartFileNo  = 4294967295;//0xffffffff
+		unStartBlockNo = 4294967295;//0xffffffff
+		unEndBlockNo   = 4294967295;//0xffffffff
+		unFlag         = 4294967295;//unFlag(0xffffffff:BDS_FLAG_INITIAL 0:BDS_FLAG_USED)
+		unTimeInVal    = 30;       //DEFAULT 15분 900 => 30초
+		unMaxBillSize  = 1048576;   //1M
+	}
+	fclose(fp);
+	return(1);
+*/
+}
+
+
+int bdspC::getDateNTime(char *buf)
+{
+	time_t	  t;
+	struct tm *s;
+
+	time(&t);
+	s = (struct tm *) localtime( &t );
+	sprintf(buf,"%04d%02d%02d%02d%02d%02d",
+			s->tm_year+1900, s->tm_mon+1,s->tm_mday,s->tm_hour,s->tm_min,s->tm_sec);
+	return(1);
+}
+
+
+char * bdspC::zero_itoa(int n, int width, char *s)
+{
+    int loop = 0;
+
+    if (n < 0)
+    {
+        n *= -1;
+        *s = '-';
+        loop = 1;
+    }
+    while (width-- > 0 && n > 0)
+    {
+        *(s + width) = (n % 10) + '0';
+        n = n / 10;
+    }
+    while (width >= loop)
+    {
+        *(s + width) = '0';
+        width--;
+    }
+	return s;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////
+//function name : void searchBillData(void)
+//function desc : BDS_UDR.seq의 마지막 파일 또는 SEARCH_BREAK만큼 파일을 찾아 정보를 사용.
+//return value  : 없음
+/////////////////////////////////////////////////////////////////////////////////////
+void bdspC::searchEndFile(void)
+{
+	
+
+	int nBreak=0;
+	unsigned int unTempFileNo;
+
+	//readFileBlock()에서 읽은 unStartFileNo을 unTempFileNo에 저장하고 증가시키면서 파일을 찾는다
+	unTempFileNo = unStartFileNo;
+
+	while(1)
+	{
+		//nBreak가 SEARCH_BREAK(현재 20)보다 크면 searchEndFile()을 break한다
+		if (nBreak > SEARCH_BREAK)
+		{
+			break;
+		}
+		nBreak++;
+		
+		memset(strFileName,0x00,sizeof(strFileName));
+		sprintf(strFileName, "%s%u",FILE_NAME_BDS_UDR,++unTempFileNo);
+		//file을 찾아보고 있으면
+		if ( _filesearch->getFile(strFileName) == FILE_EXIST )
+		{
+			*logout << logout->ErrorCode(0) << "[NOTICE] searchEndFile() success : " << unTempFileNo << endl;
+			if (unFlag == BDS_FLAG_INITIAL)
+			{
+				//file을 찾은후 unFlag가 BDS_FLAG_INITIAL이면
+				//unFlag를 BDS_FLAG_USED로 저장한다
+				saveFileBlock();
+			}
+*logout << logout->ErrorCode(0) <<  "strFileName : " << strFileName << endl;			
+*logout << logout->ErrorCode(0) <<  "_bdsfile->read_BdsUdrData(unTempFileNo) : " << unTempFileNo << endl;
+
+			*logout << logout->ErrorCode(0) <<  "_bdsfile->read_BdsUdrData(unTempFileNo) : " << _bdsfile->read_BdsUdrData(unTempFileNo) << endl;
+
+			//BDS_UDR.seq File에서 읽은 get_unFileSeq()로 대치한다
+			//unSearchEndFileStartFileNo = _bdsfile->get_unFileSeq();
+			unSearchEndFileStartFileNo = unTempFileNo;
+			//BDS_UDR.seq File에서 읽은 get_unStartBlockSeq()로 대치한다
+			unSearchEndFileStartBlockNo = _bdsfile->get_unStartBlockSeq();//File
+			//BDS_UDR.seq File에서 읽은 get_unEndBlockSeq()로 대치한다
+			unSearchEndFileEndBlockNo = _bdsfile->get_unEndBlockSeq();
+			
+*logout << logout->ErrorCode(0) <<  "_bdsfile->get_unStartBlockSeq() : " <<  _bdsfile->get_unStartBlockSeq();
+*logout << logout->ErrorCode(0) <<  "_bdsfile->get_unEndBlockSeq() : " <<  _bdsfile->get_unEndBlockSeq();
+			
+		}
+		//file을 찾아보고 없으면 Collector가 저장한 파일이 없음.
+		else
+		{
+			if (unFlag == BDS_FLAG_INITIAL)
+			{
+				*logout << logout->ErrorCode(0) << "[NOTICE] BDS_FLAG_INITIAL searchEndFile() fail : " << unTempFileNo << endl;
+				unSearchEndFileStartFileNo = 0xffffffff;
+				unSearchEndFileStartBlockNo = 0xffffffff;
+				unSearchEndFileEndBlockNo = 0xffffffff;
+			}
+			break;
+		}
+
+	}//while
+
+}
+
+void bdspC::writePMSMQ(int sigNo)
+{
+	int i;
+	char PMSMQ_NO[2];
+	MsgPmsStatus	OneRec(MSG_STATUS, SystemId, ServiceId, GroupId, ProcessType, ProSerialNo, ProReMark);
+	
+/***************************************	
+	OneRec.sys_id      = SystemId;
+	OneRec.svc_id      = ServiceId;
+	OneRec.group_type  = GroupId;
+	OneRec.proc_type   = ProcessType;
+	OneRec.proc_sn     = ProSerialNo;
+	OneRec.proc_remark = ProReMark;
+	OneRec.msg_type    = 0;//??????
+	OneRec.pid         = getpid();//??????
+	OneRec.status_flag = sigNo;
+***************************************/
+	OneRec.set_nStatus(sigNo);
+	
+	sprintf(PMSMQ_NO, "%d", ServiceId);
+	
+	while(1)
+	{
+		i++;
+		if (_PMSMQ->sendMsg(&OneRec) == FLAG_MQ_IS_FULL)
+		{
+			*logout << logout->ErrorCode(0) << "[ERROR] PMSMQ " << PMSMQ_NO << " IS FULL sleep(1)...!"	<< endl;
+			*logout << logout->ErrorCode(8231) << "[ERROR] PMSMQ " << PMSMQ_NO << " IS FULL sleep(1)...!"	<< endl;
+			sleep(1);
+			if (i >= 10)
+			{
+				kill(0,SIGINT);
+			}
+		}
+		else
+		{
+			break;
+		}
+	}
+}
+
+
+void bdspC::printMsg( int nMsgType )
+{
+	int i;//for i Element
+	
+	*logout << logout->ErrorCode(0) << " ===== HEADER====================================================" << endl;
+	*logout << logout->ErrorCode(0) << " getMsgSeqNum()       [" << _packet->getMsgSeqNum()           << "]" << endl;
+	*logout << logout->ErrorCode(0) << " getMsgType()         [" << _packet->getMsgType()             << "]" << endl;
+	*logout << logout->ErrorCode(0) << " getMsgId()           [" << _packet->getMsgId()               << "]" << endl;
+	*logout << logout->ErrorCode(0) << " getMsgLen()          [" << _packet->getMsgLen()              << "]" << endl;
+	switch(nMsgType)
+	{
+		case CONFIG_REQ://no data
+			*logout << logout->ErrorCode(0) << " ===== bdspPacketC::CONFIG_REQ=====" << endl;
+			break;
+		case CONFIG_REQ_ACK:
+			*logout << logout->ErrorCode(0) << " ===== bdspPacketC::CONFIG_REQ_ACK=====" << endl;
+			*logout << logout->ErrorCode(0) << " usStatus           [" << _packet->stConfigReqAck.usStatus       << "]" << endl;
+			*logout << logout->ErrorCode(0) << " usReason           [" << _packet->stConfigReqAck.usReason       << "]" << endl;
+			*logout << logout->ErrorCode(0) << " strDescription     [" << _packet->stConfigReqAck.strDescription << "]" << endl;
+			break;
+		case CONFIG_RES:
+			*logout << logout->ErrorCode(0) << " ===== bdspPacketC::CONFIG_RES=====" << endl;
+			*logout << logout->ErrorCode(0) << " unMdId                                        [" << _packet->stConfigRes.unMdId   << "]" << endl;
+			*logout << logout->ErrorCode(0) << " unSwitchCount                                 [" << _packet->stConfigRes.unSwitchCount  << "]" << endl;
+			for(i=0; i<1; i++)
+			{
+			*logout << logout->ErrorCode(0) << " stRElement[" << i << "].unSwitchId                    [" << _packet->stConfigRes.stRElement[i].unSwitchId                    << "]" << endl;
+			*logout << logout->ErrorCode(0) << " stRElement[" << i << "].stFileNoRange.unStartFileNo   [" << _packet->stConfigRes.stRElement[i].stFileNoRange.unStartFileNo   << "]" << endl;
+			*logout << logout->ErrorCode(0) << " stRElement[" << i << "].stFileNoRange.unEndFileNo     [" << _packet->stConfigRes.stRElement[i].stFileNoRange.unEndFileNo     << "]" << endl;
+			*logout << logout->ErrorCode(0) << " stRElement[" << i << "].stBlockNoRange.unStartBlockNo [" << _packet->stConfigRes.stRElement[i].stBlockNoRange.unStartBlockNo << "]" << endl;
+			*logout << logout->ErrorCode(0) << " stRElement[" << i << "].stBlockNoRange.unEndBlockNo   [" << _packet->stConfigRes.stRElement[i].stBlockNoRange.unEndBlockNo   << "]" << endl;
+			}
+			break;
+		case CONFIG_RES_ACK:
+			*logout << logout->ErrorCode(0) << " ===== bdspPacketC::CONFIG_RES_ACK=====" << endl;
+			*logout << logout->ErrorCode(0) << " usStatus                                      [" << _packet->stConfigResAck.usStatus       << "]" << endl;
+			*logout << logout->ErrorCode(0) << " usReason                                      [" << _packet->stConfigResAck.usReason       << "]" << endl;
+			*logout << logout->ErrorCode(0) << " unMdId                                        [" << _packet->stConfigResAck.unMdId         << "]" << endl;
+			*logout << logout->ErrorCode(0) << " unSwitchCount                                 [" << _packet->stConfigResAck.unSwitchCount  << "]" << endl;
+			for(i=0; i<1; i++)
+			{
+			*logout << logout->ErrorCode(0) << " stRElement[" << i << "].unSwitchId                    [" << _packet->stConfigResAck.stRElement[i].unSwitchId                    << "]" << endl;
+			*logout << logout->ErrorCode(0) << " stRElement[" << i << "].stFileNoRange.unStartFileNo   [" << _packet->stConfigResAck.stRElement[i].stFileNoRange.unStartFileNo   << "]" << endl;
+			*logout << logout->ErrorCode(0) << " stRElement[" << i << "].stFileNoRange.unEndFileNo     [" << _packet->stConfigResAck.stRElement[i].stFileNoRange.unEndFileNo     << "]" << endl;
+			*logout << logout->ErrorCode(0) << " stRElement[" << i << "].stBlockNoRange.unStartBlockNo [" << _packet->stConfigResAck.stRElement[i].stBlockNoRange.unStartBlockNo << "]" << endl;
+			*logout << logout->ErrorCode(0) << " stRElement[" << i << "].stBlockNoRange.unEndBlockNo   [" << _packet->stConfigResAck.stRElement[i].stBlockNoRange.unEndBlockNo   << "]" << endl;
+			}
+			break;
+		case COLLECTION_START_INFO:
+			*logout << logout->ErrorCode(0) << " ===== bdspPacketC::COLLECTION_START_INFO=====" << endl;
+			*logout << logout->ErrorCode(0) << " unMdId                          [" << _packet->stCollectionStartInfo.unMdId        << "]" << endl;
+			*logout << logout->ErrorCode(0) << " unSwitchCount                   [" << _packet->stCollectionStartInfo.unSwitchCount << "]" << endl;
+			for(i=0; i<1; i++)
+			{
+			*logout << logout->ErrorCode(0) << " stSElement[" << i << "].unSwitchId      [" << _packet->stCollectionStartInfo.stSElement[i].unSwitchId     << "]" << endl;
+			*logout << logout->ErrorCode(0) << " stSElement[" << i << "].unStartFileNo   [" << _packet->stCollectionStartInfo.stSElement[i].unStartFileNo  << "]" << endl;
+			*logout << logout->ErrorCode(0) << " stSElement[" << i << "].unStartBlockNo  [" << _packet->stCollectionStartInfo.stSElement[i].unStartBlockNo << "]" << endl;
+			}
+			break;
+		case COLLECTION_START_INFO_ACK:
+			*logout << logout->ErrorCode(0) << " ===== bdspPacketC::COLLECTION_START_INFO_ACK=====" << endl;
+			*logout << logout->ErrorCode(0) << " usStatus                        [" << _packet->stCollectionStartInfoAck.usStatus       << "]" << endl;
+			*logout << logout->ErrorCode(0) << " usReason                        [" << _packet->stCollectionStartInfoAck.usReason       << "]" << endl;
+			*logout << logout->ErrorCode(0) << " unMdId                          [" << _packet->stCollectionStartInfoAck.unMdId         << "]" << endl;
+			*logout << logout->ErrorCode(0) << " unSwitchCount                   [" << _packet->stCollectionStartInfoAck.unSwitchCount  << "]" << endl;
+			for(i=0; i<1; i++)
+			{
+			*logout << logout->ErrorCode(0) << " stSElement[" << i << "].unSwitchId      [" << _packet->stCollectionStartInfoAck.stSElement[i].unSwitchId     << "]" << endl;
+			*logout << logout->ErrorCode(0) << " stSElement[" << i << "].unStartFileNo   [" << _packet->stCollectionStartInfoAck.stSElement[i].unStartFileNo  << "]" << endl;
+			*logout << logout->ErrorCode(0) << " stSElement[" << i << "].unStartBlockNo  [" << _packet->stCollectionStartInfoAck.stSElement[i].unStartBlockNo << "]" << endl;
+			}
+			break;
+		case TRANS_CONFIG_CHANGE_REQ:
+			*logout << logout->ErrorCode(0) << " ===== bdspPacketC::TRANS_CONFIG_CHANGE_REQ=====" << endl;
+			*logout << logout->ErrorCode(0) << " unTimeInVal    [" << _packet->stTransConfigChangeReq.unTimeInVal << "]" << endl;
+			*logout << logout->ErrorCode(0) << " unMaxBillSize  [" << _packet->stTransConfigChangeReq.unMaxBillSize << "]" << endl;
+			break;
+		case TRANS_CONFIG_CHANGE_REQ_ACK:
+			*logout << logout->ErrorCode(0) << " ===== bdspPacketC::TRANS_CONFIG_CHANGE_REQ_ACK=====" << endl;
+			*logout << logout->ErrorCode(0) << " usStatus        [" << _packet->stTransConfigChangeReqAck.usStatus        << "]" << endl;
+			*logout << logout->ErrorCode(0) << " usReason        [" << _packet->stTransConfigChangeReqAck.usReason        << "]" << endl;
+			*logout << logout->ErrorCode(0) << " unTimeInVal     [" << _packet->stTransConfigChangeReqAck.unTimeInVal     << "]" << endl;
+			*logout << logout->ErrorCode(0) << " unMaxBillSize   [" << _packet->stTransConfigChangeReqAck.unMaxBillSize   << "]" << endl;
+			*logout << logout->ErrorCode(0) << " strDescription  [" << _packet->stTransConfigChangeReqAck.strDescription  << "]" << endl;
+			break;
+		case BILL_DATA_TRANS_START_REQ:
+			*logout << logout->ErrorCode(0) << " ===== bdspPacketC::BILL_DATA_TRANS_START_REQ=====" << endl;
+			*logout << logout->ErrorCode(0) << " unMdId            [" << _packet->stBillDataTransStartReq.unMdId        << "]" << endl;
+			*logout << logout->ErrorCode(0) << " unSwitchCount     [" << _packet->stBillDataTransStartReq.unSwitchCount << "]" << endl;
+			for(i=0; i<1; i++)
+			{
+			*logout << logout->ErrorCode(0) << " unSwitchId[" << i << "]   [" << _packet->stBillDataTransStartReq.unSwitchId  << "]" << endl;
+			}
+			break;
+		case BILL_DATA_TRANS_START_REQ_ACK:
+			*logout << logout->ErrorCode(0) << " ===== bdspPacketC::BILL_DATA_TRANS_START_REQ_ACK=====" << endl;
+			*logout << logout->ErrorCode(0) << " usStatus        [" << _packet->stBillDataTransStartReqAck.usStatus        << "]" << endl;
+			*logout << logout->ErrorCode(0) << " usReason        [" << _packet->stBillDataTransStartReqAck.usReason        << "]" << endl;
+			*logout << logout->ErrorCode(0) << " strDescription  [" << _packet->stBillDataTransStartReqAck.strDescription  << "]" << endl;
+			break;
+
+
+		case BILL_DATA_REP:
+			*logout << logout->ErrorCode(0) << " ===== bdspPacketC::BILL_DATA_REP=====" << endl;
+			*logout << logout->ErrorCode(0) << " unSwitchId                    [" << _packet->stBillDataRep.unSwitchId                    << "]" << endl;
+			*logout << logout->ErrorCode(0) << " usDataType                    [" << _packet->stBillDataRep.usDataType                    << "]" << endl;
+			*logout << logout->ErrorCode(0) << " usCdrSize                     [" << _packet->stBillDataRep.usCdrSize                     << "]" << endl;
+			*logout << logout->ErrorCode(0) << " unBlockSize                   [" << _packet->stBillDataRep.unBlockSize                   << "]" << endl;
+			*logout << logout->ErrorCode(0) << " unFileNo                      [" << _packet->stBillDataRep.unFileNo                      << "]" << endl;
+			*logout << logout->ErrorCode(0) << " stBlockNoRange.unStartBlockNo [" << _packet->stBillDataRep.stBlockNoRange.unStartBlockNo << "]" << endl;
+			*logout << logout->ErrorCode(0) << " stBlockNoRange.unEndBlockNo   [" << _packet->stBillDataRep.stBlockNoRange.unEndBlockNo   << "]" << endl;
+			break;
+
+
+		case BILL_DATA_REP_ACK:
+			*logout << logout->ErrorCode(0) << " ===== bdspPacketC::BILL_DATA_REP_ACK=====" << endl;
+			*logout << logout->ErrorCode(0) << " unSwitchId                    [" << _packet->stBillDataRepAck.unSwitchId                    << "]" << endl;
+			*logout << logout->ErrorCode(0) << " unFileNo                      [" << _packet->stBillDataRepAck.unFileNo                       << "]" << endl;
+			*logout << logout->ErrorCode(0) << " stBlockNoRange.unStartBlockNo [" << _packet->stBillDataRepAck.stBlockNoRange.unStartBlockNo << "]" << endl;
+			*logout << logout->ErrorCode(0) << " stBlockNoRange.unEndBlockNo   [" << _packet->stBillDataRepAck.stBlockNoRange.unEndBlockNo   << "]" << endl;
+			*logout << logout->ErrorCode(0) << " strTimeStamp                  [" << _packet->stBillDataRepAck.strTimeStamp                  << "]" << endl;
+			*logout << logout->ErrorCode(0) << " usStatus                      [" << _packet->stBillDataRepAck.usStatus                      << "]" << endl;
+			*logout << logout->ErrorCode(0) << " usReason                      [" << _packet->stBillDataRepAck.usReason                      << "]" << endl;
+			*logout << logout->ErrorCode(0) << " strDescription                [" << _packet->stBillDataRepAck.strDescription                << "]" << endl;
+			break;
+
+		case DISK_STATUS_REQ:
+			*logout << logout->ErrorCode(0) << " ===== bdspPacketC::DISK_STATUS_REQ=====" << endl;
+			*logout << logout->ErrorCode(0) << " unMdId         [" << _packet->stDiskStatusReq.unMdId         << "]" << endl;
+			*logout << logout->ErrorCode(0) << " unSwitchCount  [" << _packet->stDiskStatusReq.unSwitchCount  << "]" << endl;
+			//preformancefor(i=0; i<10; i++)
+			for(i=0; i<1; i++)
+			{
+			*logout << logout->ErrorCode(0) << " unSwitchId[" << i << "]" << "[" << _packet->stDiskStatusReq.unSwitchId[i] << "]" << endl;
+			}
+			break;
+		case DISK_STATUS_REQ_ACK:
+			*logout << logout->ErrorCode(0) << " ===== bdspPacketC::DISK_STATUS_REQ_ACK=====" << endl;
+			*logout << logout->ErrorCode(0) << " unMdId             [" << _packet->stDiskStatusReqAck.unMdId         << "]" << endl;				
+			*logout << logout->ErrorCode(0) << " usStatus           [" << _packet->stDiskStatusReqAck.usStatus       << "]" << endl;
+			*logout << logout->ErrorCode(0) << " usErrorCode        [" << _packet->stDiskStatusReqAck.usErrorCode    << "]" << endl;
+			*logout << logout->ErrorCode(0) << " strDescription     [" << _packet->stDiskStatusReqAck.strDescription << "]" << endl;
+			*logout << logout->ErrorCode(0) << " unSwitchCount      [" << _packet->stDiskStatusReqAck.unSwitchCount  << "]" << endl;				
+			//preformancefor(i=0; i<10; i++)
+			for(i=0; i<1; i++)
+			{
+			*logout << logout->ErrorCode(0) << " stDElement[" << i << "].unSwitchId     [" << _packet->stDiskStatusReqAck.stDElement[i].unSwitchId     << "]" << endl;
+			*logout << logout->ErrorCode(0) << " stDElement[" << i << "].usStatus       [" << _packet->stDiskStatusReqAck.stDElement[i].usStatus       << "]" << endl;
+			*logout << logout->ErrorCode(0) << " stDElement[" << i << "].usErrorCode    [" << _packet->stDiskStatusReqAck.stDElement[i].usErrorCode    << "]" << endl;
+			*logout << logout->ErrorCode(0) << " stDElement[" << i << "].strDescription [" << _packet->stDiskStatusReqAck.stDElement[i].strDescription << "]" << endl;
+			}				
+			break;
+		case STATUS_DATA_REP1:
+			*logout << logout->ErrorCode(0) << " ===== bdspPacketC::STATUS_DATA_REP1=====" << endl;
+			*logout << logout->ErrorCode(0) << " usStatus        [" << _packet->stStatusDataRep1.usStatus        << "]" << endl;
+			*logout << logout->ErrorCode(0) << " usSysType       [" << _packet->stStatusDataRep1.usSysType       << "]" << endl;
+			*logout << logout->ErrorCode(0) << " unSysId         [" << _packet->stStatusDataRep1.unSysId         << "]" << endl;
+			*logout << logout->ErrorCode(0) << " usErrorCode     [" << _packet->stStatusDataRep1.usErrorCode     << "]" << endl;
+			*logout << logout->ErrorCode(0) << " strTimeStamp    [" << _packet->stStatusDataRep1.strTimeStamp    << "]" << endl;
+			*logout << logout->ErrorCode(0) << " strDescription  [" << _packet->stStatusDataRep1.strDescription  << "]" << endl;
+			break;
+		case STATUS_DATA_REP2:
+			*logout << logout->ErrorCode(0) << " ===== bdspPacketC::STATUS_DATA_REP2=====" << endl;
+			*logout << logout->ErrorCode(0) << " usStatus        [" << _packet->stStatusDataRep2.usStatus        << "]" << endl;
+			*logout << logout->ErrorCode(0) << " usSysType       [" << _packet->stStatusDataRep2.usSysType       << "]" << endl;
+			*logout << logout->ErrorCode(0) << " unSysId         [" << _packet->stStatusDataRep2.unSysId         << "]" << endl;
+			*logout << logout->ErrorCode(0) << " strDescription  [" << _packet->stStatusDataRep2.strDescription  << "]" << endl;
+			break;
+		case STATUS_DATA_REP3:
+			*logout << logout->ErrorCode(0) << " ===== bdspPacketC::STATUS_DATA_REP3=====" << endl;
+			*logout << logout->ErrorCode(0) << " usStatus        [" << _packet->stStatusDataRep3.usStatus        << "]" << endl;
+			*logout << logout->ErrorCode(0) << " usSysType       [" << _packet->stStatusDataRep3.usSysType       << "]" << endl;
+			*logout << logout->ErrorCode(0) << " unSysId         [" << _packet->stStatusDataRep3.unSysId         << "]" << endl;
+			*logout << logout->ErrorCode(0) << " usErrorCode     [" << _packet->stStatusDataRep3.usErrorCode     << "]" << endl;
+			*logout << logout->ErrorCode(0) << " strTimeStamp    [" << _packet->stStatusDataRep3.strTimeStamp    << "]" << endl;
+			*logout << logout->ErrorCode(0) << " strDescription  [" << _packet->stStatusDataRep3.strDescription  << "]" << endl;
+			break;
+		case STATUS_DATA_REP4:
+			*logout << logout->ErrorCode(0) << " ===== bdspPacketC::STATUS_DATA_REP4=====" << endl;
+			*logout << logout->ErrorCode(0) << " usStatus        [" << _packet->stStatusDataRep4.usStatus        << "]" << endl;
+			*logout << logout->ErrorCode(0) << " usSysType       [" << _packet->stStatusDataRep4.usSysType       << "]" << endl;
+			*logout << logout->ErrorCode(0) << " unSysId         [" << _packet->stStatusDataRep4.unSysId         << "]" << endl;
+			*logout << logout->ErrorCode(0) << " usErrorCode     [" << _packet->stStatusDataRep4.usErrorCode     << "]" << endl;
+			*logout << logout->ErrorCode(0) << " strTimeStamp    [" << _packet->stStatusDataRep4.strTimeStamp    << "]" << endl;
+			*logout << logout->ErrorCode(0) << " strDescription  [" << _packet->stStatusDataRep4.strDescription  << "]" << endl;
+			break;
+		case STATUS_DATA_REP5:
+			*logout << logout->ErrorCode(0) << " ===== bdspPacketC::STATUS_DATA_REP5=====" << endl;
+			*logout << logout->ErrorCode(0) << " usStatus        [" << _packet->stStatusDataRep5.usStatus        << "]" << endl;
+			*logout << logout->ErrorCode(0) << " usSysType       [" << _packet->stStatusDataRep5.usSysType       << "]" << endl;
+			*logout << logout->ErrorCode(0) << " unSysId         [" << _packet->stStatusDataRep5.unSysId         << "]" << endl;
+			*logout << logout->ErrorCode(0) << " usErrorCode     [" << _packet->stStatusDataRep5.usErrorCode     << "]" << endl;
+			*logout << logout->ErrorCode(0) << " strTimeStamp    [" << _packet->stStatusDataRep5.strTimeStamp    << "]" << endl;
+			*logout << logout->ErrorCode(0) << " strDescription  [" << _packet->stStatusDataRep5.strDescription  << "]" << endl;
+			break;
+		case STATUS_DATA_REP_ACK://no data
+			*logout << logout->ErrorCode(0) << " ===== bdspPacketC::STATUS_DATA_REP_ACK=====" << endl;
+			break;
+		case STATUS_REQ://no data
+			*logout << logout->ErrorCode(0) << " ===== bdspPacketC::STATUS_REQ=====" << endl;
+			break;
+		case STATUS_REQ_ACK://no data//ihy 10.07
+			*logout << logout->ErrorCode(0) << " ===== bdspPacketC::STATUS_REQ_ACK=====" << endl;
+			break;
+		case DISCONNECT_REQ://no data
+			*logout << logout->ErrorCode(0) << " ===== bdspPacketC::DISCONNECT_REQ=====" << endl;
+			break;
+		default:
+			break;
+	}
+	*logout << logout->ErrorCode(0)<< endl << endl;
+}
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,351 @@
+/************************************************
+* This file is defines transaction of aggregator 
+* file name : TransactOfAggregate.hpp 
+* writer : Han Guen Hee
+* program history
+
+* bug fix history
+
+* last update : 2000. 9. 29
+************************************************/
+#ifndef TRANSACTOFAGGREGATE_HPP
+#define TRANSACTOFAGGREGATE_HPP
+
+#include <fstream.h>
+#include <Btree.hpp>
+#include <stdlib.h>
+
+#define 	DEBUG	0
+const   int                 SIZE_UDRFORMAT      = sizeof( UdrFormat );
+//const   char*               DATA_NAME_SHM       = "../include/TransactOfAggregate.hpp";
+//const   unsigned char       DATA_ID_SHM         = 'D';
+
+//class CTransactOfAggregate : virtual public ShmMemory
+class CTransactOfAggregate
+{
+	public:
+		CTransactOfAggregate();
+		CTransactOfAggregate(char* Data_Name_Shm, char Data_Id_Shm);
+		~CTransactOfAggregate();
+		// index shared memory 객체를 가리키기 위한 포인터 
+		HandleOfAllocIndex*		pAllocDataIndexC;
+		// btree shared memory 객체를 가리키기 위한 포인터 
+		CBtree*					pBtree;
+		// data shared memory 객체를 가리키기 위한 포인터  
+		ShmMemory*			shmData;
+		void	 			selectshm( );
+		int 				deleteshm( UdrFormat*	pUdrFormat );
+		void				readshm( );
+		int 				updateshm( UdrFormat*	pUdrFormat );
+		int 				insertshm( UdrFormat*	pUdrFormat );
+		CBtree*				get_BtreePointer() { return pBtree; }
+		UdrFormat*			getUdrPointer() { return stPtrDataIndexInfo; }
+
+	private:
+	    // file descriptor
+		fstream 			fInOut;
+		// data shared memory의 base address를 가리키기 위한 포인터. 
+		UdrFormat*  		stPtrDataIndexInfo;
+		int 		 		_TransactionInsert( UdrFormat*	stDataNode );
+		int		 			_TransactionUpdate( UdrFormat*	stDataNode );
+		int		 			_TransactionDelete( unsigned int 		iDeleteKey );
+		UdrFormat*			_TransactionSelect( unsigned int 		iSelectKey );
+
+};
+// 생성자. 
+// 1. file descriptor open.
+// 2. Btree instance 생성. 
+// 3. Data shared memory instance create.
+// 4. Data index shared memory instance create.
+// 
+CTransactOfAggregate::CTransactOfAggregate(char* Data_Name_Shm, char Data_Id_Shm)
+{
+	char BtreeId;
+	
+	cout << "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&" << endl;
+	cout << "Data_Name_Shme=" << Data_Name_Shm << endl;
+	cout << "Data_Id_Shm=" << Data_Id_Shm << endl;
+	cout << "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&" << endl;
+	
+	
+	
+	shmData=new ShmMemory( Data_Name_Shm, 'Z', SIZE_UDRFORMAT*MAXKEYMEMBER, 0660|IPC_CREAT );
+	
+	Data_Id_Shm++;
+	stPtrDataIndexInfo=( UdrFormat * )shmData->ShmPtr();
+	pAllocDataIndexC=new HandleOfAllocIndex( 'X', MAXKEYMEMBER, ( unsigned int )stPtrDataIndexInfo );
+
+	Data_Id_Shm++;
+	pBtree=new CBtree( Data_Name_Shm, Data_Id_Shm );
+	cout << " constructor pBtree: " << pBtree << endl;
+	
+	
+	// initialize
+	fInOut.open( "/SVC1/MB/fMdbBackup.txt", ios::in | ios::out | ios::binary );
+	if( !fInOut )
+	{
+		cout << "File could not be opened fMdbBackup.txt." << endl;
+		exit( 1 );
+	}
+	cout << "****************************" << endl;
+	cout << "shmData(DATA SHAREDMEM): " << shmData << endl;
+	cout << "pAllocDataIndexC(DATA Alloc):" << pAllocDataIndexC << endl;
+	cout << "Btree Pointer: " << pBtree << endl;
+	cout << "****************************" << endl;
+
+}
+CTransactOfAggregate::CTransactOfAggregate()
+{
+}
+CTransactOfAggregate::~CTransactOfAggregate()
+{ 
+	delete shmData;
+	delete pBtree;
+	delete pAllocDataIndexC;
+	fInOut.close(); 
+}
+// test data가 제대로 입력되고 변경되는지 확인하기 위한 메소드.
+// 실제는 log file로 대체됨. 
+void CTransactOfAggregate::readshm( )
+{
+}
+// update 메소드.
+// update하기위한 데이터를 입력받아 해당 메소드를 update.
+// _TransactionUpdate메소드를 호출하여 처리. 
+int CTransactOfAggregate::updateshm( UdrFormat *pUdrFormat )
+{
+	cout << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << endl;
+	cout << "Hi Transact Of Aggregate : updateshm" << endl;
+	
+	if( _TransactionUpdate( pUdrFormat ) )
+	{
+		cout << "updateshm:_TransactionUpdate Error!!" << endl;
+		return -1;
+	}
+	return 0;
+}
+// insert method.
+// data를 입력받아, _TransactionInsert method를 호출해서 insert.
+int CTransactOfAggregate::insertshm( UdrFormat*	pUdrFormat )
+{
+	cout << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << endl;
+	cout << "Hi Transact Of Aggregate : insertshm" << endl;
+	if( _TransactionInsert( pUdrFormat ) )
+	{
+		cout << "Error CTransactOfAggregate::insertshm" << endl;
+		return -1;
+	}
+	return 0;
+}
+// delete method. 
+// delete하고자 하는 키를 입력받아,
+// _TransactionDelete method를 호출하여 delete.
+int CTransactOfAggregate::deleteshm( UdrFormat*	pUdrFormat )
+{
+	A_INT_TYPE*	pAtype;
+
+	cout << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << endl;
+	cout << "Hi Transact Of Aggregate : deleteshm" << endl;
+	pAtype=pUdrFormat->get_ItemA();
+	if( _TransactionDelete( pAtype->get_unMsId() ) )
+	{
+		cout << "delete: _TransactionDelete Error !!!" << endl;
+		return -1;
+	}
+	return 0;
+}
+// select method.
+// 처리(update)하고자 하는 값을 입력받아,
+// _TransactionSelect method를 호출하여,
+// return vlaue( _DISKNODE *)를 가지고 일을 처리.
+void CTransactOfAggregate::selectshm( )
+{
+	int iSelectKey;
+	UdrFormat*	pSelectDataNode;
+	UdrFormat pFileSelect;
+	unsigned int unBaseAddress;
+	unsigned int unCurrentAddress;
+	A_INT_TYPE*		pAtype;
+
+	cout << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << endl;
+	cout << "Hi Transact Of Aggregate : selectshm" << endl;
+	/*
+	cout << "input select key: ";
+	cin >> iSelectKey;
+	*/
+	for( int i=0; i<MAXKEYMEMBER; i++)
+	{
+		iSelectKey=rand() % MAXKEYMEMBER;
+	pSelectDataNode=_TransactionSelect( iSelectKey );
+	if(pSelectDataNode == NULL)
+	{
+		cout << "selectshm: _TransactionSelect key not found !!" << endl;
+		exit(1);
+	}
+	}
+	// file에서 읽을 포인터를 setting하기위해서 
+	// 해당 주소의 index를 계산하기위한 변수.
+	unCurrentAddress=(unsigned int)pSelectDataNode;
+	unBaseAddress=(unsigned int)pAllocDataIndexC->get_unBaseAddress();
+
+	// file read 
+	// 해당 위치로 포인터를 옮겨준다.
+	fInOut.seekg( ( ( unCurrentAddress-unBaseAddress )/sizeof( UdrFormat ) )*sizeof( UdrFormat ) );
+	fInOut.read( ( char * )&pFileSelect, sizeof( UdrFormat ) );
+	pAtype=pFileSelect.get_ItemA();
+
+}
+// _TransctionSelect method.
+// return value: UdrFormat *(찾은 key의 실제 address.)
+UdrFormat*	CTransactOfAggregate::_TransactionSelect( unsigned int iSearchKey )
+{
+    _DATATYPE stDataType;
+
+    // Btree의 key(struct _DATATYPE)형으로 넣어준다.
+    stDataType.iDataKey=iSearchKey;
+    return pBtree->ShowSearch(&stDataType);
+}
+
+// _TransctionSelect method.
+// return value: UdrFormat *(찾은 key의 실제 address.)
+int CTransactOfAggregate::_TransactionDelete( unsigned int iSearchKey )
+{
+      int iIndex;
+     _DATATYPE stDataType;
+    UdrFormat*	pDeleteDataNode;
+    unsigned int unBaseAddress;
+    unsigned int unCurrentAddress;
+
+	cout << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << endl;
+	cout << "Hi Transact Of Aggregate : _TransactionDelete" << endl;
+    stDataType.iDataKey=iSearchKey;
+    pDeleteDataNode=pBtree->ShowSearch(&stDataType);
+
+    if(pDeleteDataNode == NULL)
+    {
+        cout << "_TransactionDelete:ShowSearch() Error!!\n";
+        return -1;
+    }
+    unCurrentAddress=(unsigned int)pDeleteDataNode;
+    unBaseAddress=(unsigned int)pAllocDataIndexC->get_unBaseAddress();
+
+    //Btree index를 초기화 시켜준다.
+    memset((char *)pDeleteDataNode,0x00,sizeof(UdrFormat));
+
+	// file update
+//	fInOut.seekp( ( ( unCurrentAddress-unBaseAddress )/sizeof( UdrFormat ) )*sizeof( UdrFormat ) );
+	fInOut.seekp( ( unCurrentAddress-unBaseAddress ) );
+	fInOut.write( ( char * )pDeleteDataNode, sizeof( UdrFormat ) );
+	fInOut.flush();
+
+    // Btree data를 delete.
+    pBtree->DelNode(stDataType);
+
+    pAllocDataIndexC->deleteIndex( (( unCurrentAddress-unBaseAddress )/sizeof( UdrFormat )) );
+
+    return 0;
+}
+//_TransactionUpdate method. 
+// return value : -1 update error
+//                 0 update complete
+int CTransactOfAggregate::_TransactionUpdate( UdrFormat*	stDataNode )
+{
+	 _DATATYPE stDataType;
+	UdrFormat*   pUpdateDataNode;
+	unsigned int unBaseAddress;
+	unsigned int unCurrentAddress;
+	A_INT_TYPE*	pAtype;
+	H_TYPE*		pHtype;
+	UDRHEAD_TYPE*   pItemHead;
+
+	cout << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << endl;
+	cout << "Hi Transact Of Aggregate : _TransactionUpdate" << endl;
+	pAtype=stDataNode->get_ItemA();
+	stDataType.iDataKey=pAtype->get_unMsId();
+	pItemHead=stDataNode->get_ItemHead();
+
+	pUpdateDataNode=pBtree->ShowSearch(&stDataType);
+	if(pUpdateDataNode == NULL)
+	{
+		cout << "_TransactionUpdate:ShowSearch() Error!!\n";
+		return -1;
+	}
+	unCurrentAddress=(unsigned int)pUpdateDataNode;
+	unBaseAddress=(unsigned int)pAllocDataIndexC->get_unBaseAddress();
+
+
+	//data node update
+	memcpy( pUpdateDataNode, stDataNode, sizeof( UdrFormat ) );
+
+	// file update
+	//fInOut.seekp( ( ( unCurrentAddress-unBaseAddress )/sizeof( UdrFormat ) )*sizeof( UdrFormat ) );
+	fInOut.seekp( ( unCurrentAddress-unBaseAddress ) );
+	fInOut.write( ( char * )pUpdateDataNode, sizeof( UdrFormat ) );
+	fInOut.flush();
+
+	// btree update
+	/*
+	pBtree->DelNode(stDataType);
+	stDataType.iDataKey=pAtype->get_unMsId();
+	stDataType.pUdrFormat=pUpdateDataNode;
+	pBtree->InsertData(stDataType);
+	*/
+	return 0;
+}
+// _TransactionInsert method.
+int CTransactOfAggregate::_TransactionInsert( UdrFormat*	stDataNode )
+{
+     _DATATYPE stDataType;
+    UdrFormat*	stPtrReturnDataAddress;
+    UdrFormat   pFileSelect;
+    unsigned int unBaseAddress;
+    unsigned int unCurrentAddress;
+	A_INT_TYPE*	pAtype;
+	unsigned int test;
+
+	cout << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << endl;
+	cout << "Hi Transact Of Aggregate : _TransactionInsert" << endl;
+    // memory allocate.
+    stPtrReturnDataAddress=( UdrFormat * )pAllocDataIndexC->newIndex( (unsigned int)sizeof(UdrFormat) );
+    cout << "Hi Transact Of Aggregate : _TransactionInsert1111111111111111111111111" << endl;
+    if(stPtrReturnDataAddress == 0 )
+    {
+        cout << " Overflow***************" << endl;
+        fInOut.close();
+		return -1;
+    }
+    unCurrentAddress=(unsigned int)stPtrReturnDataAddress;
+    cout << "Hi Transact Of Aggregate : _TransactionInsert2222222222222222222222" << endl;
+    unBaseAddress=(unsigned int)pAllocDataIndexC->get_unBaseAddress();
+	cout << "Hi Transact Of Aggregate : _TransactionInsert3333333333333333333333333333" << endl;
+   
+    cout << "stDataNode= " << stDataNode << endl;
+    cout << "stPtrReturnDataAddress= " << stPtrReturnDataAddress << endl;
+    cout << "pAllocDataIndexC= " << pAllocDataIndexC << endl;
+    
+    //data insert.
+	memcpy( stPtrReturnDataAddress, stDataNode, sizeof( UdrFormat ) );
+	cout << "Hi Transact Of Aggregate : _TransactionInsert444444444444444444444444444" << endl;
+	pAtype=stDataNode->get_ItemA();
+	stPtrReturnDataAddress->setItem(pAtype);
+	cout << "unMsId: " << pAtype->get_unMsId() << endl;
+
+cout << "Hi Transact Of Aggregate : _TransactionInsert5555555555555555555555555555555" << endl;
+    // file wirte.
+    //fInOut.seekp( ( ( unCurrentAddress-unBaseAddress )/sizeof( UdrFormat ) )*sizeof( UdrFormat) );
+	fInOut.seekp( ( unCurrentAddress-unBaseAddress ) );
+    fInOut.write( ( char * )stPtrReturnDataAddress, sizeof( UdrFormat ) );
+	fInOut.flush();
+cout << "Hi Transact Of Aggregate : _TransactionInsert6666666666666666666666666666666666" << endl;
+    // Btree insert.
+    stDataType.iDataKey=pAtype->get_unMsId();
+    stDataType.pUdrFormat=stPtrReturnDataAddress;
+    cout << "Hi Transact Of Aggregate : _TransactionInsert7777777777777777777777777777777777" << endl;
+    pBtree->InsertData(stDataType);
+cout << "Hi Transact Of Aggregate : _TransactionInsert8888888888888888888888888888888888888" << endl;
+	return 0;
+}
+#endif
+
+
+

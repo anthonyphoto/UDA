@@ -1,0 +1,44 @@
+shmInfo:nLRemark:10
+******* proc_remark = 10
+shmInfo:nLRemark:11
+******* proc_remark = 11
+shmInfo:nLRemark:12
+******* proc_remark = 12
+shmInfo:nLRemark:13
+******* proc_remark = 13
+shmInfo:nLRemark:0
+******* proc_remark = 0
+shmInfo:nLRemark:10
+******* proc_remark = 10
+shmInfo:nLRemark:10
+******* proc_remark = 10
+shmInfo:nLRemark:10
+******* proc_remark = 10
+shmInfo:nLRemark:10
+******* proc_remark = 10
+shmInfo:nLRemark:10
+******* proc_remark = 10
+shmInfo:nLRemark:10
+******* proc_remark = 10
+shmInfo:nLRemark:10
+******* proc_remark = 10
+shmInfo:nLRemark:10
+******* proc_remark = 10
+shmInfo:nLRemark:10
+******* proc_remark = 10
+shmInfo:nLRemark:10
+******* proc_remark = 10
+shmInfo:nLRemark:10
+******* proc_remark = 10
+shmInfo:nLRemark:10
+******* proc_remark = 10
+shmInfo:nLRemark:3
+******* proc_remark = 3
+shmInfo:nLRemark:2
+******* proc_remark = 2
+shmInfo:nLRemark:1
+******* proc_remark = 1
+shmInfo:nLRemark:0
+******* proc_remark = 0
+/SVC1/DATA/pdsn1_filter.cfg  1 : 0 : 
+/SVC1/DATA/pdsn1_filter.cfg  1 : 0 : 

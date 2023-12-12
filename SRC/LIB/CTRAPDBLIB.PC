@@ -1,0 +1,234 @@
+/*****************************************************************************************
+* file : CTrapDbLib.pc
+*
+* T_TRAP_LOG 테이블 핸들링 클래스.
+*
+*                                                                 01-05-22 5:06오후 ky.
+*****************************************************************************************/
+// Include
+//----------------------------------------------------------
+#define SQLCA_STORAGE_CLASS extern
+#include "CTrapDbLib.hpp"
+#include "time.hpp"       // for get_MDateTime ...
+#include <sqlca.h>
+
+
+
+
+// Structure
+//----------------------------------------------------------
+EXEC SQL BEGIN DECLARE SECTION;
+   typedef struct _trapT
+   {
+      char strRecvTime[ 17+1];   // receive time (삽입시간)
+      int  nTrapNo;              // tran number
+      char strTrapName[ 64+1];   // trap name
+      int  nTrapValue;           // trap value
+      char strTrapDesc[128+1];   // trap description
+      int  strTrapDescLen;       // trap description length
+   } h_trapT;
+EXEC SQL END   DECLARE SECTION;
+
+
+
+
+// Class define
+//----------------------------------------------------------
+// Public member function
+/*****************************************************************************************
+* Function Name : CTrapDbLib()
+* Description   : CTrapDbLib class constructor. 변수 초기화.
+* Parameters    : void
+* Return values : void
+* Date          : 01-05-22 5:41오후
+* Last Update   :
+* Author        : Ki Yon
+*****************************************************************************************/
+CTrapDbLib::CTrapDbLib()
+{
+   m_nCursorFlag = false;
+}//end CTrapDbLib
+
+
+
+
+/*****************************************************************************************
+* Function Name : ~CTrapDbLib()
+* Description   : CTrapDbLib class destructor.
+* Parameters    : void
+* Return values : void
+* Date          : 01-05-22 7:29오후
+* Last Update   :
+* Author        : Ki Yon
+*****************************************************************************************/
+CTrapDbLib::~CTrapDbLib()
+{
+   // 커서가 오픈되어 있으면 닫는다.
+   //----------------------------------------------------------
+   if (m_nCursorFlag == true) CloseCursor();
+}//end ~CTrapDbLib
+
+
+
+
+/*****************************************************************************************
+* Function Name : OpenCursor()
+* Description   : cursor open.
+* Parameters    : void
+* Return values : bool true  - cursor open success.
+*                      false - cursor open fail.
+* Date          : 01-05-22 6:07오후
+* Last Update   :
+* Author        : Ki Yon
+*****************************************************************************************/
+bool CTrapDbLib::OpenCursor()
+{
+   // Cursor declare
+   //----------------------------------------------------------
+   EXEC SQL DECLARE trap_cursor CURSOR FOR
+      SELECT nvl(recv_time, ' '), nvl(trap_no, 0), nvl(trap_name, ' '),
+             nvl(trap_value, 0), nvl(trap_desc, ' '), nvl(lengthb(trap_desc), 0)
+             from  T_TRAP_LOG
+             where send_time = ' ';         // sendtime을 플래그로 사용.
+
+   if (sqlca.sqlcode != 0) return false;
+
+   // Cursor open
+   //----------------------------------------------------------
+   EXEC SQL OPEN trap_cursor;
+
+   m_nCursorFlag = true;   // cursor open
+
+   return (sqlca.sqlcode == 0) ? true : false;
+}//end OpenCursor
+
+
+
+
+/*****************************************************************************************
+* Function Name : Select()
+* Description   : T_TRAP_LOG. fetch.
+* Parameters    : void
+* Return values : int 0   - fetch fail.
+*                     > 0 - fetch sucess. 조회한 갯수.
+* Date          : 01-05-22 7:40오후
+* Last Update   :
+* Author        : Ki Yon
+*****************************************************************************************/
+int CTrapDbLib::Select(trapT *data)
+{
+   EXEC SQL BEGIN DECLARE SECTION;
+      h_trapT h_data[D_LOG_RECORD_CNT];                    // fetch data저장 변수.
+   EXEC SQL END   DECLARE SECTION;
+
+	memset(h_data, 0x00, sizeof(h_data));
+   EXEC SQL FETCH trap_cursor INTO :h_data;
+
+   // 조회 데이터 반환.
+   //----------------------------------------------------------
+   for (int i=0; i<sqlca.sqlerrd[2]; i++)
+   {
+      strtok(h_data[i].strRecvTime, " ");
+      strtok(h_data[i].strTrapName, " ");
+      h_data[i].strTrapDesc[h_data[i].strTrapDescLen] = 0x00;
+   }
+   memcpy(data, h_data, sizeof(trapT)*D_LOG_RECORD_CNT);
+   return sqlca.sqlerrd[2];   // 조회한 갯수를 return한다.
+}//end Select
+
+
+
+
+/*****************************************************************************************
+* Function Name : CloseCursor()
+* Description   : cursor close.
+* Parameters    : void
+* Return values : bool true  - cursor close success.
+*                      false - cursor close fail.
+* Date          : 01-05-22 7:28오후
+* Last Update   :
+* Author        : Ki Yon
+*****************************************************************************************/
+bool CTrapDbLib::CloseCursor()
+{
+   EXEC SQL CLOSE trap_cursor;
+
+   m_nCursorFlag = false;     // cursor close
+
+   return (sqlca.sqlcode == 0) ? true : false;
+}//end CloseCursor
+
+
+
+
+/*****************************************************************************************
+* Function Name : UpdateSendTime()
+* Description   : NMS로 trap을 전송한 시간(현재시간)을 T_TRAP_LOG ptrKey레코드의
+*                 sendtime field에 기록.
+* Parameters    : const char *ptrKey - record key
+* Return values : bool true  - update success.
+*                      false - update fail.
+* Date          : 01-05-22 9:19오후
+* Last Update   :
+* Author        : Ki Yon
+*****************************************************************************************/
+bool CTrapDbLib::UpdateSendTime(const char *ptrKey)
+{
+   EXEC SQL BEGIN DECLARE SECTION;
+      const char *h_ptrKey  = ptrKey;     // key
+      char *h_strTime;                    // send time
+   EXEC SQL END   DECLARE SECTION;
+
+   DateTime Itime;                        // time class object
+   h_strTime = Itime.get_MDateTime(1);    // 년월일시분초천분의일초 ex) '20010522211523332'
+
+   // trap send time update
+   //----------------------------------------------------------
+   EXEC SQL UPDATE T_TRAP_LOG
+                   SET   send_time = :h_strTime
+                   WHERE recv_time = :h_ptrKey;
+
+   if (sqlca.sqlcode == 0) { EXEC SQL COMMIT WORK; return true; }
+   else { EXEC SQL ROLLBACK WORK; return false; }
+}//end UpdateSendTime
+
+
+
+
+/*****************************************************************************************
+* Function Name : Insert()
+* Description   : T_TRAP_LOG insert.
+* Parameters    : const int   nTrapNo     - trap number
+*                 const char *ptrTrapName - trap name
+*                 const int   nTrapValue  - trap value
+*                 const char *ptrTrapDesc - trap description
+* Return values : bool true  - insert success.
+*                      false - insert fail.
+* Date          : 01-05-22 9:33오후
+* Last Update   :
+* Author        : Ki Yon
+*****************************************************************************************/
+bool CTrapDbLib::Insert(const int nTrapNo, const char *ptrTrapName, const int nTrapValue,
+                        const char *ptrTrapDesc)
+{
+   EXEC SQL BEGIN DECLARE SECTION;
+      const char *h_ptrRecvTime;                  // recvtime
+      const int   h_nTrapNo     = nTrapNo;        // trap number
+      const char *h_ptrTrapName = ptrTrapName;    // trap name
+      const int   h_nTrapValue  = nTrapValue;     // trap value
+      const char *h_ptrTrapDesc = ptrTrapDesc;    // trap description
+   EXEC SQL END   DECLARE SECTION;
+
+   DateTime Itime;                                // time class object
+   h_ptrRecvTime = Itime.get_MDateTime(1);        // 년월일시분초천분의일초 ex) '20010522211523332'
+
+   EXEC SQL INSERT INTO T_TRAP_LOG (recv_time, trap_no, trap_name, trap_value, trap_desc)
+                   VALUES (:h_ptrRecvTime, :h_nTrapNo, :h_ptrTrapName,
+                           :h_nTrapValue, :h_ptrTrapDesc);
+
+   if (sqlca.sqlcode == 0) { EXEC SQL COMMIT WORK; return true; }
+   else { EXEC SQL ROLLBACK WORK; return false; }
+}//end Insert
+
+
+

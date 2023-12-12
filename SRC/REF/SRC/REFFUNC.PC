@@ -1,0 +1,188 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <iostream.h>
+#include <sys/stat.h>    // mkdir()
+#include <dirent.h>
+
+#define SQLCA_STORAGE_CLASS extern
+EXEC SQL INCLUDE    SQLCA;
+
+EXEC SQL INCLUDE "../INCLUDE/RefFunc.hpp";
+
+
+
+//------------------------------------------------------------------------------
+// 생성자
+CRefFunc::CRefFunc(char *strMappingName,char *strActVer,char *strOutName,char *strOutVer)
+    : CLoadActTable(strMappingName,strActVer), CLoadOutTable(strOutName,strOutVer)
+{
+	nActIndex = 0;
+	nInOffset = 0;	
+	nOutLen   = 0;	
+	nOutOffSet= 0;
+
+	LogM		 = new FileLogWrite(".", "clt.log");// Input, Output File을 log file에 기록하기 위함
+}
+
+
+
+
+//------------------------------------------------------------------------------
+// 소멸자
+CRefFunc::~CRefFunc()
+{
+	delete [] m_strTemp;
+	delete [] m_strOutTemp;
+	delete LogM;
+}
+
+
+
+
+//------------------------------------------------------------------------------
+// 한 레코드를 Input Record의 Field별로 읽은 후,
+// Output Record의 offset과 길이만큼 Output Buffer에 저장한다. 
+int CRefFunc::UdrReformat(char *strIn, char *strOut)
+{
+	int nActCnt   = 0;
+	
+	nActIndex = m_nActStartRecIndex;	// Action Record Start Index
+
+	nActCnt	  = m_ActionTable[nActIndex].In_Field_Offset;
+	++nActIndex;
+	
+	LogM->Write("-Input Record Start Sequence Number : %d", nActIndex);
+	LogM->Write("-Input Record Total Count : %d", nActCnt);
+
+    for(;nActIndex<=nActCnt;nActIndex++)
+    {
+		nInOffset = m_ActionTable[nActIndex].In_Field_Offset;
+		nOutOffSet = m_ActionTable[nActIndex].Out_Field_Offset;
+	    nOutLen    = m_ActionTable[nActIndex].Out_Field_Length;
+
+        LogM->Write("-------------------------");
+		LogM->Write("-Sequence Num  : %d", nActIndex);
+		LogM->Write("-Input Offset  : %d", nInOffset);
+
+        if(OneFieldReformat(strIn,strOut)<0)	return FAIL;
+        LogM->Write("-------------------------\n");
+    }
+    return OK;
+}
+
+
+
+
+//------------------------------------------------------------------------------
+// Input Data를 [t_ref_action] table의 Data Type에 맞게 Conversion한다
+// ->변환된 Data를 Action code에 따라 Sub action code를 읽어서 원하는 Character로 padding한다.
+// ->Output Buffer로 Data를 Move한다.
+int CRefFunc::OneFieldReformat(char *ptrSrc,char *ptrDes)
+{
+	char strSubAction;
+    int	 nActInLen		= 0;
+    int  nActionCode    = 0;     // Action Code
+  	int  nDataType      = 0;     // Data Type
+
+    m_strTemp 	 = new char[nOutLen+1];
+    m_strOutTemp = new char[nOutLen+1];
+
+    memset(m_strTemp   , 0x00, nOutLen+1);
+    memset(m_strOutTemp, 0x20, nOutLen);
+	m_strOutTemp[nOutLen] = NULL;
+
+    nActInLen    = m_ActionTable[nActIndex].In_Field_Length;
+    memcpy(m_strTemp    , &ptrSrc[nInOffset], nActInLen);
+    memcpy(&strSubAction, m_ActionTable[nActIndex].Sub_Action_Code, 1);
+
+    nDataType   = atoi(m_ActionTable[nActIndex].Data_Type);
+    nActionCode = atoi(m_ActionTable[nActIndex].Action_Code);
+	LogM->Write("-Data Type     : %d", nDataType);
+	LogM->Write("-Action Code   : %d", nActionCode);
+	LogM->Write("-SubAction Code: %c", strSubAction);
+
+	int			 nTemp  = 0;
+	unsigned int unTemp = 0;
+
+ 	// Data Type에 따른 해당 Field conversion
+    switch(nDataType)    
+    {
+		case  18 :
+	 				memcpy(&nTemp,m_strTemp,sizeof(int));
+					LogM->Write("-InTempBuff    : [%d]", nTemp);
+					memcpy(m_strOutTemp, convIntToStr(nTemp,nOutLen), nOutLen);
+					break;
+		case  28 :
+    				memcpy(&unTemp,m_strTemp,sizeof(unsigned int));
+ 					LogM->Write("-InTempBuff    : [%d]", unTemp);
+    				memcpy(m_strOutTemp, convUnIntToStr(unTemp,nOutLen), nOutLen);
+    				break;
+		case  88 : 
+					LogM->Write("-InTempBuff    : [%s]", m_strTemp);
+					memcpy(m_strOutTemp,m_strTemp,nOutLen);
+					break;
+		case  98 :
+					memcpy(&unTemp,m_strTemp,sizeof(unsigned int));
+					LogM->Write("-InTempBuff    : [%d]", unTemp);
+					memcpy(m_strOutTemp, ipToStr(unTemp), nOutLen);
+					break;
+    	default  :
+    				LogM->Write("!!!Error : Undefined Data type.");
+    				return FAIL;
+    }
+//	LogM->Write("-OutTempBuff   : [%s]", m_strOutTemp);
+
+
+	// Action Code에 따라 해당 Field를 Sub action code로 앞에서 or 뒤에서부터 Padding한다 
+	switch(nActionCode)
+	{
+		case 0 :
+				break;
+		case 1 :
+				memcpy(m_strOutTemp,convPrefixChar(m_strOutTemp, strSubAction, nOutLen),nOutLen);
+				break;
+		case 2 :
+				memcpy(m_strOutTemp,convPostfixChar(m_strOutTemp, strSubAction, nOutLen),nOutLen);
+				break;
+		default :
+				LogM->Write("!!!Error : Undefined Action Code.");
+				return FAIL;
+	}
+
+    memcpy(m_strOutTemp,nullToSpace(m_strOutTemp, nOutLen),nOutLen);
+	LogM->Write("-OutTempBuff   : [%s]", m_strOutTemp);
+	DataMove(m_strOutTemp, ptrDes);			
+	return OK;
+}
+
+
+
+
+//------------------------------------------------------------------------------
+// 한 필드의 data를 Output Buffer에 해당 offset, length만큼 저장한다. 
+void CRefFunc::DataMove(char *InBuf, char *OutBuf)
+{
+    LogM->Write("-Output Offset  : %d", nOutOffSet);
+	LogM->Write("-Output Length  : %d", nOutLen);
+    memcpy(OutBuf+nOutOffSet,InBuf,nOutLen);
+}
+
+
+
+
+//------------------------------------------------------------------------------
+// Input Buffer에 저장된 한 필드의 내용을 offset과 length에 맞게 가져온다.
+void CRefFunc::GetOneField(char *OneCDR, char *strTemp, int nRecSeqNo)
+{
+    memcpy(strTemp,OneCDR+m_ActionTable[nRecSeqNo].In_Field_Offset ,m_ActionTable[nRecSeqNo].In_Field_Length );
+}
+
+
+
+
+//------------------------------------------------------------------------------
+// Output Buffer에 한 필드의 내용을 offset과 length에 맞게 저장시킨다.
+void CRefFunc::PutOneField(char* strIn, char *strOutBuff, int nRecSeqNo)
+{
+    memcpy(strOutBuff+m_ActionTable[nRecSeqNo].Out_Field_Offset, strIn, m_ActionTable[nRecSeqNo].Out_Field_Length);
+}

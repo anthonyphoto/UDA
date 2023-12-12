@@ -1,0 +1,76 @@
+#ifndef	RECVLOGMANAGE_HPP
+#define	RECVLOGMANAGE_HPP
+
+#include <iostream.h>
+#include <strstream.h>
+#include <fstream.h>
+#include <string.h>
+#include <unistd.h>
+#include <fstream.h>
+
+#include <ProcEventHst.hpp>
+#include <ProcPerform.hpp>
+#include <ErrorLog.hpp>
+
+
+#ifndef TEMPMSGQ_HPP
+//	#include <TempMsgQ_new.hpp>
+	#include <TempMsgQ_file.hpp>
+#endif
+
+#ifndef MSGFORMAT_HPP
+	#include <MsgFormat.hpp>
+#endif
+
+
+class RecvLogManage 
+{
+	
+	private:
+		int								EmptyN;
+		char							strLog[100];
+		//--------MQ Define----------------
+		ProcPerformData					*perForm;
+		MessageQueue<ProcPerformData>*	performMQ;
+		
+		ProcEventData					*eventHst;
+		MessageQueue<ProcEventData>*	eventHstMQ;
+		
+		ProcErrInfo						*errorLog;
+		MessageQueue<ProcErrInfo>*		errorLogMQ;
+		
+		//CustHist						*custHst;
+		//MessageQueue<CustHist>*		custHstMQ;
+		
+		//ObservHist					*observHst;
+		//MessageQueue<ObservHist>*		observHstMQ;
+		
+		
+		//---------DB Write-----------------
+		ProcPerform*					dbPerForm;
+		ProcEventHist*					dbeventHst;
+		ErrorLog*						dberrorLog;
+		//CustHist*						dbcustHst;
+		//ObservHist*						dbobservHst;
+		
+		
+		void WritePerForm(void);
+		void WriteEventHst(void);
+		void WriteErrorLog(void);
+		
+		
+		void WriteSelfLog(void);	// 자신의 로그를 남긴다.
+		//void WriteObservHst(void);
+		//void WriteCustHst(void);
+		
+	public:
+		RecvLogManage(int	nSystemId, int	nServiceId);
+		~RecvLogManage(void);
+		
+		int	 WriteLog(void);
+		
+		void SelfEvent(int first);	// LogMGR 이 시작하고 종료할때 남긴다.
+	
+};
+
+#endif

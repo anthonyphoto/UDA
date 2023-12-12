@@ -1,0 +1,23 @@
+include $(HOME)/common/env_proc_32.mk
+include $(HOME)/common/env_uda.mk
+
+MFLAGS = -D_SVC1
+
+OBJS = Btree.o CustMdbMan.o CustomerBtree.o LimitMan.o RateRule.o TransactOfAggregate.o 
+
+all : $(OBJS)
+	ar r $(UDALINKMDBLIBES) $(OBJS)
+	ranlib $(UDALINKMDBLIBES)
+	rm -rf $(OBJS) core
+	@echo ..............Library building finished .............................
+	@ctags -w *cpp
+
+install : $(OBJS)
+	$(INSTALL2) $(UDALINKMDBLIBES) $(COMMLIBPATH)/bak/
+	rm -rf $(OBJS) core
+	@echo ..............Library install finished .............................
+
+clean :
+	rm -rf $(UDALINKMDBLIBES) $(OBJS) core
+	touch *
+	@echo ..............Library clean finished .............................

@@ -1,0 +1,425 @@
+/******************************************************************
+* 파 일 명     
+      : filterC.cpp                
+* 기   능                                                          
+     : parser로부터 받은 UDR에 한도 정보 및 NTOP구분을 해서 10개의
+       aggregator로 분기시킨다.
+       또한 SCP IF로부터 한도처리 결과를 받아 Aggregator로 전송한다.
+* 작 성 자     
+     : 정중기                         
+* first data  
+     :                     
+* last updata 
+     : 2000. 11. 27                  
+* 관 련 화 일  
+     : filterC.hpp	
+* program history                                
+                           
+* Version
+  : 1.1 ( 2001. 05. 21 )                                           
+******************************************************************/
+#include"filterC.hpp"
+
+#define SQLCA_STORAGE_CLASS extern
+EXEC    SQL     INCLUDE SQLCA;
+
+// select Items from T_SHM_INFO
+EXEC SQL BEGIN DECLARE SECTION;
+VARCHAR	user[32];
+VARCHAR	password[32];
+VARCHAR	gstrNai[80]; // LEN_NAI :defined at UDR.hpp
+EXEC SQL END DECLARE SECTION;
+
+filterC::filterC()
+{
+	int  svcid=0;
+	char strPath[64];
+	char strBack[64];
+	nLastSeqR = 0; // file number init
+	
+	if( ConnectToDB()!= SC )
+		*logWrite<<"DB Connection Error!"<<sqlca.sqlcode<<logWrite->ErrorCode(2000)<<endl;
+	
+	EXEC SQL	select	ntop_code
+				into	:gstrNai
+				from	t_ntop_code;
+
+	if(sqlca.sqlcode == SC )
+	{
+		char		tmpStr[80];
+		memset(tmpStr,0x00,80);
+		memcpy(tmpStr,gstrNai.arr,gstrNai.len);
+		*logWrite<<"nTop구분코드 :"<<tmpStr<<logWrite->ErrorCode(0)<<endl; 
+		ReleaseDB();
+	}
+	else { 
+		*logWrite<<"nTop code select error:"<<sqlca.sqlcode<<logWrite->ErrorCode(0)<<endl;
+		ReleaseDB();
+	}
+
+	memset(strPath,0x00,64);
+	// system 당 CIM은 하나 
+	if(ServiceId == 1 || ServiceId == 2 ) svcid = 1;
+	else if(ServiceId == 3 || ServiceId == 4 ) svcid = 3;
+	sprintf(strPath, "/SVC%d/DATA/SubsShm.cfg", svcid);
+	sprintf(strBack, "/SVC%d/MB/SUBS.mb", svcid);
+//	subsInfoC = new CCustMdbMan(strPath,'A',SystemId,svcid,3,2,0,0);
+	subsInfoC = new CCustMdbMan(strPath,'A',strBack, 128, 100000);
+	
+}
+
+filterC::~filterC()
+{
+	logWrite->put_EventHistData(FLAG_END,0);
+	for(int i = 0;i<MAX_AGG_CNT;i++)
+		delete AggMq[i];
+	
+	delete filterMq;
+	delete subsInfoC;
+	*logWrite<<"Filter Stop!!"<<logWrite->ErrorCode(0)<<endl; 
+}
+
+int filterC::ConnectToDB( void )
+{
+	strcpy((char *) user.arr, DB_USERNAME);
+	user.len = (unsigned short) strlen(DB_USERNAME);
+
+	strcpy((char *) password.arr, DB_PASSWORD);
+	password.len = (unsigned short) strlen(DB_PASSWORD);
+	
+	EXEC SQL connect :user identified by :password;
+	return(sqlca.sqlcode);
+}
+
+int filterC::ReleaseDB()
+{
+	EXEC	SQL	COMMIT	WORK	RELEASE;
+
+	return(sqlca.sqlcode); 
+}
+
+void filterC::display(void) {
+    
+    *logWrite<<logWrite->ErrorCode(0) 
+    	<< "==RECV UDR===================INFO=====" << endl;
+
+    *logWrite<<logWrite->ErrorCode(0) 
+    	<< "HD : " << "[ " << gStUdr.stItemHead.get_nUdrType()<< " ] "
+        << "[ " << gStUdr.stItemHead.get_nUdrFileSeq()  << " ] " 
+        << "[ " << gStUdr.stItemHead.get_nUdrSeqNo()    << " ] " 
+        << "[ " << gStUdr.stItemHead.get_nUdrStatus()   << " ] " 
+        << "[ " << gStUdr.stItemHead.get_nServiceType() << " ] " 
+        << "[ " << gStUdr.stItemHead.get_nSubsType()    << " ] " << endl; 
+                           
+    *logWrite<<logWrite->ErrorCode(0) 
+    	<< "MI : " << "[ " << gStUdr.stItemHead.get_nServiceProvider()<< " ] " 
+        << "[ " << gStUdr.stItemHead.get_nMin1()            << " ] " 
+        << "[ " << gStUdr.stItemHead.get_nMin2()            << " ] " << endl;
+
+    *logWrite<<logWrite->ErrorCode(0) 
+    	<< "A  : " << "[ " << gStUdr.stItemA.get_unMsId() << " ]" << endl;
+    
+    *logWrite<<logWrite->ErrorCode(0) 
+    	<< "B  : " << "[ " << gStUdr.stItemB.get_nIpAddr() << " ]" 
+        << "[ " << gStUdr.stItemB.get_strNAI()  << " ]" << endl;
+
+    *logWrite<<logWrite->ErrorCode(0) 
+    	<< "C  : " << "[ " << gStUdr.stItemC.get_strAccountSessionID() << " ]" 
+        << "[ " << gStUdr.stItemC.get_strCorrelationID()    << " ]" << endl;
+
+    *logWrite<<logWrite->ErrorCode(0) 
+    	<< "D  : " << "[ " << gStUdr.stItemD.get_nMIP_HomeAgent() << " ]"
+        << "[ " << gStUdr.stItemD.get_nPDSN_FA_Addr()  << " ]" 
+        << "[ " << gStUdr.stItemD.get_nServing_PCF()   << " ]" 
+        << "[ " << gStUdr.stItemD.get_strBS_MSC_ID()   << " ]" << endl;
+
+    *logWrite<<logWrite->ErrorCode(0) 
+    	<< "E  : " << "[ " << gStUdr.stItemE.get_nUserZone() << " ]" << endl;
+
+    *logWrite<<logWrite->ErrorCode(0) 
+    	<< "F  : " << "[ " << gStUdr.stItemF.get_nForwardMUXOpt() << " ]"
+        << "[ " << gStUdr.stItemF.get_nReverseMUXOpt()        << " ]" 
+        << "[ " << gStUdr.stItemF.get_nForward_Fund_Rate()    << " ]" 
+        << "[ " << gStUdr.stItemF.get_nReverse_Fund_Rate()    << " ]"
+        << "[ " << gStUdr.stItemF.get_nServiceOpt()           << " ]"
+        << "[ " << gStUdr.stItemF.get_nForwardTrafficType()   << " ]"
+        << "[ " << gStUdr.stItemF.get_nReverseTrafficType()   << " ]" << endl;
+    
+    *logWrite<<logWrite->ErrorCode(0) 
+    	<< "     " << "[ " << gStUdr.stItemF.get_nFundFrameSize() << " ]"                    
+    	<< "[ " << gStUdr.stItemF.get_nForwardFundamentalRC() << " ]" 
+        << "[ " << gStUdr.stItemF.get_nReverseFundamentalRC() << " ]" 
+        << "[ " << gStUdr.stItemF.get_nIP_Technology()        << " ]" 
+        << "[ " << gStUdr.stItemF.get_nCompulsoryTunnelInd()  << " ]" 
+        << "[ " << gStUdr.stItemF.get_nReleaseIndicator()     << " ]" << endl;
+
+    *logWrite<<logWrite->ErrorCode(0) 
+    	<< "G  : " << "[ " << gStUdr.stItemG.get_nDataOctetCntTerminat()   << " ]"
+    	<< "[ " << gStUdr.stItemG.get_nDataOctetCntOrigin()     << " ]"
+        << "[ " << gStUdr.stItemG.get_nBadPPPframeCnt()         << " ]"
+        << "[ " << gStUdr.stItemG.get_nStartEventTime()         << " ]"
+        << "[ " << gStUdr.stItemG.get_nEndEventTime()           << " ]"
+        << "[ " << gStUdr.stItemG.get_nActiveTime()             << " ]" << endl;
+    
+    *logWrite<<logWrite->ErrorCode(0) 
+    	<< "     " << "[ " << gStUdr.stItemG.get_nNumOfActiveTransitions() << " ]"
+        << "[ " << gStUdr.stItemG.get_nSDB_OctetCountTerminat() << " ]"
+        << "[ " << gStUdr.stItemG.get_nSDB_OctetCountOrigin()   << " ]"
+        << "[ " << gStUdr.stItemG.get_nNumOfSDBsTerminat()      << " ]"
+        << "[ " << gStUdr.stItemG.get_nNumOfSDBsOrigin()        << " ]"
+        << "[ " << gStUdr.stItemG.get_nNumOfPPPbytesReceived()  << " ]" << endl;
+                                                                               
+    *logWrite<<logWrite->ErrorCode(0) 
+    	<< "H  : " << "[ " << gStUdr.stItemH.get_nAlternateBillingId() << " ]" << endl;
+
+    *logWrite<<logWrite->ErrorCode(0) 
+    	<< "I  : " << "[ " << gStUdr.stItemI.get_nIP_QoS()<< " ]" 
+        << "[ " << gStUdr.stItemI.get_nInterconnectIP_NetworkProviderID() << " ]" 
+        << "[ " << gStUdr.stItemI.get_nInterconnectIP_NetworkServiceQoS() << " ]" 
+        << "[ " << gStUdr.stItemI.get_nAirlinkQoS()                       << " ]" << endl;                      
+        
+    *logWrite<<logWrite->ErrorCode(0) 
+    	<< "Y  : " << "[ " << gStUdr.stItemY.get_nAirlinkRecType()<< " ]"
+        << "[ " << gStUdr.stItemY.get_nRP_SessionID()            << " ]"           
+        << "[ " << gStUdr.stItemY.get_nAirlinkSeqNum()           << " ]"
+        << "[ " << gStUdr.stItemY.get_nMobileOrigin_TerminatID() << " ]" << endl;
+ 
+    *logWrite<<logWrite->ErrorCode(0) 
+    	<< "Z  : " << "[ " << gStUdr.stItemZ.get_strContainer() << " ]" << endl;
+}
+
+void filterC::run(void)
+{
+	A_INT_TYPE	*stMin;
+	int	nMin;
+	
+	// Header 정보를 가져온다
+	gStUdrH = gStUdr.get_ItemHead();
+	setSubsInfo();
+	if( gStUdrH->get_nUdrType()== 0x81 || gStUdrH->get_nUdrType()== 0x82) // 3:한도정보
+	{  
+		*logWrite<<" Limit Price: "<< gStUdr.get_LimitInfo()->get_nLimitPrice() \
+				 <<logWrite->ErrorCode(0)<<endl;
+		*logWrite<<" nTop free  : "<< gStUdr.get_LimitInfo()->get_nNtopFreeTime()\
+				 <<logWrite->ErrorCode(0)<<endl;
+	}
+	// UDR Splite : 끝자리로 구분
+	
+	stMin = gStUdr.get_ItemA();
+    nMin  = stMin->get_unMsId();
+		
+	while(AggMq[nMin%10]->sendMsg(&gStUdr) == FLAG_MQ_IS_FULL )
+	{             
+		*logWrite<<" AggMQ is full!! "<<logWrite->ErrorCode(2005)<<endl;
+		usleep(100);
+	}
+	*logWrite<<"Send AggNo["<<(nMin%10)<<"]"<<logWrite->ErrorCode(0)<<endl;
+	*logWrite<<"UDR_TYPE: "<<gStUdrH->get_nUdrType() <<logWrite->ErrorCode(0)<<endl;
+
+	if( gStUdrH->get_nUdrType()!= 0x81 || gStUdrH->get_nUdrType()!= 0x82) // 3:한도정보
+	{
+		saveLastSeqNum();
+		// SLA 통계
+		logWrite->put_PerformanceData(FLAG_ACC,0,gStUdr.stItemHead.get_nUdrFileSeq(),1,0,0);
+	}
+
+}
+
+void filterC::setSubsInfo()
+{
+	A_INT_TYPE	*stMin;
+	B_TYPE		*stB; 	// for classify n.Top subscribers
+	char		*strNai;
+	char		tmpStr[80];
+	char		strMin[10];
+	int 		nMin;
+
+	stMin = gStUdr.get_ItemA();
+    nMin  = stMin->get_unMsId();
+	
+	*logWrite<<"<<MIN>>: "<<nMin <<logWrite->ErrorCode(0)<<endl;
+	
+	// Classify nTop subscribers
+	stB = gStUdr.get_ItemB();
+	strNai = stB->get_strNAI();
+	memset(tmpStr,0x00,80);	memcpy(tmpStr,gstrNai.arr,gstrNai.len);
+	if(!strncmp(strNai, tmpStr, strlen(tmpStr)))
+	{
+		gStUdr.stItemHead.put_nServiceType(SVC_NTOP);
+		*logWrite<<"n-Top Subscriber!"<<logWrite->ErrorCode(0)<<endl;
+	}
+	else gStUdr.stItemHead.put_nServiceType(SVC_PACKET);
+	
+	// Classifiy TTL school subscribers
+	if( subsInfoC->SearchMdb(nMin) == 1)// find success:1 ,not fount:0
+	{
+		gStUdr.stItemHead.put_nSubsType(SUBS_TTL);
+		gStUdr.stItemF.put_nServiceCorrelation(SUBS_TTL);
+		*logWrite<<"TTL School Subscriber!"<<logWrite->ErrorCode(0)<<endl;
+		// SLA 통계
+		logWrite->put_PerformanceData(FLAG_ACC,0,gStUdr.stItemHead.get_nUdrFileSeq(),0,0,1);
+	}
+	else gStUdr.stItemHead.put_nSubsType(SUBS_NORMAL);
+}
+
+int filterC::saveLastSeqNum()
+{
+	FILE *fp;
+	char strFileName[100];
+
+	memset(strFileName,0x00,100);
+	sprintf(strFileName,"/SVC%d/DATA/RADIUS%d_FileNo%d.cfg",\
+			ServiceId, gStUdrH->get_processSN(), gStUdrH->get_processRemark());
+
+	FilterFileNo fileSave(strFileName);
+	
+	if ((fp = fopen(strFileName, "r")) == NULL) {
+//		cout<<"fopen1 failed"<<endl;
+		fp = fopen(strFileName, "w");fclose(fp);
+		fp = fopen(strFileName, "r");
+
+	}
+	// fscanf는 파일열기 모드 'r'에서만 실행된다.
+	if( fscanf(fp, "%u", &nLastSeqR) < 0 )
+		nLastSeqR = -1;
+	fclose(fp);
+	
+//	*logWrite<<"ReadFileNo:"<<nLastSeqR <<", GotFileNo:"<<gStUdr.stItemHead.get_nUdrFileSeq() <<logWrite->ErrorCode(0)<<endl;
+
+	// save된 file number보다 큰값일 경우 그값을 save
+	// save된 값이 0xffffffff일 경우& 받은 값이 '0'이상일 때 save 
+	if( (nLastSeqR < gStUdr.stItemHead.get_nUdrFileSeq()) ||
+		((nLastSeqR ==  0xffffffff)&&(gStUdr.stItemHead.get_nUdrFileSeq()>= 0)) )
+	{
+		fileSave.setStartBlockNo(gStUdr.stItemHead.get_nUdrFileSeq());
+		fileSave.write_FilterFileNo();
+
+		nLastSeqR = gStUdr.stItemHead.get_nUdrFileSeq();
+		
+		if(chmod(strFileName, 00666) < 0) {
+			*logWrite<< "chmod failed : " << strFileName  <<logWrite->ErrorCode(2004)<<endl;
+			return(-1);
+		}
+	}
+	//else *logWrite<<"got(small/equal)fileNo:["<< gStUdr.stItemHead.get_nUdrFileSeq()<<"]" <<logWrite->ErrorCode(2006)<<endl;
+		
+	return(1);
+}
+
+int main(int argc, char **argv)
+{
+	int 	nTemp;
+	filterC *cfilter;
+
+    if(argc != 7 )
+    {
+    	cout <<"Usage: filer [sysId][svcId][gId][pId][pSn][pRemark]"<<endl;
+    	exit(-1);
+    }
+    SystemId=atoi(argv[1]);    processInfo.nSystemId  = atoi(argv[1]);
+	ServiceId=atoi(argv[2]);   processInfo.nServiceId = atoi(argv[2]);
+	GroupId=atoi(argv[3]);     processInfo.nGroupType = atoi(argv[3]);
+	ProcessType=atoi(argv[4]); processInfo.nProcType  = atoi(argv[4]);
+	PserialNo=atoi(argv[5]);   processInfo.nProcSn    = atoi(argv[5]);
+	PreMark=atoi(argv[6]);     processInfo.nProcRmk   = atoi(argv[6]);
+   
+	signal(SIGUSR1,sigCapture); 	signal(SIGTERM,sigCapture);
+	signal(SIGTERM,sigCapture);
+	signal(SIGINT,sigCapture); 	signal(SIGSTOP,sigCapture);
+	signal(SIGQUIT,sigCapture);	signal(SIGTSTP,sigCapture);
+	signal(SIGKILL,sigCapture);	signal(SIGCONT,sigCapture);	//26
+
+
+	logWrite = new SendLogManage(atoi(argv[1]),atoi(argv[2]),atoi(argv[3]),\
+								 atoi(argv[4]),atoi(argv[5]),atoi(argv[6]));
+    filterMq = new MessageQueue<UdrFormat>(atoi(argv[1]),atoi(argv[2]),atoi(argv[3]),\
+	   								      atoi(argv[4]),atoi(argv[5]),10,1000);
+	mqPMS    = new MessageQueue<MsgPmsStatus>(atoi(argv[1]), 0,1,1,0,10, 1000);
+	
+	logWrite->put_EventHistData(FLAG_START,FLAG_PROC_START);
+	
+	for(int i=0; i<MAX_AGG_CNT; i++)
+		AggMq[i]   = new MessageQueue<UdrFormat>(atoi(argv[1]),atoi(argv[2]),2 ,1 ,i ,10 ,1000);
+
+    *logWrite<<" Filter Start!!"<<logWrite->ErrorCode(0)<<endl;
+    
+    WritePMSMQ(FLAG_PROC_START);
+	cfilter = new filterC();
+
+	while(1)
+	{
+		memset((char*)&gStUdr, NULL, sizeof(UdrFormat));
+		if (filterMq->recvMsg(&gStUdr) == FLAG_MQ_IS_EMPTY)
+			sleep(1);
+		else
+		{ 
+	   		
+	   		*logWrite<<logWrite->ErrorCode(0)<< "<<GET UDR>>=============================================="<< endl;
+//	   		*logWrite<< "<<GET UDR>>"<<logWrite->ErrorCode(0)<< endl;
+   			cfilter->run();
+    		*logWrite<<logWrite->ErrorCode(0)<< "========================================================="<< endl;
+   		}
+	}
+	
+	delete cfilter;
+	delete logWrite;
+	delete filterMq;
+	delete mqPMS;
+
+    return 0;
+}
+
+void WritePMSMQ(int sigNo)
+{
+	int 			i=0;
+	char 			PMSMQ_NO[2];
+	MsgPmsStatus	OneRec(MSG_STATUS, SystemId, ServiceId, GroupId, ProcessType, PserialNo, PreMark);
+
+	
+	sprintf(PMSMQ_NO, "%d", SystemId);
+	OneRec.set_nStatus(sigNo);
+	
+	while(1)
+	{
+		i++;
+		if (mqPMS->sendMsg(&OneRec) == FLAG_MQ_IS_FULL)
+		{
+			*logWrite<<"PmpMQ IS FULL.. sleep(1)!"<<logWrite->ErrorCode(2005)<< endl;
+			sleep(1);
+			if (i >= 10)
+			{
+				kill(0,SIGINT);
+			}
+		}else break;
+	}
+}
+
+
+void sigCapture(int sigNo)
+{
+	logWrite->put_EventHistData(FLAG_END,0);
+	
+	switch(sigNo)
+	{
+		case SIGINT :
+		case SIGQUIT :
+		case SIGKILL :
+		case SIGTERM :
+				WritePMSMQ(FLAG_PROC_KILL);//-1//프로세스 비정상 stop (killed)
+				delete mqPMS;
+				exit(-1);
+				break;
+		case SIGUSR1:
+				WritePMSMQ(FLAG_PROC_TERM);//0//프로세스정상stop (Client업무명령)
+				delete mqPMS;
+				exit(0);
+				break;
+		default:
+				WritePMSMQ(FLAG_PROC_KILL);//-1//프로세스 비정상 stop (killed)
+				delete mqPMS;
+				exit(-1);
+				break;
+	}
+}
+
+

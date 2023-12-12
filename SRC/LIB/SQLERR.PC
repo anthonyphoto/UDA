@@ -1,0 +1,81 @@
+/////////////////////////////////////////////////////////////
+//
+//   Class Name     : SqlErr
+//   Usage          : Sql Error 처리를 위한 공용 클래스
+//   DATE           : 2000. 12 .1
+//   LAST UPDATE    :
+//   AUTHOR         : Kwon Chong Wook (cwkwon@neomnt.co.kr)
+//   History        :
+//
+/////////////////////////////////////////////////////////////
+
+#define SQLCA_STORAGE_CLASS extern
+#include <sqlca.h>
+#include <oraca.h>
+
+EXEC SQL INCLUDE "/home/uda1/include/SqlErr.hpp";
+
+char	SqlErr::strSqlTemp[50];
+
+/////////////////////////////////////////////////////////////
+//	Comment : SQL Error를 처리하기 위한 클래스
+/////////////////////////////////////////////////////////////
+SqlErr::SqlErr()
+{
+	memset (strSqlError, NULL, 128);
+	Init_SqlCa();
+}
+
+// Initiate SQLCA Option
+void SqlErr::Init_SqlCa()
+{
+	// enable you to use the ORACA
+	EXEC ORACLE OPTION (ORACA=YES);
+	
+	// instructs Pro*C to release resources associated with embedded SQL
+    // statements after they are executed
+	EXEC ORACLE OPTION (RELEASE_CURSOR=YES);
+	
+	// Save text of current SQL statement in the ORACA if an error occurs
+	oraca.orastxtf = ORASTFERR;
+	//cout << "Init_SqlCa!! " << endl;
+}
+
+// Error 발생후 program 종료할 필요가있을 때
+void  SqlErr::SqlError(char* strMsg)
+{
+	printf("\nProcess abnormal done. SQL Error : \n%s\n%.*s",
+				 strMsg,sqlca.sqlerrm.sqlerrml, sqlca.sqlerrm.sqlerrmc);
+	printf("in \"%.*s...\"\n", oraca.orastxt.orastxtl,oraca.orastxt.orastxtc);
+	printf("on line %d of %.*s.\n\n",
+	 oraca.oraslnr, oraca.orasfnm.orasfnml, oraca.orasfnm.orasfnmc);
+
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+	EXEC SQL ROLLBACK WORK RELEASE;
+	exit(-1);
+}
+
+// Error Message print and Return
+char *SqlErr::SqlErrCout(char* strMsg)
+{
+	printf("\nProcess abnormal done. SQL Error : \n%s\n%.*s",
+				 strMsg,sqlca.sqlerrm.sqlerrml, sqlca.sqlerrm.sqlerrmc);
+	printf("in \"%.*s...\"\n", oraca.orastxt.orastxtl,oraca.orastxt.orastxtc);
+	printf("on line %d of %.*s.\n\n",
+	 oraca.oraslnr, oraca.orasfnm.orasfnml, oraca.orasfnm.orasfnmc);
+	 
+	sprintf(m_strSqlMsg,"%.*s", sqlca.sqlerrm.sqlerrml, sqlca.sqlerrm.sqlerrmc);
+
+	EXEC SQL ROLLBACK WORK;
+	
+	return m_strSqlMsg;
+}
+
+/* Example
+	Process abnormal done. SQL Error :
+	Action Table : Select get_RecordCount Error!!
+	ORA-00942: table or view does not exist
+	in "select count(*)  into :b0  from T_META_FIEL where META_FILE_NAME=:b1..."
+	on line 65 of LoadActTable.pc.
+*/
+

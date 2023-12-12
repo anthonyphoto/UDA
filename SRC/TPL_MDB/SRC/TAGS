@@ -1,0 +1,37 @@
+CSemHandler	CSemHandler.cpp	/^CSemHandler::CSemHandler(const char* strPathName, /
+CloseIPCSEM	CSemHandler.cpp	/^int CSemHandler::CloseIPCSEM(void)$/
+CommCfgFile	CommCfgFile.cpp	/^CommCfgFile::CommCfgFile( const char* strFileName /
+CreateIPCSEM	CSemHandler.cpp	/^int CSemHandler::CreateIPCSEM(int nsems)	\/\/	nsems /
+DisplayError	CSemHandler.cpp	/^void CSemHandler::DisplayError(const char*	str)$/
+FileLogWrite	FileLogWrite.cpp	/^FileLogWrite::FileLogWrite(const char *path, const/
+GetHexDump	FileLogWrite.cpp	/^void FileLogWrite::GetHexDump(char *RBuf, const ch/
+HandleOfAllocIndex_New	HandleOfAllocIndex_new.cpp	/^HandleOfAllocIndex_New::HandleOfAllocIndex_New( co/
+InitBuf	FileLogWrite.cpp	/^void FileLogWrite::InitBuf(char *Buf,long Cnt)$/
+ShmBuf	SharedMemLegacy.cpp	/^ShmBuf::ShmBuf(const char* strPathName, int nId, i/
+Write	FileLogWrite.cpp	/^void FileLogWrite::Write(const char *format, ...)$/
+WriteHexLog	FileLogWrite.cpp	/^int FileLogWrite::WriteHexLog(char *Buf,	long BufL/
+checkFlagOfSavedPosition	HandleOfAllocIndex_new.cpp	/^int HandleOfAllocIndex_New::checkFlagOfSavedPositi/
+checkOffsetOfEmptyRoom	HandleOfAllocIndex_new.cpp	/^int HandleOfAllocIndex_New::checkOffsetOfEmptyRoom/
+deleteIndex	HandleOfAllocIndex_new.cpp	/^void HandleOfAllocIndex_New::deleteIndex(unsigned /
+displayLongLongValue	HandleOfAllocIndex_new.cpp	/^void HandleOfAllocIndex_New::displayLongLongValue(/
+error	HandleOfAllocIndex_new.cpp	/^\/\/				  -1 -> error ( overflow )						$/
+getOffsetOfEmptyRoom	HandleOfAllocIndex_new.cpp	/^int HandleOfAllocIndex_New::getOffsetOfEmptyRoom()/
+lock	CSemHandler.cpp	/^int CSemHandler::lock()$/
+newIndex	HandleOfAllocIndex_new.cpp	/^unsigned int HandleOfAllocIndex_New::newIndex(unsi/
+print_all	CommCfgFile.cpp	/^void CommCfgFile::print_all( void )$/
+read_CommCfgFile	CommCfgFile.cpp	/^void CommCfgFile::read_CommCfgFile( void )$/
+save_unSavedPosition	HandleOfAllocIndex_new.cpp	/^void HandleOfAllocIndex_New::save_unSavedPosition(/
+setAllocIndexFlag	HandleOfAllocIndex_new.cpp	/^void HandleOfAllocIndex_New::setAllocIndexFlag(uns/
+shm_destory	SharedMemLegacy.cpp	/^int	ShmMemory::shm_destory()$/
+shm_detach	SharedMemLegacy.cpp	/^int	ShmMemory::shm_detach(const void *shmaddr)$/
+shm_lock	SharedMemLegacy.cpp	/^int ShmMemory::shm_lock()$/
+shm_mode	SharedMemLegacy.cpp	/^int	ShmMemory::shm_mode(ShmInfo& si, int nCmd = IP/
+shm_modeset	SharedMemLegacy.cpp	/^int	ShmMemory::shm_modeset(int nMode)$/
+shm_release	SharedMemLegacy.cpp	/^int ShmMemory::shm_release()$/
+shm_stat	SharedMemLegacy.cpp	/^int	ShmMemory::shm_stat()$/
+shmat	SharedMemLegacy.cpp	/^void*  ShmBuf::shmat(const void* shmaddr=NULL, int/
+shmctl	SharedMemLegacy.cpp	/^int ShmBuf::shmctl(int cmd, ShmInfo& ShmComp)$/
+shmdt	SharedMemLegacy.cpp	/^int ShmBuf::shmdt(const void *shmaddr)$/
+shmget	SharedMemLegacy.cpp	/^int ShmBuf::shmget(int nFlag) const$/
+unlock	CSemHandler.cpp	/^int CSemHandler::unlock()$/
+write_CommCfgFile	CommCfgFile.cpp	/^void CommCfgFile::write_CommCfgFile( void )$/

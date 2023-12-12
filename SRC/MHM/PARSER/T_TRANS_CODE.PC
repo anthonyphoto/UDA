@@ -1,0 +1,63 @@
+/******************************************************************
+* 파 일 명     
+      : t_trans_code.cpp                
+* 기   능                                                          
+     : Service provider가 017인 Parsing된 Udr을 보낼 MQ를 결정하기 위해
+       [t_trans_code] table에서 전송여부코드를 읽어온다.
+* 작 성 자     
+     : 신미연                         
+* first data  
+     : 2000. 04. 30                      
+* last updata 
+     : 2001. 04. 30                  
+* 관 련 화 일  
+     : t_trans_code.h                     
+* program history                                
+                           
+* Version
+  : 1.1 ( 2001. 05. 21 )                                           
+******************************************************************/
+
+
+#include "t_trans_code.hpp"
+
+#define SQLCA_STORAGE_CLASS extern
+EXEC    SQL     INCLUDE SQLCA;
+
+//Host Variable Declare-------------
+EXEC SQL BEGIN DECLARE SECTION;
+static char	Svc_Provider	[3+1];
+static char	Trans_Flag		[2+1];
+EXEC SQL END DECLARE SECTION;
+//Host Variable Declare-------------
+
+
+///////////////////////////////////
+//	CLASS	T_Trans_Code's Method
+///////////////////////////////////
+
+//------------------------------------------------------------------------
+// T_TRANS_CODE table에서 Udr 전송 정보를 읽어옴
+int T_Trans_Code::Get_Record(Rec_Trans_Code *recTransCode)
+{	
+	strncpy(Svc_Provider, recTransCode->get_svc_provider() , 3);
+
+	cout << "[T_Trans_Code][GET RECORD] Svc_Provider : [" << Svc_Provider << "]" << endl;
+
+	EXEC SQL 	SELECT nvl(trans_flag, ' ')
+				into  :Trans_Flag
+				FROM  t_trans_code
+				WHERE svc_provider	=:Svc_Provider;
+
+	
+	if (sqlca.sqlcode == 0){
+		recTransCode->set_trans_flag(Trans_Flag);
+        
+		cout << "[T_Trans_Code][GET RECORD] [" <<  Svc_Provider << "]:[" << Trans_Flag << "] Read Ok! " << endl;  
+		return OK;
+	}
+	else{
+		cout << "[T_Trans_Code][GET RECORD] t_trans_code ERROR : " << (int)sqlca.sqlcode << endl;
+		return FAIL;
+	}
+}

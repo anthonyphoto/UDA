@@ -1,0 +1,22 @@
+include $(HOME)/common/env_proc_32.mk
+include $(HOME)/common/env_uda_sql.mk
+
+MFLAGS = -D_SVC1
+
+OBJS = SqlCommon.o ShmInfo.o LogManage.o
+
+all : $(OBJS)
+	ar r $(UDALINKLIBES) $(OBJS)
+	ranlib $(UDALINKLIBES)
+	rm -rf $(OBJS) core SqlCommon.cpp ShmInfo.cpp LogManage.cpp
+	@echo ..............Library building finished .............................
+	
+install : $(OBJS)
+	$(INSTALL2) $(UDALINKLIBES) $(LIBUDR) $(COMMLIBPATH)/bak/
+	rm -rf $(OBJS) core 
+	@echo ..............Library install finished .............................
+
+clean :	
+	rm -rf $(OBJS) core 
+	touch *
+	@echo ..............Library clean finished .............................

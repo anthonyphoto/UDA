@@ -1,0 +1,20 @@
+include $(HOME)/common/env_proc_32.mk
+include $(HOME)/common/env_uda.mk
+
+MFLAGS=-D_SVC1
+
+EXE = StiIF_type
+OBJS = 017pdsn_if_typeErr.o $(UDALINKLIBES)
+
+all : $(EXE)
+
+$(EXE) : $(OBJS)
+	$(CC) -o $@ $(OBJS) $(PROLDLIBS) $(UDASQLLIBES) $(UDALINKLIBES)
+
+install : $(EXE)
+	$(INSTALL2) $(EXE) $(COMMBINPATH)/
+	rm -rf $(EXE) *.o core 
+
+clean :	
+	rm -rf $(EXE) *.o core 
+	touch *.cpp

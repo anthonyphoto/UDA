@@ -1,0 +1,23 @@
+include $(HOME)/common/env_proc_32.mk
+include $(HOME)/common/env_uda.mk
+
+MFLAGS=-D_SVC1
+EXE = parser 
+OBJS = parser.o parsermainDB.o t_trans_code.o $(UDASQLLIBES) $(UDALINKLIBES)
+
+all : $(EXE)
+
+$(EXE) : $(OBJS)
+	$(CC) -o $@ $(OBJS) $(CFLAGS) $(PROLDLIBS) $(UDASQLLIBES) $(UDALINKLIBES) 
+
+install : $(EXE)
+	$(INSTALL2) $(EXE) $(COMMBINPATH)/
+	rm -rf $(EXE) *.o  core 
+
+clean :	
+	rm -rf $(EXE) *.o core t_trans_code.cpp 
+	touch *.cpp *.pc
+
+
+
+

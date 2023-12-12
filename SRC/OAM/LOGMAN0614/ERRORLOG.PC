@@ -1,0 +1,137 @@
+/******************************************************************
+* 파 일 명     
+      : ErrorLog.pc                
+* 기   능                                                          
+     : Error 메세지를 [t_error_log] table에 insert or update한다.                       
+* 작 성 자     
+     : 조상영                         
+* first data  
+     :                    
+* last updata 
+     :                 
+* 관 련 화 일  
+     : ErrorLog.hpp                     
+* program history                                
+
+* Version
+  : 1.1 ( 2001. 05. 21 )                                           
+******************************************************************/
+
+
+#include <ErrorLog.hpp>
+
+#define SQLCA_STORAGE_CLASS extern
+EXEC    SQL     INCLUDE SQLCA;
+
+EXEC SQL BEGIN DECLARE SECTION;
+static int		nSys_id;
+static int		nSvc_id;
+static int		nGroup_type;
+static int		nProc_type;
+static int		nProc_sn;
+static int		nProc_remark;
+static char		SDate[9+1];
+static char		STime[6+1];
+static char		ErrCode[4+1];
+static char		Fname[40+1];
+static char		ErrStr[512+1];
+EXEC SQL END DECLARE SECTION;
+
+
+//------------------------------------------------------------------------------
+int ErrorLog::Set_ErrorLog(char *sdate, char *stime, char *ecode, char *fname, char *strerr)
+{
+	int	nRet;
+	
+	
+	//---------------- 변수할당
+	nSys_id = sys_id;
+	nSvc_id = svc_id;
+	nGroup_type = group_type;
+	nProc_type = proc_type;
+	nProc_sn = proc_sn;
+	nProc_remark = proc_remark;
+	
+	strcpy(SDate, sdate);
+	strcpy(STime, stime);
+	strcpy(ErrCode, ecode);
+	strcpy(Fname, fname);
+	strcpy(ErrStr, strerr);
+	//---------------- 변수할당
+	
+	cout << "INSERT.....T_ERROR_LOG" << endl;
+	EXEC SQL INSERT INTO t_error_log(sys_id, svc_id, group_type, proc_type, 
+											proc_sn, proc_remark,system_date,
+											system_time, error_code, file_name, error_detail)
+					values(:nSys_id, :nSvc_id, :nGroup_type, :nProc_type, :nProc_sn,
+					       :nProc_remark, :SDate, :STime, :ErrCode, :Fname, :ErrStr); 
+	
+	
+	nRet = sqlca.sqlcode;
+	if (sqlca.sqlcode == 0)  EXEC SQL COMMIT WORK;
+	else
+	{
+		cout << "[INSERT] T_ERROR_LOG ERROR : " << (int)sqlca.sqlcode << endl;
+		EXEC SQL ROLLBACK;
+	}	
+	
+	
+	if(nRet == -1) 
+	{	// 추가에러 UPdate 하기 
+		cout << "UPDATE....." << endl;
+		EXEC SQL UPDATE t_error_log SET error_code = :ErrCode,
+										file_name = :Fname,
+										error_detail = :ErrStr
+					WHERE sys_id=:nSvc_id and group_type=:nGroup_type and proc_type=:nProc_type 
+					      and proc_sn = :nProc_sn and  proc_remark=:nProc_remark
+					      and system_date=:SDate and system_time=:STime;
+		
+		
+		if (sqlca.sqlcode == 0)  EXEC SQL COMMIT WORK;
+		else
+		{
+			cout << "[UPDATE] T_ERROR_LOG ERROR : " << sqlca.sqlcode << endl;
+			EXEC SQL ROLLBACK;
+		}	
+	}
+	
+	nRet = (int)sqlca.sqlcode;
+ 	//clsDbConnect.disconnect();
+
+ 	return (nRet);
+}
+
+
+/*
+//--------------------------------------------------------------------
+int main(int argc, char *argv[])
+{
+	
+	if(argc<6) 
+	{
+		cout << " Usage:" << argv[0] << "[systemid] [serviceid] [groupid] [processtype] [serialno] [remarks]" << endl;
+		exit(1);
+	}
+	
+	int			nRet;
+	DbConnect	clsDbConnect;
+
+	nRet = clsDbConnect.connect();
+	if (nRet < 0)
+	{
+		cout << "DB Connect Failure [" << nRet << "]" << endl;
+		return nRet;
+	}else cout << "DB Connect Success " << endl;
+	
+	
+	
+	ErrorLog EventHst(atoi(argv[1]),atoi(argv[2]),atoi(argv[3]),atoi(argv[4]),atoi(argv[5]), atoi(argv[6]));
+	EventHst.Set_ErrorLog("20001120", "122000", "aaaa", "log.dat", "CHO SANG YOUNG!!");
+	EventHst.Set_ErrorLog("20001120", "122000", "bbbb", "log2.dat", "CHO SANG YOUNG!!");
+	
+	
+	
+	clsDbConnect.disconnect();
+	exit(1);
+}
+*/

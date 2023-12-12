@@ -1,0 +1,68 @@
+6,7d5
+< #include <unistd.h>
+< #include <fcntl.h>
+56d53
+< 		void 			write_unBlockSeq();
+95d91
+< 		void			write_unFileSeq(unsigned int);
+126d121
+< 		void		 	write_unBlockSeqInConf(){	clsPtrConfig->write_unBlockSeq();	}
+181,182c176
+< 		int 				put_strBdsFileBuffer(int nBlockSeqNum, char* strValue);
+< 		int 				put_strBdsFile();
+---
+> 		int 				put_strBdsFile(int nBlockSeqNum, char* strValue);
+203c197
+< //		void				make_BdsUdrFileName(char* strBdsFileName, unsigned int unSeq);
+---
+> 		void				make_BdsUdrFileName(char* strBdsFileName, unsigned int unSeq);
+208,210d201
+< 
+< 		//smy 2000.12.5
+< 		void		 	write_unFileSeqInConf(unsigned int unValue)		{	clsPtrConfig->write_unFileSeq(unValue);	}
+220c211
+< //		char			strDate[12];
+---
+> 		char			strDate[12];
+224c215
+< //		int				nResult;
+---
+> 		int				nResult;
+232c223
+< //		char*			get_strDate()						{	return strDate;				}
+---
+> 		char*			get_strDate()						{	return strDate;				}
+236c227
+< //		int				get_nResult()						{	return nResult;				}
+---
+> 		int				get_nResult()						{	return nResult;				}
+239c230
+< //		void			put_strDate(char* strValue)			{   strcpy(strDate, strValue);	}
+---
+> 		void			put_strDate(char* strValue)			{   strcpy(strDate, strValue);	}
+243c234
+< //		void			put_nResult(int nValue)				{   nResult			= nValue;	}
+---
+> 		void			put_nResult(int nValue)				{   nResult			= nValue;	}
+252,257d242
+< class	TempUdrFile
+< {
+< 	private:
+< 		char	strFileName[64];
+< 		long	nUdrCount;
+< 		int		nRecordSize;
+259,272d243
+< 	public:
+< 		TempUdrFile(int nRecSize);
+< 		int		get_nUdrCount()		{	return nUdrCount;	}
+< 		char*	get_strFileName()	{	return strFileName;	}
+< 		long	get_TempFileSize();
+< 
+< 		int		write_TempUdrFile(UdrFormat* strUdr);
+< 		int		read_TempUdrFile(UdrFormat* strUdr, int nOffset);
+< 
+< 		void	put_strFileName(const char *strValue);
+< 		void 	get_nUdrCountFromFile();
+< 
+< 		int unlink_TempUdrFile()	{	return unlink(strFileName);	}
+< };

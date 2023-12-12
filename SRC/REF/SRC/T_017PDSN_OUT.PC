@@ -1,0 +1,212 @@
+/******************************************************************
+* 파 일 명     
+      : t_017pdsn_out.pc                
+* 기   능                                                          
+     : Parsing된 Pdsn format으로 바꾸기 위해 [t_017pdsn_out]table의 data를 Memory로 Load한다.
+* 작 성 자     
+     : 신미연                          
+* first data  
+     : 2001. 03. 21                      
+* last updata 
+     : 2000. 03. 29                     
+* 관 련 화 일  
+     : t_017pdsn_out.hpp                     
+* program history                                
+           
+* Version
+  : 1.1 ( 2001. 05. 21 )                                           
+******************************************************************/
+
+
+#define SQLCA_STORAGE_CLASS extern
+EXEC    SQL     INCLUDE SQLCA;
+
+EXEC SQL INCLUDE "../INCLUDE/t_017pdsn_out.hpp";
+
+
+
+///////////////////////////////
+// Class C017Pdsn's Method	 //
+///////////////////////////////
+
+//------------------------------------------------------------------------------
+// 생성자
+C017Pdsn::C017Pdsn()
+{
+    m_nOutRecCount    = 0;
+
+    try
+    {
+        get_RecordCount();	// GET Total Record Count
+
+	    m_PdsnTable = new PdsnTable[m_nOutRecCount+1]; // Allocate ActionTable Buffer
+
+        init_PdsnTable();	// Initialize Buffer
+      
+        declare_Cursor();	// Declare Cursor
+
+        open_Cursor();		// OPEN Cursor
+
+	    fetch_Data();		// FETCH Data
+    }
+    catch(char *strTemp)
+    {
+        char strErrMsg[400];
+        memset(strErrMsg , 0x00, 400);
+        strcpy(strErrMsg,strTemp);
+        SqlError(strTemp);
+    }
+	int nStartIdx = 0;
+	if(nStartIdx  = SearchPdsnIndex() < 0)		exit(-1);
+	m_nOutStartRecIndex = nStartIdx;
+}
+
+
+
+
+//------------------------------------------------------------------------------
+C017Pdsn::~C017Pdsn()
+{
+	delete [] m_PdsnTable;
+}
+
+
+
+
+//------------------------------------------------------------------------------
+// [t_017pdsn_out] table의 레코드개수만큼 만들어진 배열을 초기화한다.
+void C017Pdsn::init_PdsnTable()
+{
+    int i;
+    for(i = 0; i <= m_nOutRecCount; i++)
+    	memset(&m_PdsnTable[i], 0x00, sizeof(PdsnTable));
+}
+
+
+
+
+//------------------------------------------------------------------------------
+// [t_017pdsn_out] table에서 레코드 개수를 가져온다.
+void C017Pdsn::get_RecordCount()    throw(char *)
+{
+	EXEC SQL SELECT COUNT(*)
+    	     INTO  :m_nOutRecCount
+             FROM  T_017PDSN_OUT;
+                  
+    if (sqlca.sqlcode != 0){
+   	 	strcpy(strSqlTemp,"!!!Error : [t_017pdsn_out] table : Fail Get Record Count.");
+  		throw (char *)strSqlTemp;
+   	}	
+
+}
+
+
+
+
+//------------------------------------------------------------------------------
+// Cursor 선언
+void C017Pdsn::declare_Cursor()    throw(char *)
+{
+    EXEC SQL DECLARE CUR_TABLE CURSOR FOR
+                SELECT      SEQ_NO,
+                            nvl(PDSN_CODE,0),
+                            nvl(VENDOR_CODE,0)
+                FROM        T_017PDSN_OUT
+                ORDER BY    SEQ_NO;
+
+    if (sqlca.sqlcode != 0){
+	    strcpy(strSqlTemp,"!!!Error : [t_017pdsn_out] table : Fail Declare Cursor.");
+        throw (char *)strSqlTemp;
+    }    
+}
+
+
+
+
+//------------------------------------------------------------------------------
+// Cursor Open
+void C017Pdsn::open_Cursor()    throw(char *)
+{
+    EXEC SQL OPEN CUR_TABLE;
+
+    if (sqlca.sqlcode != 0){
+	    strcpy(strSqlTemp,"!!!Error : [t_017pdsn_out] table : Fail Open Cursor.");
+        throw (char *)strSqlTemp;
+    }
+}
+
+
+
+
+//------------------------------------------------------------------------------
+// Cursor Close
+void C017Pdsn::close_Cursor()
+{
+    EXEC SQL CLOSE CUR_TABLE;
+}
+
+
+
+
+//------------------------------------------------------------------------------
+// DB에 있는 Data를 메모리로 가져온다.
+void C017Pdsn::fetch_Data()    throw(char *)
+{
+    for(int i = 0; i <= m_nOutRecCount; i++)
+    {
+        EXEC SQL FETCH CUR_TABLE INTO :m_PdsnTable[i];
+
+        if(sqlca.sqlcode == 1403){
+            close_Cursor();
+            break;
+        }
+        else if(sqlca.sqlcode != 0){
+            strcpy(strSqlTemp,"!!!Error : [t_017pdsn_out] table : Fail Data fetch.");
+            close_Cursor();
+            throw (char *)strSqlTemp;
+        }
+    }
+    
+//    show_PdsnTable();	// [t_017pdsn_out] table Display
+
+}
+
+
+
+
+//------------------------------------------------------------------------------
+// [t_017pdsn_out]table의 record count만큼 루프를 돌면서 Mapping Name, Mapping Version이 같은지 확인한 후
+// Sequence Number의 값이 0인 레코드의 시작 위치를 찾는다
+int C017Pdsn::SearchPdsnIndex()
+{
+	for(int i = 0; i < m_nOutRecCount; i++){
+		if(m_PdsnTable[i].Seq_No==0){
+//		    cout << " i=> " << i << endl;
+			return i;
+		}//if
+	}//for
+
+//    cout << "!!!Error : [t_017pdsn_out] table : Sequence Number != 0" << endl;
+    return FAILPDSN;
+}
+
+
+
+
+//------------------------------------------------------------------------------
+// [t_017pdsn_out] Table의 내용을 Display하기 위한 함수
+void C017Pdsn::show_PdsnTable()
+{
+	cout << "########### T_017PDSN_OUT Table ###########" << endl;
+	cout << "All Record   Cnt           => " << m_nOutRecCount << endl;
+
+	cout << "======================================================" << endl;
+	cout << "SeqNo	PdsnCode	VendorCode" << endl;
+	cout << "------------------------------------------------------" << endl;
+	for(int c=0;c<m_nOutRecCount;c++)
+	{
+		printf( "  %d	%d	%d\n", m_PdsnTable[c].Seq_No, m_PdsnTable[c].Pdsn_Code, m_PdsnTable[c].Vendor_Code);
+	}
+	cout << "------------------------------------------------------" << endl;
+
+}

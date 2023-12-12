@@ -1,0 +1,2 @@
+update t_process_status set proc_status = 'T' where proc_alias = '11CIF00X'
+/

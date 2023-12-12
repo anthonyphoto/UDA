@@ -1,0 +1,82 @@
+/*
+ * $Log: CSqlException.pc $
+ * Revision 0.1.0  2001/02/20 10:20:18  dongcheol
+ * sql exception
+ *
+ */
+
+#include "CSQLException.hpp"
+
+#define SQLCA_STORAGE_CLASS extern
+EXEC SQL INCLUDE    SQLCA;
+//#define ORACA_STORAGE_CLASS extern
+EXEC SQL INCLUDE    ORACA;
+
+EXEC ORACLE OPTION (ORACA=YES);
+EXEC ORACLE OPTION (RELEASE_CURSOR=YES);
+
+
+CSQLException::CSQLException(const string& what_arg) throw() : str_(what_arg) {
+
+	// Save text of current SQL statement in the ORACA if an error occurs
+	oraca.orastxtf = ORASTFANY;   // ORASTFERR = 1, ORASTFWRN = 2, ORASTFANY = 3
+
+    sqlca.sqlerrm.sqlerrmc[sqlca.sqlerrm.sqlerrml] = '\0';
+    oraca.orastxt.orastxtc[oraca.orastxt.orastxtl] = '\0';
+    oraca.orasfnm.orasfnmc[oraca.orasfnm.orasfnml] = '\0';
+
+    char lines[10];
+    memset(lines, 0x00, sizeof(lines));
+    sprintf(lines, "%d", oraca.oraslnr);
+
+    str_ = "\nSQLException occurred " + str_ + "\n";
+    str_.append("Oracle error : ");
+    str_.append(sqlca.sqlerrm.sqlerrmc);
+    str_.append("\nin ");
+    str_.append(oraca.orastxt.orastxtc);
+    str_.append("...\n");
+    str_.append("on line ");
+    str_.append(lines);
+    str_.append(" of ");
+    str_.append(oraca.orasfnm.orasfnmc);
+    str_.append("\n\n");
+
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+
+	//EXEC SQL ROLLBACK RELEASE;
+    EXEC SQL ROLLBACK WORK;
+}
+
+
+/** Sample 
+
+class Credit {
+public:
+    void insert() throw(CSQLException) {
+        string msg("insert()");
+        //throw CSQLException(msg);
+        throw exception();
+    }
+};
+
+int main() {
+
+    // Set unexpected to be my_unexpected 
+    PFV old_unexpected = set_unexpected(my_unexpected); 
+
+    Credit credit;
+    try {
+        credit.insert();
+    } catch (CSQLException e) {
+        cout << e.what();
+    } catch (...) {
+        cerr << "Caught unexpected exception!!" << endl;
+    }
+
+    set_unexpected (old_unexpected); // restore unexpected
+
+    return EXIT_SUCCESS;
+}
+*/
+
+

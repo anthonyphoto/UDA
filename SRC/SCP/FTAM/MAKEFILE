@@ -1,0 +1,22 @@
+CC = cc
+
+EXEC = main 
+INCLUDEDIR = -I /usr/include -I/home/pentacom/usr1/ama
+LIBDIR = -L/usr/lib
+CFLAGS = -c -O $(INCLUDEDIR) -D_NO_PROTO -DKSH
+LIBS =  -lsocket -lnsl -lgen -lXm -lXt -lX11 -lXext  
+OBJECTS = main.o sub.o AmaBlock.o
+SOURCES = main.c sub.c AmaBlock.c
+
+$(EXEC): $(OBJECTS)
+	$(CC)  -o  $(EXEC)  $(OBJECTS) $(LIBDIR) $(LIBS)
+
+clean:
+	 rm  -f  $(EXEC)  $(OBJECTS)
+main.o :
+	$(CC) $(CFLAGS) main.c $(LIBDIR) $(LIBS)
+AmaBlock.o :
+	$(CC) $(CFLAGS) AmaBlock.c $(LIBDIR) $(LIBS)
+sub.o :
+	$(CC) -c sub.c 
+

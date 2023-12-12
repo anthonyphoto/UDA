@@ -1,0 +1,43 @@
+#ifndef _PROCPERFORM_HPP
+#define _PROCPERFORM_HPP
+
+#include <iostream.h>
+#include <iomanip.h>
+#include <string.h>
+#include <stdlib.h>
+#include <strstream.h>
+#include <SqlCommon.hpp>
+
+#define	PROCESS_ID_LEN		8
+#define	PROCESS_TIME_LEN	10	//YYYYMMDDhh
+
+
+//--------------------------------------------------------------------
+class ProcPerform	: public ProcessID
+{
+	private:
+	
+	public:
+        
+        ProcPerform	(	int		nLSystemId,					\
+						int		nLServiceId,				\
+						int		nLGroupId,					\
+						int		nLProcessType,				\
+						int		nLSerialNo,					\
+						int		nLRemark					\
+					)	: 	ProcessID 	(	nLSystemId,		\
+											nLServiceId,	\
+											nLGroupId,		\
+											nLProcessType,	\
+											nLSerialNo,		\
+											nLRemark		\
+										){}
+										
+										
+		int Set_PerForm(int fileseq, int udrcount, int failcount, int querycount, char *proctime);
+};
+
+
+
+#endif
+

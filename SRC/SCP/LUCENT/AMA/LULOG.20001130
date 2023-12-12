@@ -1,0 +1,2819 @@
+Connect RPC Completed : 0
+set_trace() : -31
+Could not connect : scid : -31
+[AMA_ERROR] Reconnect : waiting 10s..!!
+Connect RPC Completed : 0
+set_trace() : 0
+connect_session() succeeded : scid : 12
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+poll_primary() : OK : ret : 0
+fhdrp->fssno   : 0
+fhdrp->fnamlen : 5
+fhdrp->fcode   : 1
+fhdrp->flen    : 3062
+Send ACK : OK 
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+poll_primary() : OK : ret : 0
+fhdrp->fssno   : 1
+fhdrp->fnamlen : 5
+fhdrp->fcode   : 1
+fhdrp->flen    : 1531
+Send ACK : OK 
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+poll_primary() : OK : ret : 0
+fhdrp->fssno   : 2
+fhdrp->fnamlen : 5
+fhdrp->fcode   : 1
+fhdrp->flen    : 1531
+Send ACK : OK 
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+poll_primary() : OK : ret : 0
+fhdrp->fssno   : 3
+fhdrp->fnamlen : 5
+fhdrp->fcode   : 1
+fhdrp->flen    : 1531
+Send ACK : OK 
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+poll_primary() : OK : ret : 0
+fhdrp->fssno   : 4
+fhdrp->fnamlen : 5
+fhdrp->fcode   : 1
+fhdrp->flen    : 1531
+Send ACK : OK 
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+poll_primary() : OK : ret : 0
+fhdrp->fssno   : 5
+fhdrp->fnamlen : 5
+fhdrp->fcode   : 1
+fhdrp->flen    : 1531
+Send ACK : OK 
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+poll_primary() : OK : ret : 0
+fhdrp->fssno   : 6
+fhdrp->fnamlen : 5
+fhdrp->fcode   : 1
+fhdrp->flen    : 1531
+Send ACK : OK 
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+poll_primary() : OK : ret : 0
+fhdrp->fssno   : 7
+fhdrp->fnamlen : 5
+fhdrp->fcode   : 1
+fhdrp->flen    : 1531
+Send ACK : OK 
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+poll_primary() : OK : ret : 0
+fhdrp->fssno   : 8
+fhdrp->fnamlen : 5
+fhdrp->fcode   : 1
+fhdrp->flen    : 1531
+Send ACK : OK 
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+poll_primary() : OK : ret : 0
+fhdrp->fssno   : 9
+fhdrp->fnamlen : 5
+fhdrp->fcode   : 1
+fhdrp->flen    : 1531
+Send ACK : OK 
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+poll_primary() : OK : ret : 0
+fhdrp->fssno   : 10
+fhdrp->fnamlen : 5
+fhdrp->fcode   : 1
+fhdrp->flen    : 1531
+Send ACK : OK 
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+poll_primary() : OK : ret : 0
+fhdrp->fssno   : 11
+fhdrp->fnamlen : 5
+fhdrp->fcode   : 1
+fhdrp->flen    : 1531
+Send ACK : OK 
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+poll_primary() : OK : ret : 0
+fhdrp->fssno   : 12
+fhdrp->fnamlen : 5
+fhdrp->fcode   : 1
+fhdrp->flen    : 1531
+Send ACK : OK 
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+poll_primary() : OK : ret : 0
+fhdrp->fssno   : 13
+fhdrp->fnamlen : 5
+fhdrp->fcode   : 1
+fhdrp->flen    : 1531
+Send ACK : OK 
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+poll_primary() : OK : ret : 0
+fhdrp->fssno   : 14
+fhdrp->fnamlen : 5
+fhdrp->fcode   : 1
+fhdrp->flen    : 1531
+Send ACK : OK 
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+poll_primary() : OK : ret : 0
+fhdrp->fssno   : 15
+fhdrp->fnamlen : 5
+fhdrp->fcode   : 1
+fhdrp->flen    : 1531
+Send ACK : OK 
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+poll_primary() : OK : ret : 0
+fhdrp->fssno   : 16
+fhdrp->fnamlen : 5
+fhdrp->fcode   : 1
+fhdrp->flen    : 1531
+Send ACK : OK 
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+poll_primary() : OK : ret : 0
+fhdrp->fssno   : 17
+fhdrp->fnamlen : 5
+fhdrp->fcode   : 1
+fhdrp->flen    : 1531
+Send ACK : OK 
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+poll_primary() : OK : ret : 0
+fhdrp->fssno   : 18
+fhdrp->fnamlen : 5
+fhdrp->fcode   : 1
+fhdrp->flen    : 1531
+Send ACK : OK 
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+poll_primary() : OK : ret : 0
+fhdrp->fssno   : 19
+fhdrp->fnamlen : 5
+fhdrp->fcode   : 1
+fhdrp->flen    : 1531
+Send ACK : OK 
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+poll_primary() : OK : ret : 0
+fhdrp->fssno   : 20
+fhdrp->fnamlen : 5
+fhdrp->fcode   : 1
+fhdrp->flen    : 1531
+Send ACK : OK 
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+poll_primary() : OK : ret : 0
+fhdrp->fssno   : 21
+fhdrp->fnamlen : 5
+fhdrp->fcode   : 1
+fhdrp->flen    : 1531
+Send ACK : OK 
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+poll_primary() : OK : ret : 0
+fhdrp->fssno   : 22
+fhdrp->fnamlen : 5
+fhdrp->fcode   : 1
+fhdrp->flen    : 1531
+Send ACK : OK 
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+poll_primary() : OK : ret : 0
+fhdrp->fssno   : 23
+fhdrp->fnamlen : 5
+fhdrp->fcode   : 1
+fhdrp->flen    : 1531
+Send ACK : OK 
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!

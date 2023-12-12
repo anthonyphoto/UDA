@@ -1,0 +1,34 @@
+include $(HOME)/common/env_uda.mk
+
+###############################################################################
+#
+#       Paths for include files
+#
+###############################################################################
+
+BASEOBJS = ctime.o ptrList.o 
+COMMINCPATH = $(HOME)/pms/PMS/COMMON/INCLUDE
+COMMLIB = pmslib.a
+
+###############################################################################
+#
+# make all objects
+#
+###############################################################################
+
+all : $(BASEOBJS) $(COMMLIB)
+
+ptrList.o:		$(COMMINCPATH)/ptrList.hpp ptrList.cpp
+ctime.o:		$(COMMINCPATH)/ctime.hpp ctime.cpp
+
+$(COMMLIB) : $(BASEOBJS)
+	ar r $(COMMLIB) $(BASEOBJS)
+    				
+###############################################################################
+#
+# clean up
+#
+###############################################################################
+clean :
+	rm -rf $(BASEOBJS) $(COMMLIB);
+	@echo "All object files"

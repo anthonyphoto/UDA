@@ -1,0 +1,2558 @@
+shmInfo:nLRemark:0
+******* proc_remark = 0
+shm_key = [1099694137] shm_id  = [13339] shm_size= [72000
+ERR : [22] = EINVAL==> 1shm access fail args = 
+ LogManageSM::LogSMinit(void) : 
+[FETCH] t_log_manage sqlcode : 0
+shmInfo:nLRemark:0
+******* proc_remark = 0
+ LogManageSM::LogSMinit(void) : 
+[FETCH] t_log_manage sqlcode : 0
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 1 | 72
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 2 | 144
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 3 | 216
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 4 | 288
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 5 | 360
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 6 | 432
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 7 | 504
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 8 | 576
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 9 | 648
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 10 | 720
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 11 | 792
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 12 | 864
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 13 | 936
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 14 | 1008
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 15 | 1080
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 16 | 1152
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 17 | 1224
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 18 | 1296
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 19 | 1368
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 20 | 1440
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 21 | 1512
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 22 | 1584
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 23 | 1656
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 24 | 1728
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 25 | 1800
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 26 | 1872
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 27 | 1944
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 28 | 2016
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 29 | 2088
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 30 | 2160
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 31 | 2232
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 32 | 2304
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 33 | 2376
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 34 | 2448
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 35 | 2520
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 36 | 2592
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 37 | 2664
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 38 | 2736
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 39 | 2808
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 40 | 2880
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 41 | 2952
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 42 | 3024
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 43 | 3096
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 44 | 3168
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 45 | 3240
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 46 | 3312
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 47 | 3384
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 48 | 3456
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 49 | 3528
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 50 | 3600
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 51 | 3672
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 52 | 3744
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 53 | 3816
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 54 | 3888
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 55 | 3960
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 56 | 4032
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 57 | 4104
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 58 | 4176
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 59 | 4248
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 60 | 4320
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 61 | 4392
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 62 | 4464
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 63 | 4536
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 64 | 4608
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 65 | 4680
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 66 | 4752
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 67 | 4824
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 68 | 4896
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 69 | 4968
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 70 | 5040
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 71 | 5112
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 72 | 5184
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 73 | 5256
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 74 | 5328
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 75 | 5400
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 76 | 5472
+[FETCH] t_log_manage sqlcode : 1403
+Q file name = [/SVC1/DATA/MQ/10110010.MQ]
+get_unRecSize();    = [80]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120011.MQ]
+get_unRecSize();    = [140]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120012.MQ]
+get_unRecSize();    = [92]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120013.MQ]
+get_unRecSize();    = [676]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/10110010.MQ]
+get_unRecSize();    = [80]
+get_unRecCount();   = [1000]
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 2
+nProc_sn = 0
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 2
+nProc_sn = 0
+nProc_remark = 0
+nExitCode	 = 0
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 5
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 1
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 4
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 8
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 9
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 0
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 7
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 6
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 3
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 2
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 6
+nProc_remark = 0
+nExitCode	 = -1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 9
+nProc_remark = 0
+nExitCode	 = -1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 4
+nProc_remark = 0
+nExitCode	 = -1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 8
+nProc_remark = 0
+nExitCode	 = -1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 1
+nProc_remark = 0
+nExitCode	 = -1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 7
+nProc_remark = 0
+nExitCode	 = -1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 2
+nProc_remark = 0
+nExitCode	 = -1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 5
+nProc_remark = 0
+nExitCode	 = -1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 0
+nProc_remark = 0
+nExitCode	 = -1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 3
+nProc_remark = 0
+nExitCode	 = -1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 0
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 5
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 4
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 3
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 1
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 6
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 7
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 9
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 8
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 2
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+INSERT.....T_ERROR_LOG
+INSERT.....T_ERROR_LOG
+INSERT.....T_ERROR_LOG
+INSERT.....T_ERROR_LOG
+INSERT.....T_ERROR_LOG
+INSERT.....T_ERROR_LOG
+INSERT.....T_ERROR_LOG
+INSERT.....T_ERROR_LOG
+INSERT.....T_ERROR_LOG
+INSERT.....T_ERROR_LOG
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 2
+nProc_sn = 0
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 2
+nProc_sn = 0
+nProc_remark = 0
+nExitCode	 = 0
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 9
+nProc_remark = 0
+nExitCode	 = -1
+INSERT.....T_PROC_EVENT_HIST
+INSERT.....T_ERROR_LOG
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 3
+nProc_remark = 0
+nExitCode	 = -1
+INSERT.....T_PROC_EVENT_HIST
+INSERT.....T_ERROR_LOG
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 2
+nProc_remark = 0
+nExitCode	 = -1
+INSERT.....T_PROC_EVENT_HIST
+INSERT.....T_ERROR_LOG
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 8
+nProc_remark = 0
+nExitCode	 = -1
+INSERT.....T_PROC_EVENT_HIST
+INSERT.....T_ERROR_LOG
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 5
+nProc_remark = 0
+nExitCode	 = -1
+INSERT.....T_PROC_EVENT_HIST
+INSERT.....T_ERROR_LOG
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 1
+nProc_remark = 0
+nExitCode	 = -1
+INSERT.....T_PROC_EVENT_HIST
+INSERT.....T_ERROR_LOG
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 7
+nProc_remark = 0
+nExitCode	 = -1
+INSERT.....T_PROC_EVENT_HIST
+INSERT.....T_ERROR_LOG
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 0
+nProc_remark = 0
+nExitCode	 = -1
+INSERT.....T_PROC_EVENT_HIST
+INSERT.....T_ERROR_LOG
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 6
+nProc_remark = 0
+nExitCode	 = -1
+INSERT.....T_PROC_EVENT_HIST
+INSERT.....T_ERROR_LOG
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 4
+nProc_remark = 0
+nExitCode	 = -1
+INSERT.....T_PROC_EVENT_HIST
+INSERT.....T_ERROR_LOG
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 0
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 3
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 6
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 8
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 1
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 7
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 9
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 2
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 5
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 4
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 7
+nProc_remark = 0
+nExitCode	 = -1
+INSERT.....T_PROC_EVENT_HIST
+INSERT.....T_ERROR_LOG
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 2
+nProc_remark = 0
+nExitCode	 = -1
+INSERT.....T_PROC_EVENT_HIST
+INSERT.....T_ERROR_LOG
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 0
+nProc_remark = 0
+nExitCode	 = -1
+INSERT.....T_PROC_EVENT_HIST
+INSERT.....T_ERROR_LOG
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 1
+nProc_remark = 0
+nExitCode	 = -1
+INSERT.....T_PROC_EVENT_HIST
+INSERT.....T_ERROR_LOG
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 6
+nProc_remark = 0
+nExitCode	 = -1
+INSERT.....T_PROC_EVENT_HIST
+INSERT.....T_ERROR_LOG
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 8
+nProc_remark = 0
+nExitCode	 = -1
+INSERT.....T_PROC_EVENT_HIST
+INSERT.....T_ERROR_LOG
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 9
+nProc_remark = 0
+nExitCode	 = -1
+INSERT.....T_PROC_EVENT_HIST
+INSERT.....T_ERROR_LOG
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 4
+nProc_remark = 0
+nExitCode	 = -1
+INSERT.....T_PROC_EVENT_HIST
+INSERT.....T_ERROR_LOG
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 3
+nProc_remark = 0
+nExitCode	 = -1
+INSERT.....T_PROC_EVENT_HIST
+INSERT.....T_ERROR_LOG
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 5
+nProc_remark = 0
+nExitCode	 = -1
+INSERT.....T_PROC_EVENT_HIST
+INSERT.....T_ERROR_LOG
+ sql error code: 0
+ConnectToDB sqlcode:0
+/dev/vg00/lvol3 143360 36665 100272 27 /
+20001205120902
+1
+/dev/vg00/lvol3
+143360
+36665
+100272
+27
+/
+S
+/dev/vg00/lvol1 83733 53815 21544 71 /stand
+20001205120902
+1
+/dev/vg00/lvol1
+83733
+53815
+21544
+71
+/stand
+S
+/dev/vg00/lvol8 1064960 307925 710435 30 /var
+20001205120902
+1
+/dev/vg00/lvol8
+1064960
+307925
+710435
+30
+/var
+S
+/dev/vg00/lvol7 1191936 524062 626147 46 /usr
+20001205120902
+1
+/dev/vg00/lvol7
+1191936
+524062
+626147
+46
+/usr
+S
+/dev/vg00/lvol4 65536 1273 60294 2 /tmp
+20001205120902
+1
+/dev/vg00/lvol4
+65536
+1273
+60294
+2
+/tmp
+S
+/dev/vg00/lvol6 819200 479160 319522 60 /opt
+20001205120902
+1
+/dev/vg00/lvol6
+819200
+479160
+319522
+60
+/opt
+S
+/dev/vg00/lvol5 20480 1182 18160 6 /home
+20001205120902
+1
+/dev/vg00/lvol5
+20480
+1182
+18160
+6
+/home
+S
+/dev/vg02/radius1 10240000 3352718 6672130 33 /SVC1/RADIUS
+20001205120902
+1
+/dev/vg02/radius1
+10240000
+3352718
+6672130
+33
+/SVC1/RADIUS
+S
+/dev/vg02/data1 1024000 152990 816619 16 /SVC1/DATA
+20001205120902
+1
+/dev/vg02/data1
+1024000
+152990
+816619
+16
+/SVC1/DATA
+S
+/dev/vg02/log1 3072000 339801 2561525 12 /SVC1/LOG
+20001205120902
+1
+/dev/vg02/log1
+3072000
+339801
+2561525
+12
+/SVC1/LOG
+S
+/dev/vg02/bds2 5120000 7151 4793336 0 /SVC2/BDS
+20001205120902
+1
+/dev/vg02/bds2
+5120000
+7151
+4793336
+0
+/SVC2/BDS
+S
+/dev/vg02/mb2 1024000 2424 957731 0 /SVC2/MB
+20001205120902
+1
+/dev/vg02/mb2
+1024000
+2424
+957731
+0
+/SVC2/MB
+S
+/dev/vg03/bds1 5120000 13363 4787516 0 /SVC1/BDS
+20001205120902
+1
+/dev/vg03/bds1
+5120000
+13363
+4787516
+0
+/SVC1/BDS
+S
+/dev/vg03/mb1 1024000 1358 958732 0 /SVC1/MB
+20001205120902
+1
+/dev/vg03/mb1
+1024000
+1358
+958732
+0
+/SVC1/MB
+S
+/dev/vg03/radius2 10240000 3406 9916708 0 /SVC2/RADIUS
+20001205120902
+1
+/dev/vg03/radius2
+10240000
+3406
+9916708
+0
+/SVC2/RADIUS
+S
+/dev/vg03/log2 3072000 207472 2685502 7 /SVC2/LOG
+20001205120902
+1
+/dev/vg03/log2
+3072000
+207472
+2685502
+7
+/SVC2/LOG
+S
+/dev/vg03/data2 1024000 1359 958728 0 /SVC2/DATA
+20001205120902
+1
+/dev/vg03/data2
+1024000
+1359
+958728
+0
+/SVC2/DATA
+S
+/dev/vg01/oracle1 3072000 982682 1958745 33 /oracle1
+20001205120902
+1
+/dev/vg01/oracle1
+3072000
+982682
+1958745
+33
+/oracle1
+S
+/dev/vg01/uda1 4096000 868539 3026823 22 /home/uda1
+20001205120902
+1
+/dev/vg01/uda1
+4096000
+868539
+3026823
+22
+/home/uda1
+S
+/dev/vg01/oradata 8192000 4099133 3837070 52 /home/uda1/dbdata
+20001205120902
+1
+/dev/vg01/oradata
+8192000
+4099133
+3837070
+52
+/home/uda1/dbdata
+S
+/dev/vg02/oraindex 4096000 831561 3060418 21 /home/uda1/dbindex
+20001205120902
+1
+/dev/vg02/oraindex
+4096000
+831561
+3060418
+21
+/home/uda1/dbindex
+S
+ sql error code: 0
+ConnectToDB sqlcode:0
+0 1 0 99
+a /SVC1/BDS//BDS_UDR.1 65 blocks
+a /SVC1/BDS//BDS_UDR.18 65 blocks
+a /SVC1/BDS//BDS_UDR.19 65 blocks
+a /SVC1/BDS//BDS_UDR.2 65 blocks
+a /SVC1/BDS//BDS_UDR.3 65 blocks
+a /SVC1/BDS//BDS_UDR.4 65 blocks
+a /SVC1/BDS//BDS_UDR.5 65 blocks
+a /SVC1/BDS//BDS_UDR.6 65 blocks
+a /SVC1/BDS//BDS_UDR.20 65 blocks
+a /SVC1/BDS//BDS_UDR.7 65 blocks
+a /SVC1/BDS//BDS_UDR.21 65 blocks
+a /SVC1/BDS//BDS_UDR.8 65 blocks
+a /SVC1/BDS//BDS_UDR.9 65 blocks
+a /SVC1/BDS//BDS_UDR.10 65 blocks
+a /SVC1/BDS//BDS_UDR.22 65 blocks
+a /SVC1/BDS//BDS_UDR.23 65 blocks
+a /SVC1/BDS//BDS_UDR.11 65 blocks
+a /SVC1/BDS//BDS_UDR.12 65 blocks
+a /SVC1/BDS//BDS_UDR.13 65 blocks
+a /SVC1/BDS//BDS_UDR.14 65 blocks
+a /SVC1/BDS//BDS_UDR.15 65 blocks
+a /SVC1/BDS//BDS_UDR.24 65 blocks
+a /SVC1/BDS//BDS_UDR.16 65 blocks
+a /SVC1/BDS//BDS_UDR.25 65 blocks
+a /SVC1/BDS//BDS_UDR.17 65 blocks
+a /SVC1/BDS//BDS_UDR.26 65 blocks
+a /SVC1/BDS//BDS_UDR.27 65 blocks
+a /SVC1/BDS//BDS_UDR.28 65 blocks
+a /SVC1/BDS//BDS_UDR.29 65 blocks
+a /SVC1/BDS//BDS_UDR.30 65 blocks
+a /SVC1/BDS//BDS_UDR.31 65 blocks
+a /SVC1/BDS//BDS_UDR.32 65 blocks
+a /SVC1/BDS//BDS_UDR.33 65 blocks
+a /SVC1/BDS//BDS_UDR.34 65 blocks
+a /SVC1/BDS//BDS_UDR.35 65 blocks
+a /SVC1/BDS//BDS_UDR.36 65 blocks
+a /SVC1/BDS//BDS_UDR.37 65 blocks
+a /SVC1/BDS//BDS_UDR.38 65 blocks
+a /SVC1/BDS//BDS_UDR.39 65 blocks
+a /SVC1/BDS//BDS_UDR.40 65 blocks
+a /SVC1/BDS//BDS_UDR.41 65 blocks
+a /SVC1/BDS//BDS_UDR.42 65 blocks
+a /SVC1/BDS//BDS_UDR.43 65 blocks
+a /SVC1/BDS//BDS_UDR.44 65 blocks
+a /SVC1/BDS//BDS_UDR.45 65 blocks
+a /SVC1/BDS//BDS_UDR.46 65 blocks
+a /SVC1/BDS//BDS_UDR.47 65 blocks
+a /SVC1/BDS//BDS_UDR.48 65 blocks
+a /SVC1/BDS//BDS_UDR.49 65 blocks
+a /SVC1/BDS//BDS_UDR.50 65 blocks
+a /SVC1/BDS//BDS_UDR.51 65 blocks
+a /SVC1/BDS//BDS_UDR.52 65 blocks
+a /SVC1/BDS//BDS_UDR.53 65 blocks
+a /SVC1/BDS//BDS_UDR.54 65 blocks
+a /SVC1/BDS//BDS_UDR.55 65 blocks
+a /SVC1/BDS//BDS_UDR.56 65 blocks
+a /SVC1/BDS//BDS_UDR.57 65 blocks
+a /SVC1/BDS//BDS_UDR.58 65 blocks
+a /SVC1/BDS//BDS_UDR.59 65 blocks
+a /SVC1/BDS//BDS_UDR.60 65 blocks
+a /SVC1/BDS//BDS_UDR.61 65 blocks
+a /SVC1/BDS//BDS_UDR.62 65 blocks
+a /SVC1/BDS//BDS_UDR.63 65 blocks
+a /SVC1/BDS//BDS_UDR.64 65 blocks
+a /SVC1/BDS//BDS_UDR.65 65 blocks
+a /SVC1/BDS//BDS_UDR.66 65 blocks
+a /SVC1/BDS//BDS_UDR.67 65 blocks
+[         BDS_UDR.1] 20001130 16:11:10 
+[/SVC1/BDS/] BDS_UDR.1 backup..
+[        BDS_UDR.18] 20001201 17:27:33 
+[/SVC1/BDS/] BDS_UDR.18 backup..
+[        BDS_UDR.19] 20001201 17:37:44 
+[/SVC1/BDS/] BDS_UDR.19 backup..
+[         BDS_UDR.2] 20001130 17:01:18 
+[/SVC1/BDS/] BDS_UDR.2 backup..
+[         BDS_UDR.3] 20001130 17:07:24 
+[/SVC1/BDS/] BDS_UDR.3 backup..
+[         BDS_UDR.4] 20001130 18:04:20 
+[/SVC1/BDS/] BDS_UDR.4 backup..
+[         BDS_UDR.5] 20001130 18:14:30 
+[/SVC1/BDS/] BDS_UDR.5 backup..
+[         BDS_UDR.6] 20001201 10:18:47 
+[/SVC1/BDS/] BDS_UDR.6 backup..
+[        BDS_UDR.20] 20001201 17:41:48 
+[/SVC1/BDS/] BDS_UDR.20 backup..
+[         BDS_UDR.7] 20001201 10:44:12 
+[/SVC1/BDS/] BDS_UDR.7 backup..
+[        BDS_UDR.21] 20001201 17:58:04 
+[/SVC1/BDS/] BDS_UDR.21 backup..
+[         BDS_UDR.8] 20001201 10:56:21 
+[/SVC1/BDS/] BDS_UDR.8 backup..
+[         BDS_UDR.9] 20001201 11:25:43 
+[/SVC1/BDS/] BDS_UDR.9 backup..
+[        BDS_UDR.10] 20001201 11:27:45 
+[/SVC1/BDS/] BDS_UDR.10 backup..
+[        BDS_UDR.22] 20001201 18:08:14 
+[/SVC1/BDS/] BDS_UDR.22 backup..
+[        BDS_UDR.23] 20001201 18:20:27 
+[/SVC1/BDS/] BDS_UDR.23 backup..
+[        BDS_UDR.11] 20001201 12:43:49 
+[/SVC1/BDS/] BDS_UDR.11 backup..
+[        BDS_UDR.12] 20001201 13:11:38 
+[/SVC1/BDS/] BDS_UDR.12 backup..
+[        BDS_UDR.13] 20001201 13:15:42 
+[/SVC1/BDS/] BDS_UDR.13 backup..
+[        BDS_UDR.14] 20001201 13:24:21 
+[/SVC1/BDS/] BDS_UDR.14 backup..
+[        BDS_UDR.15] 20001201 13:40:19 
+[/SVC1/BDS/] BDS_UDR.15 backup..
+[        BDS_UDR.24] 20001201 18:24:31 
+[/SVC1/BDS/] BDS_UDR.24 backup..
+[        BDS_UDR.16] 20001201 15:24:59 
+[/SVC1/BDS/] BDS_UDR.16 backup..
+[        BDS_UDR.25] 20001201 19:42:10 
+[/SVC1/BDS/] BDS_UDR.25 backup..
+[        BDS_UDR.17] 20001201 16:03:38 
+[/SVC1/BDS/] BDS_UDR.17 backup..
+[        BDS_UDR.26] 20001201 19:42:10 
+[/SVC1/BDS/] BDS_UDR.26 backup..
+[        BDS_UDR.27] 20001201 19:42:10 
+[/SVC1/BDS/] BDS_UDR.27 backup..
+[        BDS_UDR.28] 20001201 19:42:10 
+[/SVC1/BDS/] BDS_UDR.28 backup..
+[        BDS_UDR.29] 20001201 19:42:11 
+[/SVC1/BDS/] BDS_UDR.29 backup..
+[        BDS_UDR.30] 20001201 19:42:11 
+[/SVC1/BDS/] BDS_UDR.30 backup..
+[        BDS_UDR.31] 20001201 19:42:11 
+[/SVC1/BDS/] BDS_UDR.31 backup..
+[        BDS_UDR.32] 20001201 19:42:11 
+[/SVC1/BDS/] BDS_UDR.32 backup..
+[        BDS_UDR.33] 20001201 19:42:12 
+[/SVC1/BDS/] BDS_UDR.33 backup..
+[        BDS_UDR.34] 20001201 19:42:12 
+[/SVC1/BDS/] BDS_UDR.34 backup..
+[        BDS_UDR.35] 20001201 19:42:12 
+[/SVC1/BDS/] BDS_UDR.35 backup..
+[        BDS_UDR.36] 20001201 19:42:12 
+[/SVC1/BDS/] BDS_UDR.36 backup..
+[        BDS_UDR.37] 20001201 19:42:13 
+[/SVC1/BDS/] BDS_UDR.37 backup..
+[        BDS_UDR.38] 20001201 19:42:13 
+[/SVC1/BDS/] BDS_UDR.38 backup..
+[        BDS_UDR.39] 20001201 19:42:13 
+[/SVC1/BDS/] BDS_UDR.39 backup..
+[        BDS_UDR.40] 20001201 19:42:13 
+[/SVC1/BDS/] BDS_UDR.40 backup..
+[        BDS_UDR.41] 20001201 19:42:14 
+[/SVC1/BDS/] BDS_UDR.41 backup..
+[        BDS_UDR.42] 20001201 19:42:14 
+[/SVC1/BDS/] BDS_UDR.42 backup..
+[        BDS_UDR.43] 20001201 19:42:14 
+[/SVC1/BDS/] BDS_UDR.43 backup..
+[        BDS_UDR.44] 20001201 19:42:14 
+[/SVC1/BDS/] BDS_UDR.44 backup..
+[        BDS_UDR.45] 20001201 19:42:15 
+[/SVC1/BDS/] BDS_UDR.45 backup..
+[        BDS_UDR.46] 20001201 19:42:15 
+[/SVC1/BDS/] BDS_UDR.46 backup..
+[        BDS_UDR.47] 20001201 19:42:15 
+[/SVC1/BDS/] BDS_UDR.47 backup..
+[        BDS_UDR.48] 20001201 19:42:16 
+[/SVC1/BDS/] BDS_UDR.48 backup..
+[        BDS_UDR.49] 20001201 19:42:16 
+[/SVC1/BDS/] BDS_UDR.49 backup..
+[        BDS_UDR.50] 20001201 19:42:16 
+[/SVC1/BDS/] BDS_UDR.50 backup..
+[        BDS_UDR.51] 20001201 19:42:16 
+[/SVC1/BDS/] BDS_UDR.51 backup..
+[        BDS_UDR.52] 20001201 19:42:17 
+[/SVC1/BDS/] BDS_UDR.52 backup..
+[        BDS_UDR.53] 20001201 19:42:17 
+[/SVC1/BDS/] BDS_UDR.53 backup..
+[        BDS_UDR.54] 20001201 19:42:17 
+[/SVC1/BDS/] BDS_UDR.54 backup..
+[        BDS_UDR.55] 20001201 19:42:17 
+[/SVC1/BDS/] BDS_UDR.55 backup..
+[        BDS_UDR.56] 20001201 19:42:18 
+[/SVC1/BDS/] BDS_UDR.56 backup..
+[        BDS_UDR.57] 20001201 19:42:18 
+[/SVC1/BDS/] BDS_UDR.57 backup..
+[        BDS_UDR.58] 20001201 19:42:18 
+[/SVC1/BDS/] BDS_UDR.58 backup..
+[        BDS_UDR.59] 20001201 19:42:18 
+[/SVC1/BDS/] BDS_UDR.59 backup..
+[        BDS_UDR.60] 20001201 19:42:19 
+[/SVC1/BDS/] BDS_UDR.60 backup..
+[        BDS_UDR.61] 20001201 19:42:19 
+[/SVC1/BDS/] BDS_UDR.61 backup..
+[        BDS_UDR.62] 20001201 19:42:19 
+[/SVC1/BDS/] BDS_UDR.62 backup..
+[        BDS_UDR.63] 20001201 19:42:19 
+[/SVC1/BDS/] BDS_UDR.63 backup..
+[        BDS_UDR.64] 20001201 19:42:20 
+[/SVC1/BDS/] BDS_UDR.64 backup..
+[        BDS_UDR.65] 20001201 19:42:20 
+[/SVC1/BDS/] BDS_UDR.65 backup..
+[        BDS_UDR.66] 20001201 19:44:22 
+[/SVC1/BDS/] BDS_UDR.66 backup..
+[        BDS_UDR.67] 20001205 09:32:14 
+[/SVC1/BDS/] BDS_UDR.67 backup..
+a /SVC1/RADIUS//RADIUS0_UDR1.1 65 blocks
+a /SVC1/RADIUS//RADIUS0_UDR1.2 65 blocks
+a /SVC1/RADIUS//RADIUS0_UDR1.3 65 blocks
+a /SVC1/RADIUS//RADIUS0_UDR1.4 65 blocks
+a /SVC1/RADIUS//RADIUS0_UDR1.5 65 blocks
+a /SVC1/RADIUS//RADIUS0_UDR1.6 65 blocks
+a /SVC1/RADIUS//RADIUS0_UDR1.7 65 blocks
+a /SVC1/RADIUS//RADIUS0_UDR1.8 65 blocks
+a /SVC1/RADIUS//RADIUS0_UDR1.9 65 blocks
+a /SVC1/RADIUS//RADIUS0_UDR1.10 65 blocks
+a /SVC1/RADIUS//RADIUS0_UDR1.11 65 blocks
+a /SVC1/RADIUS//RADIUS0_UDR1.12 65 blocks
+a /SVC1/RADIUS//RADIUS0_UDR1.13 65 blocks
+a /SVC1/RADIUS//RADIUS0_UDR1.14 65 blocks
+a /SVC1/RADIUS//RADIUS0_UDR1.15 65 blocks
+[    RADIUS0_UDR1.1] 20001130 14:39:52 
+[/SVC1/RADIUS/] RADIUS0_UDR1.1 backup..
+[    RADIUS0_UDR1.2] 20001130 14:43:00 
+[/SVC1/RADIUS/] RADIUS0_UDR1.2 backup..
+[    RADIUS0_UDR1.3] 20001130 14:49:16 
+[/SVC1/RADIUS/] RADIUS0_UDR1.3 backup..
+[    RADIUS0_UDR1.4] 20001130 14:58:28 
+[/SVC1/RADIUS/] RADIUS0_UDR1.4 backup..
+[    RADIUS0_UDR1.5] 20001130 15:02:29 
+[/SVC1/RADIUS/] RADIUS0_UDR1.5 backup..
+[    RADIUS0_UDR1.6] 20001130 15:51:47 
+[/SVC1/RADIUS/] RADIUS0_UDR1.6 backup..
+[    RADIUS0_UDR1.7] 20001130 15:56:16 
+[/SVC1/RADIUS/] RADIUS0_UDR1.7 backup..
+[    RADIUS0_UDR1.8] 20001130 16:29:49 
+[/SVC1/RADIUS/] RADIUS0_UDR1.8 backup..
+[    RADIUS0_UDR1.9] 20001130 16:43:18 
+[/SVC1/RADIUS/] RADIUS0_UDR1.9 backup..
+[   RADIUS0_UDR1.10] 20001130 17:00:03 
+[/SVC1/RADIUS/] RADIUS0_UDR1.10 backup..
+[   RADIUS0_UDR1.11] 20001130 17:06:38 
+[/SVC1/RADIUS/] RADIUS0_UDR1.11 backup..
+[   RADIUS0_UDR1.12] 20001130 18:02:39 
+[/SVC1/RADIUS/] RADIUS0_UDR1.12 backup..
+[   RADIUS0_UDR1.13] 20001130 18:06:26 
+[/SVC1/RADIUS/] RADIUS0_UDR1.13 backup..
+[   RADIUS0_UDR1.14] 20001130 18:12:07 
+[/SVC1/RADIUS/] RADIUS0_UDR1.14 backup..
+[   RADIUS0_UDR1.15] 20001205 09:19:17 
+[/SVC1/RADIUS/] RADIUS0_UDR1.15 backup..
+ sql error code: 0
+ConnectToDB sqlcode:0
+/dev/vg00/lvol3 143360 36665 100272 27 /
+20001205130907
+1
+/dev/vg00/lvol3
+143360
+36665
+100272
+27
+/
+S
+/dev/vg00/lvol1 83733 53815 21544 71 /stand
+20001205130907
+1
+/dev/vg00/lvol1
+83733
+53815
+21544
+71
+/stand
+S
+/dev/vg00/lvol8 1064960 307925 710435 30 /var
+20001205130907
+1
+/dev/vg00/lvol8
+1064960
+307925
+710435
+30
+/var
+S
+/dev/vg00/lvol7 1191936 524062 626147 46 /usr
+20001205130907
+1
+/dev/vg00/lvol7
+1191936
+524062
+626147
+46
+/usr
+S
+/dev/vg00/lvol4 65536 1273 60294 2 /tmp
+20001205130907
+1
+/dev/vg00/lvol4
+65536
+1273
+60294
+2
+/tmp
+S
+/dev/vg00/lvol6 819200 479160 319522 60 /opt
+20001205130907
+1
+/dev/vg00/lvol6
+819200
+479160
+319522
+60
+/opt
+S
+/dev/vg00/lvol5 20480 1182 18160 6 /home
+20001205130907
+1
+/dev/vg00/lvol5
+20480
+1182
+18160
+6
+/home
+S
+/dev/vg02/radius1 10240000 3352718 6672134 33 /SVC1/RADIUS
+20001205130907
+1
+/dev/vg02/radius1
+10240000
+3352718
+6672134
+33
+/SVC1/RADIUS
+S
+/dev/vg02/data1 1024000 152990 816619 16 /SVC1/DATA
+20001205130907
+1
+/dev/vg02/data1
+1024000
+152990
+816619
+16
+/SVC1/DATA
+S
+/dev/vg02/log1 3072000 338859 2562408 12 /SVC1/LOG
+20001205130907
+1
+/dev/vg02/log1
+3072000
+338859
+2562408
+12
+/SVC1/LOG
+S
+/dev/vg02/bds2 5120000 7151 4793336 0 /SVC2/BDS
+20001205130907
+1
+/dev/vg02/bds2
+5120000
+7151
+4793336
+0
+/SVC2/BDS
+S
+/dev/vg02/mb2 1024000 2424 957731 0 /SVC2/MB
+20001205130907
+1
+/dev/vg02/mb2
+1024000
+2424
+957731
+0
+/SVC2/MB
+S
+/dev/vg03/bds1 5120000 13382 4787514 0 /SVC1/BDS
+20001205130907
+1
+/dev/vg03/bds1
+5120000
+13382
+4787514
+0
+/SVC1/BDS
+S
+/dev/vg03/mb1 1024000 1358 958732 0 /SVC1/MB
+20001205130907
+1
+/dev/vg03/mb1
+1024000
+1358
+958732
+0
+/SVC1/MB
+S
+/dev/vg03/radius2 10240000 3406 9916708 0 /SVC2/RADIUS
+20001205130907
+1
+/dev/vg03/radius2
+10240000
+3406
+9916708
+0
+/SVC2/RADIUS
+S
+/dev/vg03/log2 3072000 207472 2685502 7 /SVC2/LOG
+20001205130907
+1
+/dev/vg03/log2
+3072000
+207472
+2685502
+7
+/SVC2/LOG
+S
+/dev/vg03/data2 1024000 1359 958728 0 /SVC2/DATA
+20001205130907
+1
+/dev/vg03/data2
+1024000
+1359
+958728
+0
+/SVC2/DATA
+S
+/dev/vg01/oracle1 3072000 982682 1958745 33 /oracle1
+20001205130907
+1
+/dev/vg01/oracle1
+3072000
+982682
+1958745
+33
+/oracle1
+S
+/dev/vg01/uda1 4096000 868571 3026793 22 /home/uda1
+20001205130907
+1
+/dev/vg01/uda1
+4096000
+868571
+3026793
+22
+/home/uda1
+S
+/dev/vg01/oradata 8192000 4099133 3837070 52 /home/uda1/dbdata
+20001205130907
+1
+/dev/vg01/oradata
+8192000
+4099133
+3837070
+52
+/home/uda1/dbdata
+S
+/dev/vg02/oraindex 4096000 831561 3060418 21 /home/uda1/dbindex
+20001205130907
+1
+/dev/vg02/oraindex
+4096000
+831561
+3060418
+21
+/home/uda1/dbindex
+S
+ sql error code: 0
+ConnectToDB sqlcode:0
+0 1 0 99
+Q file name = [/SVC1/DATA/MQ/11120010.MQ]
+get_unRecSize();    = [332]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120011.MQ]
+get_unRecSize();    = [140]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120012.MQ]
+get_unRecSize();    = [92]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120013.MQ]
+get_unRecSize();    = [676]
+get_unRecCount();   = [1000]
+shmInfo:nLRemark:0
+Q file name = [/SVC1/DATA/MQ/11120010.MQ]
+get_unRecSize();    = [332]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120011.MQ]
+get_unRecSize();    = [140]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120012.MQ]
+get_unRecSize();    = [92]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120013.MQ]
+get_unRecSize();    = [676]
+get_unRecCount();   = [1000]
+shmInfo:nLRemark:0
+******* proc_remark = 0
+******* proc_remark = 0
+shmInfo:nLRemark:3
+Q file name = [/SVC1/DATA/MQ/11310010.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/10110010.MQ]
+get_unRecSize();    = [80]
+get_unRecCount();   = [1000]
+/SVC1/DATA/pdsn1_filter.cfg  1 : 58 : 
+Q file name = [/SVC1/DATA/MQ/11210010.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11210110.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11210210.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11210310.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11210410.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11210510.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11210610.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11210710.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11210810.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11210910.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+******* proc_remark = 3
+shmInfo:nLRemark:2
+shmInfo:nLRemark:3
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 3
+nProc_type   = 2
+nProc_sn = 0
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 3
+nProc_type   = 1
+nProc_sn = 0
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+******* proc_remark = 2
+shmInfo:nLRemark:1
+******* proc_remark = 3
+shmInfo:nLRemark:2
+******* proc_remark = 1
+shmInfo:nLRemark:0
+******* proc_remark = 2
+shmInfo:nLRemark:1
+******* proc_remark = 0
+shmInfo:nLRemark:10
+******* proc_remark = 1
+shmInfo:nLRemark:0
+******* proc_remark = 10
+shm_key = [1099694116] shm_id  = [14358] shm_size= [25040
+ERR : [22] = EINVAL==> 1shm access fail args = 
+******* proc_remark = 0
+[CONMGR] fread ERROR : 0
+[CONMGR] fread ERROR : 0
+[CONMGR] fread ERROR : 0
+[CONMGR] fread ERROR : 0
+Q file name = [/SVC1/DATA/MQ/11120010.MQ]
+Q file name = [/SVC1/DATA/MQ/11120010.MQ]
+get_unRecSize();    = [332]
+get_unRecSize();    = [332]
+get_unRecCount();   = [1000]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120011.MQ]
+Q file name = [/SVC1/DATA/MQ/11120011.MQ]
+get_unRecSize();    = [140]
+get_unRecSize();    = [140]
+get_unRecCount();   = [1000]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120012.MQ]
+get_unRecSize();    = [92]
+Q file name = [/SVC1/DATA/MQ/11120012.MQ]
+get_unRecCount();   = [1000]
+get_unRecSize();    = [92]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120013.MQ]
+get_unRecSize();    = [676]
+Q file name = [/SVC1/DATA/MQ/11120013.MQ]
+get_unRecCount();   = [1000]
+get_unRecSize();    = [676]
+get_unRecCount();   = [1000]
+shmInfo:nLRemark:0
+shmInfo:nLRemark:0
+Q file name = [/SVC1/DATA/MQ/11120010.MQ]
+get_unRecSize();    = [332]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120011.MQ]
+get_unRecSize();    = [140]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120012.MQ]
+get_unRecSize();    = [92]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120013.MQ]
+get_unRecSize();    = [676]
+get_unRecCount();   = [1000]
+shmInfo:nLRemark:0
+Q file name = [/SVC1/DATA/MQ/11120010.MQ]
+get_unRecSize();    = [332]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120011.MQ]
+get_unRecSize();    = [140]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120012.MQ]
+get_unRecSize();    = [92]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120013.MQ]
+get_unRecSize();    = [676]
+get_unRecCount();   = [1000]
+shmInfo:nLRemark:0
+Q file name = [/SVC1/DATA/MQ/11120010.MQ]
+get_unRecSize();    = [332]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120011.MQ]
+get_unRecSize();    = [140]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120012.MQ]
+get_unRecSize();    = [92]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120013.MQ]
+get_unRecSize();    = [676]
+get_unRecCount();   = [1000]
+shmInfo:nLRemark:0
+Q file name = [/SVC1/DATA/MQ/11120010.MQ]
+get_unRecSize();    = [332]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120011.MQ]
+get_unRecSize();    = [140]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120012.MQ]
+get_unRecSize();    = [92]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120013.MQ]
+get_unRecSize();    = [676]
+get_unRecCount();   = [1000]
+shmInfo:nLRemark:0
+Q file name = [/SVC1/DATA/MQ/11120010.MQ]
+get_unRecSize();    = [332]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120011.MQ]
+get_unRecSize();    = [140]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120012.MQ]
+get_unRecSize();    = [92]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120013.MQ]
+get_unRecSize();    = [676]
+get_unRecCount();   = [1000]
+shmInfo:nLRemark:0
+Q file name = [/SVC1/DATA/MQ/11120010.MQ]
+get_unRecSize();    = [332]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120011.MQ]
+get_unRecSize();    = [140]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120010.MQ]
+get_unRecSize();    = [332]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120011.MQ]
+get_unRecSize();    = [140]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120012.MQ]
+get_unRecSize();    = [92]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120013.MQ]
+get_unRecSize();    = [676]
+get_unRecCount();   = [1000]
+shmInfo:nLRemark:0
+Q file name = [/SVC1/DATA/MQ/11120012.MQ]
+get_unRecSize();    = [92]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120013.MQ]
+get_unRecSize();    = [676]
+get_unRecCount();   = [1000]
+shmInfo:nLRemark:0
+Q file name = [/SVC1/DATA/MQ/11120010.MQ]
+get_unRecSize();    = [332]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120011.MQ]
+get_unRecSize();    = [140]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120012.MQ]
+get_unRecSize();    = [92]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120013.MQ]
+get_unRecSize();    = [676]
+get_unRecCount();   = [1000]
+shmInfo:nLRemark:0
+[CONMGR] fread ERROR : 0
+Q file name = [/SVC1/DATA/MQ/11120010.MQ]
+get_unRecSize();    = [332]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120011.MQ]
+get_unRecSize();    = [140]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120012.MQ]
+get_unRecSize();    = [92]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120013.MQ]
+get_unRecSize();    = [676]
+get_unRecCount();   = [1000]
+shmInfo:nLRemark:0
+Q file name = [/SVC1/DATA/MQ/11120010.MQ]
+get_unRecSize();    = [332]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120011.MQ]
+get_unRecSize();    = [140]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120012.MQ]
+get_unRecSize();    = [92]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120013.MQ]
+get_unRecSize();    = [676]
+get_unRecCount();   = [1000]
+shmInfo:nLRemark:0
+******* proc_remark = 0
+[CONMGR] fread ERROR : 0
+******* proc_remark = 0
+******* proc_remark = 0
+******* proc_remark = 0
+******* proc_remark = 0
+******* proc_remark = 0
+******* proc_remark = 0
+******* proc_remark = 0
+******* proc_remark = 0
+******* proc_remark = 0
+[CONMGR] fread ERROR : 0
+******* proc_remark = 0
+Q file name = [/SVC1/DATA/MQ/11210010.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11520010.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11410010.MQ]
+get_unRecSize();    = [44]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/10110010.MQ]
+get_unRecSize();    = [80]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11210210.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11520010.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11410010.MQ]
+get_unRecSize();    = [44]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/10110010.MQ]
+get_unRecSize();    = [80]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11210110.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11520010.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11410010.MQ]
+get_unRecSize();    = [44]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/10110010.MQ]
+get_unRecSize();    = [80]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11210510.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11520010.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11410010.MQ]
+get_unRecSize();    = [44]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/10110010.MQ]
+get_unRecSize();    = [80]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11210310.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11520010.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11410010.MQ]
+get_unRecSize();    = [44]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/10110010.MQ]
+get_unRecSize();    = [80]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11210710.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11520010.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11410010.MQ]
+get_unRecSize();    = [44]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/10110010.MQ]
+get_unRecSize();    = [80]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11210610.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11520010.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11410010.MQ]
+get_unRecSize();    = [44]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/10110010.MQ]
+get_unRecSize();    = [80]
+get_unRecCount();   = [1000]
+[CONMGR] fread ERROR : 0
+nSys_id   = 1
+Q file name = [/SVC1/DATA/MQ/11210810.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11520010.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11410010.MQ]
+get_unRecSize();    = [44]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/10110010.MQ]
+get_unRecSize();    = [80]
+get_unRecCount();   = [1000]
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 0
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 2
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 1
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 5
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+Q file name = [/SVC1/DATA/MQ/11210910.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11520010.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11410010.MQ]
+get_unRecSize();    = [44]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/10110010.MQ]
+get_unRecSize();    = [80]
+get_unRecCount();   = [1000]
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 3
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 7
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 6
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 8
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 9
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+Q file name = [/SVC1/DATA/MQ/11210410.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11520010.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11410010.MQ]
+get_unRecSize();    = [44]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/10110010.MQ]
+get_unRecSize();    = [80]
+get_unRecCount();   = [1000]
+shmInfo:nLRemark:3
+******* proc_remark = 0
+Q file name = [/SVC1/DATA/MQ/11520010.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/10110010.MQ]
+get_unRecSize();    = [80]
+get_unRecCount();   = [1000]
+[unFlag]=1
+[unYYMMDD]=20010101
+[unHHMMSS]=240000
+nYear= 2001
+nMonth= 1
+nDay= 1
+nTime= 24
+nMinute= 0
+nSecond= 0
+tMakeTime = 978361200
+shmInfo:nLRemark:3
+shmInfo:nLRemark:3
+[CONMGR] fread ERROR : 0
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 4
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 2
+nProc_sn = 0
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+shmInfo:nLRemark:3
+shmInfo:nLRemark:3
+shmInfo:nLRemark:3
+shmInfo:nLRemark:3
+shmInfo:nLRemark:3
+shmInfo:nLRemark:3
+[CONMGR] fread ERROR : 0
+******* proc_remark = 3
+shmInfo:nLRemark:2
+******* proc_remark = 3
+shmInfo:nLRemark:2
+******* proc_remark = 3
+shmInfo:nLRemark:2
+******* proc_remark = 3
+shmInfo:nLRemark:2
+******* proc_remark = 3
+shmInfo:nLRemark:2
+******* proc_remark = 3
+shmInfo:nLRemark:2
+******* proc_remark = 3
+******* proc_remark = 3
+shmInfo:nLRemark:2
+shmInfo:nLRemark:2
+shmInfo:nLRemark:3
+shmInfo:nLRemark:3
+[CONMGR] fread ERROR : 0
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 3
+nProc_type   = 2
+nProc_sn = 0
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+******* proc_remark = 2
+shmInfo:nLRemark:1
+shmInfo:nLRemark:3
+******* proc_remark = 2
+shmInfo:nLRemark:1
+******* proc_remark = 3
+shmInfo:nLRemark:2
+******* proc_remark = 2
+shmInfo:nLRemark:1
+******* proc_remark = 2
+shmInfo:nLRemark:1
+******* proc_remark = 1
+shmInfo:nLRemark:0
+[CONMGR] fread ERROR : 0
+******* proc_remark = 2
+******* proc_remark = 3
+shmInfo:nLRemark:2
+******* proc_remark = 1
+shmInfo:nLRemark:0
+shmInfo:nLRemark:1
+******* proc_remark = 2
+shmInfo:nLRemark:1
+******* proc_remark = 2
+shmInfo:nLRemark:1
+******* proc_remark = 2
+shmInfo:nLRemark:1
+******* proc_remark = 3
+shmInfo:nLRemark:2
+[CONMGR] fread ERROR : 0
+******* proc_remark = 3
+shmInfo:nLRemark:2
+******* proc_remark = 1
+shmInfo:nLRemark:0
+******* proc_remark = 2
+shmInfo:nLRemark:1
+******* proc_remark = 0
+argc=112103
+shmData(DATA SHAREDMEM): 0x4000f4b0
+stPtrDataIndexInfo: 0xc3a19000
+pAllocDataIndexC(DATA Alloc):0x4000f5c8
+Btree Pointer: 0x4000f6f8
+DB Connect Failure [-20]
+FAIL : get_t_shm_info(), so EXIT !!
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[1403]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[1403]
+******* proc_remark = 2
+******* proc_remark = 1
+shmInfo:nLRemark:0
+shmInfo:nLRemark:1
+******* proc_remark = 0
+shmData= 0x4000e4a8
+stPtrDataIndexInfo= 0xc3a19000
+pAllocDataIndexC= 0x4000e5c0
+pBtree= 0x4000e6f0
+pBtreeNode= 0x0
+shmInfo:nLRemark:3
+******* proc_remark = 1
+shmInfo:nLRemark:0
+******* proc_remark = 1
+shmInfo:nLRemark:0
+******* proc_remark = 1
+shmInfo:nLRemark:0
+[CONMGR] fread ERROR : 0
+******* proc_remark = 1
+shmInfo:nLRemark:0
+******* proc_remark = 0
+argc=112163
+shmData(DATA SHAREDMEM): 0x4000f4b0
+stPtrDataIndexInfo: 0xd1a9f000
+pAllocDataIndexC(DATA Alloc):0x4000f5c8
+Btree Pointer: 0x4000f6f8
+******* proc_remark = 3
+shmInfo:nLRemark:2
+Q file name = [/SVC1/DATA/MQ/11120010.MQ]
+get_unRecSize();    = [332]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120011.MQ]
+get_unRecSize();    = [140]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120012.MQ]
+get_unRecSize();    = [92]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120013.MQ]
+get_unRecSize();    = [676]
+get_unRecCount();   = [1000]
+shmInfo:nLRemark:0
+******* proc_remark = 0
+******* proc_remark = 2
+shmInfo:nLRemark:1
+******* proc_remark = 0
+argc=112113
+shmData(DATA SHAREDMEM): 0x4000f4b0
+stPtrDataIndexInfo: 0xc5d94000
+pAllocDataIndexC(DATA Alloc):0x4000f5c8
+Btree Pointer: 0x4000f6f8
+argc=112133
+shmData(DATA SHAREDMEM): 0x4000f4b0
+stPtrDataIndexInfo: 0xca932000
+pAllocDataIndexC(DATA Alloc):0x4000f5c8
+Btree Pointer: 0x4000f6f8
+******* proc_remark = 1
+shmInfo:nLRemark:0
+******* proc_remark = 1
+shmInfo:nLRemark:0
+******* proc_remark = 0
+argc=112153
+shmData(DATA SHAREDMEM): 0x4000ece0
+stPtrDataIndexInfo: 0xcf4d0000
+pAllocDataIndexC(DATA Alloc):0x4000edf8
+Btree Pointer: 0x4000ef28
+******* proc_remark = 0
+argc=112193
+shmData(DATA SHAREDMEM): 0x4000f4b0
+stPtrDataIndexInfo: 0xd8c0c000
+pAllocDataIndexC(DATA Alloc):0x4000f5c8
+Btree Pointer: 0x4000f6f8
+[CONMGR] fread ERROR : 0
+******* proc_remark = 2
+shmInfo:nLRemark:1
+******* proc_remark = 0
+argc=112143
+shmData(DATA SHAREDMEM): 0x4000ece0
+stPtrDataIndexInfo: 0xccf01000
+pAllocDataIndexC(DATA Alloc):0x4000edf8
+Btree Pointer: 0x4000ef28
+******* proc_remark = 0
+******* proc_remark = 0
+******* proc_remark = 1
+shmInfo:nLRemark:0
+argc=112123
+shmData(DATA SHAREDMEM): 0x4000ece0
+stPtrDataIndexInfo: 0xc8363000
+pAllocDataIndexC(DATA Alloc):0x4000edf8
+Btree Pointer: 0x4000ef28
+******* proc_remark = 0
+argc=112183
+shmData(DATA SHAREDMEM): 0x4002e988
+stPtrDataIndexInfo: 0xd663d000
+pAllocDataIndexC(DATA Alloc):0x4000f408
+Btree Pointer: 0x4000f538
+******* proc_remark = 1
+shmInfo:nLRemark:0
+Q file name = [/SVC1/DATA/MQ/11210710.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11520010.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11410010.MQ]
+get_unRecSize();    = [44]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/10110010.MQ]
+get_unRecSize();    = [80]
+get_unRecCount();   = [1000]
+******* proc_remark = 0
+shmInfo:nLRemark:10
+******* proc_remark = 0
+shmData= 0x4000e4a8
+stPtrDataIndexInfo= 0xc5d94000
+pAllocDataIndexC= 0x4000e5c0
+pBtree= 0x4000e6f0
+pBtreeNode= 0x0
+shmInfo:nLRemark:3
+[CONMGR] fread ERROR : 0
+shmInfo:nLRemark:3
+******* proc_remark = 10
+shm_key = [1099694116] shm_id  = [14358] shm_size= [25040
+ERR : [22] = EINVAL==> 1shm access fail args = 
+******* proc_remark = 3
+shmInfo:nLRemark:2
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 1
+nProc_sn = 7
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+******* proc_remark = 3
+shmInfo:nLRemark:2
+******* proc_remark = 2
+shmInfo:nLRemark:1
+******* proc_remark = 2
+shmInfo:nLRemark:1
+******* proc_remark = 1
+******* proc_remark = 1
+shmInfo:nLRemark:0
+shmInfo:nLRemark:0
+[CONMGR] fread ERROR : 0
+******* proc_remark = 0
+shmData= 0x4000e4a8
+stPtrDataIndexInfo= 0xc8363000
+pAllocDataIndexC= 0x4000e5c0
+pBtree= 0x4000e6f0
+pBtreeNode= 0x0
+shmInfo:nLRemark:3
+******* proc_remark = 0
+argc=112173
+shmData(DATA SHAREDMEM): 0x4000f4b0
+stPtrDataIndexInfo: 0xd406e000
+pAllocDataIndexC(DATA Alloc):0x4000f5c8
+Btree Pointer: 0x4000f6f8
+******* proc_remark = 3
+shmInfo:nLRemark:2
+******* proc_remark = 2
+shmInfo:nLRemark:1
+******* proc_remark = 1
+shmInfo:nLRemark:0
+[CONMGR] fread ERROR : 0
+******* proc_remark = 0
+shmData= 0x4000e4a8
+stPtrDataIndexInfo= 0xca932000
+pAllocDataIndexC= 0x4000e5c0
+pBtree= 0x4000e6f0
+pBtreeNode= 0x0
+shmInfo:nLRemark:3
+******* proc_remark = 3
+shmInfo:nLRemark:2
+******* proc_remark = 2
+shmInfo:nLRemark:1
+Q file name = [/SVC1/DATA/MQ/11120010.MQ]
+get_unRecSize();    = [332]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120011.MQ]
+get_unRecSize();    = [140]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120012.MQ]
+get_unRecSize();    = [92]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120013.MQ]
+get_unRecSize();    = [676]
+get_unRecCount();   = [1000]
+shmInfo:nLRemark:0
+******* proc_remark = 1
+shmInfo:nLRemark:0
+[CONMGR] fread ERROR : 0
+******* proc_remark = 0
+******* proc_remark = 0
+shmData= 0x4000e4a8
+stPtrDataIndexInfo= 0xccf01000
+pAllocDataIndexC= 0x4000e5c0
+pBtree= 0x4000e6f0
+pBtreeNode= 0x0
+shmInfo:nLRemark:3
+nMaxBlockCount = 32
+nBillDataBlockLen = 32768
+clsPtrConfig->get_nOneBlockSize() = 1024
+nMaxBlockCount = 32
+CFileData's Constructor is OK !!
+Q file name = [/SVC1/DATA/MQ/10110010.MQ]
+get_unRecSize();    = [80]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11520010.MQ]
+get_unRecSize();    = [372]
+get_unRecCount();   = [1000]
+Error get_Message:-2
+******* proc_remark = 3
+shmInfo:nLRemark:2
+******* proc_remark = 2
+shmInfo:nLRemark:1
+[CONMGR] fread ERROR : 0
+******* proc_remark = 1
+shmInfo:nLRemark:0
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 5
+nProc_type   = 2
+nProc_sn = 0
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+******* proc_remark = 0
+shmData= 0x4000e4a8
+stPtrDataIndexInfo= 0xcf4d0000
+pAllocDataIndexC= 0x4000e5c0
+pBtree= 0x4000e6f0
+pBtreeNode= 0x0
+shmInfo:nLRemark:3
+Q file name = [/SVC1/DATA/MQ/11120010.MQ]
+get_unRecSize();    = [332]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120011.MQ]
+get_unRecSize();    = [140]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120012.MQ]
+get_unRecSize();    = [92]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120013.MQ]
+get_unRecSize();    = [676]
+get_unRecCount();   = [1000]
+shmInfo:nLRemark:0
+******* proc_remark = 3
+shmInfo:nLRemark:2
+Error get_Message:-2
+******* proc_remark = 0
+******* proc_remark = 2
+shmInfo:nLRemark:1
+[CONMGR] fread ERROR : 0
+shmInfo:nLRemark:3
+******* proc_remark = 1
+shmInfo:nLRemark:0
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 3
+nProc_type   = 2
+nProc_sn = 0
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+******* proc_remark = 3
+shmInfo:nLRemark:2
+******* proc_remark = 0
+shmData= 0x4000e4a8
+stPtrDataIndexInfo= 0xd1a9f000
+pAllocDataIndexC= 0x4000e5c0
+pBtree= 0x4000e6f0
+pBtreeNode= 0x0
+shmInfo:nLRemark:3
+******* proc_remark = 2
+shmInfo:nLRemark:1
+Error get_Message:-2
+******* proc_remark = 3
+shmInfo:nLRemark:2
+******* proc_remark = 1
+shmInfo:nLRemark:0
+[CONMGR] fread ERROR : 0
+******* proc_remark = 2
+shmInfo:nLRemark:1
+******* proc_remark = 0
+shmInfo:nLRemark:10
+******* proc_remark = 1
+shmInfo:nLRemark:0
+******* proc_remark = 10
+shm_key = [1099694116] shm_id  = [14358] shm_size= [25040
+ERR : [22] = EINVAL==> 1shm access fail args = 
+******* proc_remark = 0
+shmData= 0x4000e4a8
+stPtrDataIndexInfo= 0xd406e000
+pAllocDataIndexC= 0x4000e5c0
+pBtree= 0x4000e6f0
+pBtreeNode= 0x0
+shmInfo:nLRemark:3
+Error get_Message:-2
+******* proc_remark = 3
+shmInfo:nLRemark:2
+******* proc_remark = 2
+shmInfo:nLRemark:1
+[CONMGR] fread ERROR : 0
+******* proc_remark = 1
+shmInfo:nLRemark:0
+******* proc_remark = 0
+shmData= 0x4000e4a8
+stPtrDataIndexInfo= 0xd663d000
+pAllocDataIndexC= 0x4000e5c0
+pBtree= 0x4000e6f0
+pBtreeNode= 0x0
+shmInfo:nLRemark:3
+******* proc_remark = 3
+shmInfo:nLRemark:2
+Error get_Message:-2
+******* proc_remark = 2
+shmInfo:nLRemark:1
+******* proc_remark = 1
+shmInfo:nLRemark:0
+[CONMGR] fread ERROR : 0
+******* proc_remark = 0
+shmData= 0x4000e4a8
+stPtrDataIndexInfo= 0xd8c0c000
+pAllocDataIndexC= 0x4000e5c0
+pBtree= 0x4000e6f0
+pBtreeNode= 0x0
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 2
+nProc_sn = 0
+nProc_remark = 0
+nExitCode	 = 0
+INSERT.....T_PROC_EVENT_HIST
+Error get_Message:-2
+[CONMGR] fread ERROR : 0
+Error get_Message:-2
+[CONMGR] fread ERROR : 0
+Q file name = [/SVC1/DATA/MQ/11120010.MQ]
+get_unRecSize();    = [332]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120011.MQ]
+get_unRecSize();    = [140]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120012.MQ]
+get_unRecSize();    = [92]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120013.MQ]
+get_unRecSize();    = [676]
+get_unRecCount();   = [1000]
+shmInfo:nLRemark:0
+Error get_Message:-2
+******* proc_remark = 0
+shmInfo:nLRemark:3
+[CONMGR] fread ERROR : 0
+******* proc_remark = 3
+shmInfo:nLRemark:2
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 3
+nProc_type   = 2
+nProc_sn = 0
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+******* proc_remark = 2
+shmInfo:nLRemark:1
+******* proc_remark = 1
+shmInfo:nLRemark:0
+Error get_Message:-2
+******* proc_remark = 0
+shmInfo:nLRemark:10
+******* proc_remark = 10
+shm_key = [1099694116] shm_id  = [14358] shm_size= [25040
+ERR : [22] = EINVAL==> 1shm access fail args = 
+[CONMGR] fread ERROR : 0
+Error get_Message:-2
+[CONMGR] fread ERROR : 0
+Q file name = [/SVC1/DATA/MQ/11120010.MQ]
+get_unRecSize();    = [332]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120011.MQ]
+get_unRecSize();    = [140]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120012.MQ]
+get_unRecSize();    = [92]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120013.MQ]
+get_unRecSize();    = [676]
+get_unRecCount();   = [1000]
+shmInfo:nLRemark:0
+Error get_Message:-2
+******* proc_remark = 0
+shmInfo:nLRemark:3
+[CONMGR] fread ERROR : 0
+******* proc_remark = 3
+shmInfo:nLRemark:2
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 3
+nProc_type   = 2
+nProc_sn = 0
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+******* proc_remark = 2
+shmInfo:nLRemark:1
+******* proc_remark = 1
+shmInfo:nLRemark:0
+Error get_Message:-2
+******* proc_remark = 0
+shmInfo:nLRemark:10
+******* proc_remark = 10
+shm_key = [1099694116] shm_id  = [14358] shm_size= [25040
+ERR : [22] = EINVAL==> 1shm access fail args = 
+[CONMGR] fread ERROR : 0
+Error get_Message:-2
+[CONMGR] fread ERROR : 0
+Q file name = [/SVC1/DATA/MQ/11120010.MQ]
+get_unRecSize();    = [332]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120011.MQ]
+get_unRecSize();    = [140]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120012.MQ]
+get_unRecSize();    = [92]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120013.MQ]
+get_unRecSize();    = [676]
+get_unRecCount();   = [1000]
+shmInfo:nLRemark:0
+Error get_Message:-2
+******* proc_remark = 0
+[CONMGR] fread ERROR : 0
+shmInfo:nLRemark:3
+******* proc_remark = 3
+shmInfo:nLRemark:2
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 3
+nProc_type   = 2
+nProc_sn = 0
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+******* proc_remark = 2
+shmInfo:nLRemark:1
+******* proc_remark = 1
+shmInfo:nLRemark:0
+Error get_Message:-2
+******* proc_remark = 0
+shmInfo:nLRemark:10
+******* proc_remark = 10
+shm_key = [1099694116] shm_id  = [14358] shm_size= [25040
+ERR : [22] = EINVAL==> 1shm access fail args = 
+[CONMGR] fread ERROR : 0
+Error get_Message:-2
+[CONMGR] fread ERROR : 0
+SIGNAL :: Aggregator0Process End 
+SIGNAL :: Aggregator1Process End 
+SIGNAL :: Aggregator2Process End 
+SIGNAL :: Aggregator3Process End 
+SIGNAL :: Aggregator4Process End 
+SIGNAL :: Aggregator5Process End 
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[1403]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[1403]
+SIGNAL :: Aggregator7Process End 
+SIGNAL :: Aggregator6Process End 
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[1403]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[1403]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[1403]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[1403]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[1403]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[1403]
+SIGNAL :: Aggregator8Process End 
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[1403]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[1403]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[1403]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[1403]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[0]
+fetch_rate sqlcode:[1403]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[0]
+fetch_holiday sqlcode:[1403]
+SIGNAL :: Aggregator9Process End 

@@ -1,0 +1,120 @@
+/*
+ * $Log: TPdsnInfo.hpp $
+ * Revision 0.9.0  2001/05/12 09:40:46  dongcheol
+ * table id : t_pdsn_info
+ * Revision 0.9.1  ...
+ *
+ */
+
+#include "../INCLUDE/TPdsnInfo.hpp"
+
+#define SQLCA_STORAGE_CLASS extern
+EXEC SQL INCLUDE    SQLCA;
+
+#define ORACA_STORAGE_CLASS extern
+EXEC SQL INCLUDE    ORACA;
+
+EXEC ORACLE OPTION (ORACA=YES);
+EXEC ORACLE OPTION (RELEASE_CURSOR=YES);
+
+
+namespace acc {
+
+EXEC SQL BEGIN DECLARE SECTION;
+
+    const int LEN_PDSN_IP_ADDR = 15;
+    const int LEN_PDSN_LOC     = 32;
+
+EXEC SQL END DECLARE SECTION;
+
+
+TPdsnInfo::TPdsnInfo() : PDSN_IP_ADDR_(LEN_PDSN_IP_ADDR, 0x00), 
+                         PDSN_LOC_    (LEN_PDSN_LOC    , 0x00) { 
+} 
+
+TPdsnInfo::~TPdsnInfo() { ; }
+
+void  TPdsnInfo::setPdsnIpAddr(const string& str) { PDSN_IP_ADDR_ = str; }
+void  TPdsnInfo::setPdsnLoc   (const string& str) { PDSN_LOC_     = str; }
+
+const string&  TPdsnInfo::getPdsnIpAddr() const { return PDSN_IP_ADDR_; }
+const string&  TPdsnInfo::getPdsnLoc   () const { return PDSN_LOC_    ; }
+
+void TPdsnInfo::saveTextOfSQL() {
+    oraca.orastxtf = ORASTFANY;  
+}
+
+void TPdsnInfo::select(vector<TPdsnInfo>& tbl) throw (CSQLException, bad_exception) {
+
+    EXEC SQL BEGIN DECLARE SECTION;
+
+        typedef struct _pdsn_info {
+            VARCHAR  PDSN_IP_ADDR [LEN_PDSN_IP_ADDR + 1]; 
+            VARCHAR  PDSN_LOC     [LEN_PDSN_LOC     + 1]; 
+        } pdsn_info_type;
+    
+        pdsn_info_type buf_rec;
+ 
+    EXEC SQL END DECLARE SECTION;
+
+    // clear value to host variable
+    memset(reinterpret_cast<char*>(&buf_rec), 0x00, sizeof(buf_rec));
+
+    // always save text of sql statement
+    saveTextOfSQL();
+
+    // cursor declare section
+    EXEC SQL DECLARE CURSOR_PDSN_INFO_SEL CURSOR FOR 
+             SELECT  NVL(pdsn_ip_addr, ' '), 
+                     NVL(pdsn_loc    , ' ')
+             FROM    t_pdsn_info;
+
+    EXEC SQL OPEN CURSOR_PDSN_INFO_SEL;
+
+    if (sqlca.sqlcode != 0) { throw CSQLException("TPdsnInfo::select(vector<TPdsnInfo>&), can't open cursor"); }
+
+    // loop until the NOT FOUND condition is detected
+    while (true) {
+
+        EXEC SQL FETCH CURSOR_PDSN_INFO_SEL
+                 INTO  :buf_rec.PDSN_IP_ADDR,
+                       :buf_rec.PDSN_LOC;       
+
+        // in this set NVL into type char and int
+        // null-terminate the array before output
+        buf_rec.PDSN_IP_ADDR.arr [buf_rec.PDSN_IP_ADDR.len] = '\0';
+        buf_rec.PDSN_LOC.arr     [buf_rec.PDSN_LOC.len    ] = '\0';
+
+        // break the loop when all data have been retrieved
+        if (sqlca.sqlcode == 1403) break;
+        if (sqlca.sqlcode != 0) { throw CSQLException("TPdsnInfo::select(vector<TPdsnInfo>&), can't fetch cursor"); }
+
+#ifdef _DEBUG_
+        cout << (char*)buf_rec.PDSN_IP_ADDR.arr     << " / "
+             << (char*)buf_rec.PDSN_LOC.arr         << endl
+             << "--------------------------------------------------------" << endl;                 
+#endif
+
+        auto_ptr<TPdsnInfo> selected(new TPdsnInfo());
+        string value;
+
+        selected->setPdsnIpAddr(value = (char*)buf_rec.PDSN_IP_ADDR.arr);
+        selected->setPdsnLoc   (value = (char*)buf_rec.PDSN_LOC.arr    );
+
+        // push to vector which is prepared selected result object
+        tbl.push_back((*selected));
+
+        // clear buffer
+        memset(reinterpret_cast<char*>(&buf_rec), 0x00, sizeof(buf_rec));
+    } // end while
+
+#ifdef _DEBUG_
+    printf("\nQuery returned %d row%s.\n\n", sqlca.sqlerrd[2], (sqlca.sqlerrd[2] == 1) ? "" : "s");
+#endif
+
+    EXEC SQL CLOSE CURSOR_PDSN_INFO_SEL;
+
+    if (sqlca.sqlcode != 0) { throw CSQLException("TPdsnInfo::select(vector<TPdsnInfo>&), can't close cursor"); }
+}
+
+}; // end of namespace acc

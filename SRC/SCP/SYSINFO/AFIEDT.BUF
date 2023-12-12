@@ -1,0 +1,3 @@
+INSERT INTO t_use_filesystem(date_time, sys_id, volume_name, volume_size, used_size, avail_size, used_rate, mounted_loc, result)
+values('33:33:33', 3, '22', 2, 1, 1, 1, 'fjkdjf', 'd')
+/

@@ -1,0 +1,23 @@
+include $(HOME)/common/env_proc_32.mk
+include $(HOME)/common/env_uda.mk
+
+MFLAGS=-D_SVC1
+EXE = cdsif 
+OBJS = cdsif.o $(UDALINKLIBES) $(UDASQLLIBES)
+
+all : $(EXE)
+
+$(EXE) : $(OBJS)
+	$(CC) -o $@ $(OBJS) $(CFLAGS) $(PROLDLIBS) $(UDASQLLIBES) $(UDALINKLIBES) 
+
+install : $(EXE)
+	$(INSTALL2) $(EXE) $(COMMBINPATH)/
+	rm -f $(EXE) *.o  core 
+
+clean :	
+	rm -f $(EXE) cdsif.o core 
+	touch *.pc
+
+
+
+

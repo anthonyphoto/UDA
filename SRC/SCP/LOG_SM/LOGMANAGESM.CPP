@@ -1,0 +1,308 @@
+#include <LogManageSM.hpp>
+
+//====================================================================
+void LogManageSM::LogSMinit(void)
+{
+	DbConnect	clsDbConnect;
+	clsDbConnect.connect();
+	
+	LogN=0;
+	recSize=sizeof(LogManageRec);
+	unTempBaseAddr = (unsigned long*)get_ShmPtr();
+	
+	mem_lock();
+	
+	//LogDB = new LogManage(0,0,0,0,0,0);
+	if(!LogDB->Run_FetchDB(1)) {
+		//delete LogDB;
+		mem_unlock();
+		return;
+	}
+	memcpy(unTempBaseAddr, LogDB->Get_LogRecord(), recSize);
+	LogN++;
+	
+	
+	while(LogDB->Run_FetchDB())
+	{
+		memcpy((unTempBaseAddr+(LogN*recSize)), LogDB->Get_LogRecord(), recSize);
+		LogN++;
+	}
+	
+	//delete LogDB;
+	mem_unlock();
+	
+	clsDbConnect.disconnect();
+	
+	//-------------------------------
+	//cout <<" LogN    : " << LogN << endl;
+	//-------------------------------
+	
+}
+
+
+//--------------------------------------------------------------------
+void LogManageSM::Set_Init(void)
+{
+	DbConnect	clsDbConnect;
+
+	if (clsDbConnect.connect() < 0)
+	{
+		cout << "DB Connect Failure" << endl;
+		LogN=0;
+		return;
+	}
+	
+	recSize=sizeof(LogManageRec);
+	unTempBaseAddr = (unsigned long*)get_ShmPtr();
+	//LogN=LogDB->Get_RecCount();
+	
+	clsDbConnect.disconnect();
+	
+}
+
+//--------------------------------------------------------------------
+int	LogManageSM::Set_SysSwitch(int sysid, int flag)
+{
+	int i;
+	
+	mem_lock();
+	for(i=0; i< LogN; i++)
+	{
+		memcpy((char *)&LogRecord, unTempBaseAddr+(i*recSize), recSize);
+		if(LogRecord.get_nSystemId()==sysid)
+		{
+			LogRecord.put_nLogSwGlag(flag);
+			LogDB->Set_LogRecord(&LogRecord);			
+			memcpy(unTempBaseAddr+(i*recSize), (char *)&LogRecord, recSize);
+		}
+	}
+	
+	mem_unlock();
+	return 0;
+}
+
+
+//--------------------------------------------------------------------
+int LogManageSM::Set_ServSwitch(int sysid, int serviceid, int flag)
+{
+	int i;
+	
+	mem_lock();
+	for(i=0; i< LogN; i++)
+	{
+		memcpy((char *)&LogRecord, unTempBaseAddr+(i*recSize), recSize);
+		if(LogRecord.get_nSystemId()==sysid && LogRecord.get_nSvcId()==serviceid)
+		{
+			LogRecord.put_nLogSwGlag(flag);
+			LogDB->Set_LogRecord(&LogRecord);			
+			memcpy(unTempBaseAddr+(i*recSize), (char *)&LogRecord, recSize);
+		}
+	}
+	
+	mem_unlock();
+	return 0;
+	
+}
+
+
+
+//--------------------------------------------------------------------
+int LogManageSM::Set_GroupSwitch(int sysid, int serviceid, int grouptype, int flag)
+{
+	int i;
+	
+	mem_lock();
+	for(i=0; i< LogN; i++)
+	{
+		memcpy((char *)&LogRecord, unTempBaseAddr+(i*recSize), recSize);
+		if(LogRecord.get_nSystemId()==sysid && LogRecord.get_nSvcId()==serviceid && LogRecord.get_nGrpType()==grouptype)
+		{
+			LogRecord.put_nLogSwGlag(flag);
+			LogDB->Set_LogRecord(&LogRecord);			
+			memcpy(unTempBaseAddr+(i*recSize), (char *)&LogRecord, recSize);
+		}
+	}
+	
+	mem_unlock();
+	return 0;
+	
+}
+
+
+//-----------------------------------------------------------------------------------
+int LogManageSM::Set_ProcesSwitch(int sysid, int serviceid, int grouptype, int processtype, int flag)
+{
+	int i;
+	
+	mem_lock();
+	for(i=0; i< LogN; i++)
+	{
+		memcpy((char *)&LogRecord, unTempBaseAddr+(i*recSize), recSize);
+		if(LogRecord.get_nSystemId()==sysid && LogRecord.get_nSvcId()==serviceid && LogRecord.get_nGrpType()==grouptype
+			&& LogRecord.get_nProcType()==processtype)
+		{
+			LogRecord.put_nLogSwGlag(flag);
+			LogDB->Set_LogRecord(&LogRecord);			
+			memcpy(unTempBaseAddr+(i*recSize), (char *)&LogRecord, recSize);
+		}
+	}
+	
+	mem_unlock();
+	return 0;
+}
+
+
+
+//-----------------------------------------------------------------------------------
+int LogManageSM::Set_Switch(int sysid, int serviceid, int grouptype, int processtype, int serialno, 
+						int remark, int logtype, int flag)
+{
+	int i;
+	int ret;
+	
+	DbConnect	clsDbConnect;
+	clsDbConnect.connect();
+	
+	printf("LogN : %d\n", LogN);
+	for(i=0; i< LogN; i++)
+	{
+		memcpy((char *)&LogRecord, unTempBaseAddr+(i*recSize), recSize);
+		//---------
+		printf(" (%d | %d | %d | %d | %d | %d | %d)\n", LogRecord.get_nSystemId(), LogRecord.get_nSvcId(), 
+			LogRecord.get_nGrpType(),LogRecord.get_nProcType(), LogRecord.get_nProcSerial(),
+			LogRecord.get_nProcRemark(), LogRecord.get_nLogType());
+		//---------
+		
+		//---------
+		if(LogRecord.get_nSystemId()==sysid && LogRecord.get_nSvcId()==serviceid && LogRecord.get_nGrpType()==grouptype
+			&& LogRecord.get_nProcType()==processtype && LogRecord.get_nProcSerial()==serialno
+			&& LogRecord.get_nProcRemark()==remark && LogRecord.get_nLogType()==logtype)
+		{
+			
+			LogRecord.put_nLogSwGlag(flag);
+			ret=LogDB->Set_LogRecord(&LogRecord);			
+			printf("ret=%d\n", ret);
+			
+			mem_lock();
+			memcpy(unTempBaseAddr+(i*recSize), (char *)&LogRecord, recSize);
+			mem_unlock();
+		}
+	}
+	
+	clsDbConnect.disconnect();
+	return 0;
+}						
+
+
+//-----------------------------------------------------------------------------------
+int LogManageSM::LogInsert(int sysid, int serviceid, int grouptype, int processtype, int serialno, 
+						int remark, int logtype, int logsw, int logmd, char *path)
+{
+	LogRecord.put_nSystemId(sysid);
+	LogRecord.put_nSvcId(serviceid);
+	LogRecord.put_nGrpType(grouptype);
+	LogRecord.put_nProcType(processtype);
+	LogRecord.put_nProcSerial(serialno);
+	LogRecord.put_nProcRemark(remark);
+		
+	LogRecord.put_nLogType(logtype);	
+	LogRecord.put_nLogSwGlag(logsw);	
+	LogRecord.put_nLogMdType(logmd);
+	LogRecord.put_LogFilePath(path);	
+	
+	if(LogDB->Put_LogRecord(&LogRecord)==0) 
+	{
+		LogSMinit();					
+		return 1;
+	}
+	return 0;
+}
+
+
+//-----------------------------------------------------------------------------------
+int LogManageSM::LogDelete(int sysid, int serviceid, int grouptype, int processtype, int serialno, 
+						int remark, int logtype)
+{
+	LogRecord.put_nSystemId(sysid);
+	LogRecord.put_nSvcId(serviceid);
+	LogRecord.put_nGrpType(grouptype);
+	LogRecord.put_nProcType(processtype);
+	LogRecord.put_nProcSerial(serialno);
+	LogRecord.put_nProcRemark(remark);
+		
+	LogRecord.put_nLogType(logtype);	
+	
+	//LogRecord.put_nLogSwGlag(1);	
+	//LogRecord.put_nLogMdType(logmd);
+	//LogRecord.put_LogFilePath(path);	
+	
+	if(LogDB->Del_LogRecord(&LogRecord)==0)
+	{
+		LogSMinit();
+		return 1;
+	}
+	return 0;					
+}
+
+
+//-----------------------------------------------------------------------------------
+int LogManageSM::Get_SWGLAG(int sysid, int serviceid, int grouptype, int processtype, int serialno, 
+						int remark, int logtype)
+{
+	int i;
+	
+	for(i=0; i< LogN; i++)
+	{
+		memcpy((char *)&LogRecord, unTempBaseAddr+(i*recSize), recSize);
+		if(LogRecord.get_nSystemId()==sysid && LogRecord.get_nSvcId()==serviceid && LogRecord.get_nGrpType()==grouptype
+			&& LogRecord.get_nProcType()==processtype && LogRecord.get_nProcSerial()==serialno
+			&& LogRecord.get_nProcRemark()==remark && LogRecord.get_nLogType()==logtype)
+		{
+			return LogRecord.get_nLogSwGlag();
+		}
+	}
+	
+	return -1;
+}						
+
+
+
+//====================================================================
+int main(int argc, char *argv[])
+{
+	
+	if(argc<6) 
+	{
+		cout << " Usage:" << argv[0] << "[systemid] [serviceid] [groupid] [processtype] [serialno] [remarks]" << endl;
+		exit(1);
+	}
+	
+	int			nRet;
+	DbConnect	clsDbConnect;
+
+	
+	LogManageSM	LogSM(atoi(argv[1]),atoi(argv[2]),1,2,0,0);
+
+	nRet = clsDbConnect.connect();
+	if (nRet < 0)
+	{
+		cout << "DB Connect Failure [" << nRet << "]" << endl;
+		return nRet;
+	}else cout << "DB Connect Success " << endl;
+		
+	LogSM.LogSMinit();
+	
+	//sleep(5);
+	//LogSM.LogInsert(1,1,1,1,1,2, 2, 0, 1, "aaaaaaaaaa");	
+	//LogSM.LogInsert(1,1,1,1,1,3, 2, 1, 1, "bbbbbbbbbb");	
+	
+	//LogSM.Set_GroupSwitch(1,1,1, 5);	
+	//LogSM.Set_Switch(1,1,1,1,1,1, 2, 9);	
+	//LogSM.Set_SysSwitch(1,8);	
+	//LogSM.LogDelete(1,1,1,1,1, 3, 2);
+	LogSM.Set_Switch(1,1,1,1,1,1,2,  0);	
+	
+	clsDbConnect.disconnect();
+	exit(1);
+}
+

@@ -1,0 +1,321 @@
+#include"filterC.hpp"
+
+#define SQLCA_STORAGE_CLASS extern
+EXEC    SQL     INCLUDE SQLCA;
+
+// select Items from T_SHM_INFO
+EXEC SQL BEGIN DECLARE SECTION;
+VARCHAR	user[32];
+VARCHAR	password[32];
+VARCHAR	gstrNai[80]; // LEN_NAI :defined at UDR.hpp
+EXEC SQL END DECLARE SECTION;
+
+filterC::filterC()
+{
+	
+	nLastSeqR = 0;
+	
+	//memset(gstrNai.arr,0x00,LEN_NAI+1);
+	if( ConnectToDB()!= SC )
+		cout<<"DB Connection Error:"<<sqlca.sqlcode<<endl;
+	
+	EXEC SQL	select	ntop_code 
+				into	:gstrNai
+				from	t_ntop_code;
+	
+	if(sqlca.sqlcode == SC )
+	{
+		char		tmpStr[80];
+		memset(tmpStr,0x00,80);
+		memcpy(tmpStr,gstrNai.arr,gstrNai.len);
+		cout<<"nTop구분코드 :"<<tmpStr<<endl; 
+		ReleaseDB();
+	}
+	else { 
+		cout<<"nTop code select error:"<<sqlca.sqlcode<<endl;
+		ReleaseDB();
+	}
+	
+	subsInfoC = new CCustMdbMan("/SVC1/MB/SUBS.mb",'A',1,1,3,2,0,0);
+}
+
+filterC::~filterC()
+{
+	cout<<" filterClass destructor!\n";  
+	
+	
+	for(int i = 0;i<MAX_AGG_CNT;i++)
+		delete AggMq[i];
+	delete FilterMq;
+	delete subsInfoC;
+}
+
+int filterC::ConnectToDB( void )
+{
+	strcpy((char *) user.arr, DB_USERNAME);
+	user.len = (unsigned short) strlen(DB_USERNAME);
+
+	strcpy((char *) password.arr, DB_PASSWORD);
+	password.len = (unsigned short) strlen(DB_PASSWORD);
+	
+	EXEC SQL connect :user identified by :password;
+	return(sqlca.sqlcode);
+}
+
+int filterC::ReleaseDB()
+{
+	EXEC	SQL	COMMIT	WORK	RELEASE;
+
+	return(sqlca.sqlcode); 
+}
+
+void filterC::run(void)
+{
+	int		nAggNo;
+	char	strMin2[4];
+	
+	// Header 정보를 가져온다
+	gStUdrH = gStUdr.get_ItemHead();
+	setSubsInfo();
+
+	// UDR Splite : 끝자리로 구분
+	sprintf(strMin2,"%4d",gStUdrH->get_nMin2());
+	nAggNo = atoi(&strMin2[3]);
+//	cout<<"Min2:"<<strMin2<<"  끝자리:"<<nAggNo<<endl;
+	
+	if(AggMq[nAggNo]->sendMsg(&gStUdr) == FLAG_MQ_IS_FULL )
+		cout<<" MQ is full!!\n"<<endl;
+	
+	cout<<"UDR_TYPE: "<<gStUdrH->get_nUdrType()<<endl;
+	if( gStUdrH->get_nUdrType()!= 0x81 || gStUdrH->get_nUdrType()!= 0x82) // 3:한도정보
+		saveLastSeqNum();
+}
+
+void filterC::setSubsInfo()
+{
+	A_INT_TYPE	*stMin;
+	B_TYPE		*stB; 	// for classify n.Top subscribers
+	char		*strNai;
+	char		tmpStr[80];
+	char		strMin[10];
+	int 		nMin;
+
+	stMin = gStUdr.get_ItemA();
+    nMin  = stMin->get_unMsId();
+	
+	cout<<"<<MIN>>: "<<nMin;
+	// Classify nTop subscribers
+	stB = gStUdr.get_ItemB();
+	strNai = stB->get_strNAI();
+	
+	memset(tmpStr,0x00,80);
+	memcpy(tmpStr,gstrNai.arr,gstrNai.len);
+	 
+	if(!strncmp(strNai, tmpStr, strlen(tmpStr)))
+	{
+		gStUdr.stItemHead.put_nServiceType(SVC_NTOP);
+		cout<<"n-Top 가입자!!!";
+	}
+	else gStUdr.stItemHead.put_nServiceType(SVC_PACKET);
+	
+	// classifiy TTL school subscribers
+	if( subsInfoC->SearchMdb(nMin) == 1)		// find success
+	{
+		gStUdr.stItemHead.put_nSubsType(SUBS_TTL);
+		cout<<"  TTL School 가입자!!!"<<endl;
+	}
+	else gStUdr.stItemHead.put_nSubsType(SUBS_NORMAL);
+	
+}
+
+int filterC::saveLastSeqNum()
+{
+	FILE *fp;
+	char strFileName[100];
+	char strTmp1[]="/SVC";
+	char strTmp2[]="/DATA/RADIUS";
+	char strTmp3[]="_FileNo";
+	char strTmp4[]=".cfg";
+	char strTmp5[3];
+	
+	memset(strTmp5,0x00,3);
+	memset(strFileName,0x00,100);
+	
+	strcat(strFileName,strTmp1); 					   //	/SVC
+	sprintf(strTmp5,"%d",processInfo.nServiceId);
+	strcat(strFileName,strTmp5);memset(strTmp5,0x00,3); // 	/SVC1
+
+	strcat(strFileName,strTmp2); 					   // 	/SVC1/DATA/RADIUS
+	sprintf(strTmp5,"%d",gStUdrH->get_processSN());
+	strcat(strFileName,strTmp5);memset(strTmp5,0x00,3);// 	/SVC1/DATA/RADIUS1
+
+	strcat(strFileName,strTmp3);					   // 	/SVC1/DATA/RADIUS1_FileNo
+	sprintf(strTmp5,"%d",gStUdrH->get_processRemark());
+	strcat(strFileName,strTmp5);memset(strTmp5,0x00,3);// 	/SVC1/DATA/RADIUS1_FileNo1
+
+	strcat(strFileName,strTmp4);					   // 	/SVC1/DATA/RADIUS1_FileNo1.cfg
+	cout<<"save file name:"<<strFileName<<endl;
+
+
+	if ((fp = fopen(strFileName, "r")) == NULL) {
+		perror("fopen failed:");
+		return(-1);
+	}
+	// fscanf는 파일열기 모드 'r'에서만 실행된다.
+	if( fscanf(fp, "%u", &nLastSeqR) < 0 )
+	{
+		perror("fscanf:");
+		nLastSeqR = -1;
+	}
+	fclose(fp);
+	
+	// save된 file number보다 큰값일 경우 그값을 save
+	// save된 값이 0xffffffff일 경우& 받은 값이 '0'이상일 때 save 
+	if( (nLastSeqR < gStUdr.stItemHead.get_nUdrFileSeq()) ||
+		((nLastSeqR ==  0xffffffff)&&(gStUdr.stItemHead.get_nUdrFileSeq()>= 0)) )
+	{
+		if ((fp = fopen(strFileName, "w")) == NULL) {
+		perror("fopen failed:");
+		return(-1);
+		}
+		
+		if(fprintf(fp, "%u \n", gStUdr.stItemHead.get_nUdrFileSeq())<0)
+			perror("fail save nBlockNum to file:");
+		fclose(fp);
+		nLastSeqR = gStUdr.stItemHead.get_nUdrFileSeq();
+		if(chmod(strFileName, 00666) < 0) {
+			cout << "chmod failed ... " << strFileName <<endl;
+			return(-1);
+		}
+	}
+	else	cout<<"got invalid(small) fileNo..["<< gStUdr.stItemHead.get_nUdrFileSeq()<<"]"<<endl;
+		
+	return(1);
+}
+
+int main(int argc, char **argv)
+{
+	int 	nTemp;
+	filterC cfilter;
+
+    if(argc != 7 )
+    {
+    	cout <<"Usage: filer [sysId][svcId][gId][pId][pSn][pRemark]"<<endl;
+    	exit(-1);
+    }
+    //================================================
+	// add Han Guen Hee    2000. 11. 12(PMS)
+    SystemId=atoi(argv[1]);
+	ServiceId=atoi(argv[2]);
+	GroupId=atoi(argv[3]);
+	ProcessType=atoi(argv[4]);
+	PserialNo=atoi(argv[5]);
+	PreMark=atoi(argv[6]);
+	//================================================
+	
+    processInfo.nSystemId  = atoi(argv[1]);
+    processInfo.nServiceId = atoi(argv[2]);
+    processInfo.nGroupType = atoi(argv[3]);
+    processInfo.nProcType  = atoi(argv[4]);
+    processInfo.nProcSn    = atoi(argv[5]);
+    processInfo.nProcRmk   = atoi(argv[6]);
+    
+    //================================================
+	// add Han Guen Hee    2000. 11. 12(PMS)
+    //signal(SIGNULL,sigCapture);	//0
+	signal(SIGHUP,sigCapture);
+	signal(SIGINT,sigCapture);
+	signal(SIGQUIT,sigCapture);
+	signal(SIGKILL,sigCapture);
+	signal(SIGTERM,sigCapture);
+	signal(SIGSTOP,sigCapture);
+	signal(SIGTSTP,sigCapture);
+	signal(SIGCONT,sigCapture);	//26
+	//================================================
+	
+    
+//  PMSMQ    = new MessageQueue<DataNodePMS>(atoi(argv[1]),atoi(argv[2]), 1, 1, 0, 0, 2000);
+    FilterMq = new MessageQueue<UdrFormat>(atoi(argv[1]),atoi(argv[2]),atoi(argv[3]),\
+    								      atoi(argv[4]),atoi(argv[5]),10,1000);
+	//=======================================================================
+	// add Han Guen Hee    2000. 11. 12(PMS)
+	mqPMS = new MessageQueue<MsgPmsStatus>(atoi(argv[1]), 0,1,1,0,10, 1000);
+	//=======================================================================
+	
+	for(int i=0; i<MAX_AGG_CNT; i++)
+		AggMq[i]   = new MessageQueue<UdrFormat>(atoi(argv[1]),atoi(argv[2]),2 ,1 ,i ,10 ,1000);
+
+    cout<<" Filter Start!!"<<endl;
+
+	while(1)
+	{
+		memset((char*)&gStUdr, NULL, sizeof(UdrFormat));
+		if (FilterMq->recvMsg(&gStUdr) == FLAG_MQ_IS_EMPTY)
+			sleep(1);
+		else
+		{ 
+	   		cout << "\n\n<<GET UDR>>===================================================================="<< endl;
+   			cfilter.run();
+   			cout << "==============================================================================="<< endl;
+   		}
+	}
+    return 0;
+}
+
+//==============================================================================
+// add Han Guen Hee    2000. 11. 12(PMS)
+void WritePMSMQ(int sigNo)
+{
+	int 			i=0;
+	char 			PMSMQ_NO[2];
+	MsgPmsStatus	OneRec(MSG_STATUS, SystemId, ServiceId, GroupId, ProcessType, PserialNo, PreMark);
+
+	
+	sprintf(PMSMQ_NO, "%d", SystemId);
+	OneRec.set_nStatus(sigNo);
+	
+	while(1)
+	{
+		i++;
+		if (mqPMS->sendMsg(&OneRec) == FLAG_MQ_IS_FULL)
+		{
+			cout << "[ERROR] PMSMQ " << PMSMQ_NO << " IS FULL sleep(1)...!"	<< endl;
+			sleep(1);
+			if (i >= 10)
+			{
+				kill(0,SIGINT);
+			}
+		}else break;
+	}
+}
+
+
+void sigCapture(int sigNo)
+{
+	cout << "SIGNAL :: filter Process End " << endl;
+	
+	switch(sigNo)
+	{
+		case SIGINT :
+		case SIGQUIT :
+		case SIGKILL :
+		case SIGTERM :
+				WritePMSMQ(FLAG_PROC_KILL);//-1//프로세스 비정상 stop (killed)
+				delete mqPMS;
+				exit(-1);
+				break;
+		case SIGUSR1:
+				WritePMSMQ(FLAG_PROC_TERM);//0//프로세스정상stop (Client업무명령)
+				delete mqPMS;
+				exit(0);
+				break;
+		default:
+				WritePMSMQ(FLAG_PROC_KILL);//-1//프로세스 비정상 stop (killed)
+				delete mqPMS;
+				exit(-1);
+				break;
+	}
+}
+//==============================================================================
+
+

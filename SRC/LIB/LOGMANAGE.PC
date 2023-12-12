@@ -1,0 +1,330 @@
+#include <iostream.h>
+#include <LogManage.hpp>
+
+#define SQLCA_STORAGE_CLASS extern
+EXEC    SQL     INCLUDE SQLCA;
+
+EXEC SQL BEGIN DECLARE SECTION;
+static int	nSys_id;
+static int	nSvc_id;
+static int	nGroup_type;
+static int	nProc_type;
+static int	nProc_sn;
+static int	nProc_remark;
+static int	nLog_type;
+static int	nLog_sw;
+static int	nLog_md;
+static char	Log_file[LOG_FILEPATH_LEN+1];
+static int	nCount;
+EXEC SQL END DECLARE SECTION;
+
+
+
+
+
+// Cusor declare 
+EXEC SQL declare log_cur cursor for
+		select  sys_id, svc_id, group_type, proc_type, 
+				proc_sn, proc_remark, log_type, 
+				log_sw_glag, log_md_type
+		from    t_log_manage;
+
+//------------------------------------------------------------------------
+int	LogManage::Get_RecCount(void)
+{
+	EXEC SQL 	select count(*) 
+				into :nCount 
+				from t_log_manage;
+	
+	return nCount;
+}
+
+//------------------------------------------------------------------------
+int LogManage::FetchLogDB(void)
+{
+	EXEC SQL	fetch	log_cur 
+				into 	:nSys_id, :nSvc_id, :nGroup_type, :nProc_type, :nProc_sn,
+					    :nProc_remark, :nLog_type, :nLog_sw, :nLog_md;
+					    
+	cout << "[FETCH] t_log_manage sqlcode : "<< sqlca.sqlcode << endl;
+	return(sqlca.sqlcode);
+}	
+
+
+
+//------------------------------------------------------------------------------
+int LogManage::Run_FetchDB(int first)
+{
+	int nSqlcode;
+	
+	if(first) 
+	{
+		EXEC SQL OPEN log_cur;
+	}
+	
+	nSqlcode = FetchLogDB();
+	if( nSqlcode != 0 || nSqlcode == 1403)	
+	{
+		EXEC SQL CLOSE log_cur;
+		return 0;
+	}
+	
+	/*
+	//-----------------------------
+	cout << LogN << ":" << nSvc_id <<"/ " << LogDB->Get_LogRecord()->get_nSvcId() << "/ " 
+			<<"/ " << LogDB->Get_LogRecord()->get_nGrpType() <<"/ " << LogDB->Get_LogRecord()->get_nProcType()<< "/ "
+			<< LogDB->Get_LogRecord()->get_nProcSerial() <<"/ " << LogDB->Get_LogRecord()->get_nProcRemark() 
+			<<"/ " << LogDB->Get_LogRecord()->get_nLogType() << endl;
+	//-----------------------------
+	*/
+	
+	LogRecord.put_nSystemId(nSys_id);
+	LogRecord.put_nSvcId(nSvc_id);
+	LogRecord.put_nGrpType(nGroup_type);
+	LogRecord.put_nProcType(nProc_type);
+	LogRecord.put_nProcSerial(nProc_sn);
+	LogRecord.put_nProcRemark(nProc_remark);
+		
+	LogRecord.put_nLogType(nLog_type);	
+	LogRecord.put_nLogSwGlag(nLog_sw);	
+	LogRecord.put_nLogMdType(nLog_md);
+	//LogRecord.put_LogFilePath("imsi"Log_file);
+	LogRecord.put_LogFilePath("imsi");
+	return 1;
+}
+	
+
+	
+//------------------------------------------------------------------------------	
+//UPDATE
+int LogManage::Set_LogRecord(LogManageRec *LogRecord)
+{
+	int	nRet=0;
+	
+	//---------------- 변수할당
+	nSys_id = LogRecord->get_nSystemId();
+	nSvc_id = LogRecord->get_nSvcId();
+	nGroup_type = LogRecord->get_nGrpType();
+	nProc_type = LogRecord->get_nProcType();
+	nProc_sn = LogRecord->get_nProcSerial();
+	nProc_remark = LogRecord->get_nProcRemark();
+	nLog_type = LogRecord->get_nLogType();
+	nLog_sw = LogRecord->get_nLogSwGlag();
+	nLog_md = LogRecord->get_nLogMdType();
+	
+	strcpy(Log_file, LogRecord->get_LogFilePath());
+	
+	//---------------- 변수할당
+	
+	// UPdate 하기 
+	cout << "UPDATE.....SWGlag : " << nLog_sw << endl;
+	EXEC SQL UPDATE t_log_manage SET log_sw_glag=:nLog_sw 
+									//log_md_type=:nLog_md, 
+									//log_file_path=:Log_file
+					WHERE sys_id=:nSys_id and svc_id=:nSvc_id and group_type=:nGroup_type and proc_type=:nProc_type 
+					      and proc_sn = :nProc_sn and  proc_remark=:nProc_remark
+					      and log_type = :nLog_type;
+		
+		
+	if (sqlca.sqlcode == 0)  EXEC SQL COMMIT WORK;
+	else
+	{
+		cout << "[UPDATE] T_LOG_MANAGE ERROR : " << sqlca.sqlcode << endl;
+		EXEC SQL ROLLBACK;
+	}
+	
+ 	return (nRet);		
+}
+
+
+//------------------------------------------------------------------------------	
+//추가
+int LogManage::Put_LogRecord(LogManageRec *LogRecord)
+{
+	int	nRet=0;
+	
+	//---------------- 변수할당
+	nSys_id = LogRecord->get_nSystemId();
+	nSvc_id = LogRecord->get_nSvcId();
+	nGroup_type = LogRecord->get_nGrpType();
+	nProc_type = LogRecord->get_nProcType();
+	nProc_sn = LogRecord->get_nProcSerial();
+	nProc_remark = LogRecord->get_nProcRemark();
+	nLog_type = LogRecord->get_nLogType();
+	nLog_sw = LogRecord->get_nLogSwGlag();
+	nLog_md = LogRecord->get_nLogMdType();
+	
+	strcpy(Log_file, LogRecord->get_LogFilePath());
+	//---------------- 변수할당
+	
+	cout << "INSERT....." << endl;
+	EXEC SQL INSERT INTO t_log_manage(sys_id, svc_id, group_type, proc_type, 
+											proc_sn, proc_remark, log_type, 
+											log_sw_glag, log_md_type, log_file_path)
+					values(:nSys_id, :nSvc_id, :nGroup_type, :nProc_type, :nProc_sn,
+					       :nProc_remark, :nLog_type, :nLog_sw, :nLog_md, :Log_file);
+	
+	nRet = sqlca.sqlcode;
+	if (sqlca.sqlcode == 0)  EXEC SQL COMMIT WORK;
+	else
+	{
+		cout << "[INSERT] T_LOG_MANAGE ERROR : " << (int)sqlca.sqlcode << endl;
+		EXEC SQL ROLLBACK;
+	}
+	
+	
+	if(nRet == -1) 
+	{	// 추가에러 UPdate 하기 
+		cout << "UPDATE....." << endl;
+		EXEC SQL UPDATE t_log_manage SET log_sw_glag=:nLog_sw, 
+										log_md_type=:nLog_md, 
+										log_file_path=:Log_file
+					WHERE sys_id=:nSvc_id and group_type=:nGroup_type and proc_type=:nProc_type 
+					      and proc_sn = :nProc_sn and  proc_remark=:nProc_remark
+					      and log_type = :nLog_type;
+		
+		
+		if (sqlca.sqlcode == 0)  EXEC SQL COMMIT WORK;
+		else
+		{
+			cout << "[UPDATE] T_LOG_MANAGE ERROR : " << sqlca.sqlcode << endl;
+			EXEC SQL ROLLBACK;
+		}	
+	}	
+	
+	return nRet;	
+}
+
+
+//------------------------------------------------------------------------------	
+//삭제
+int LogManage::Del_LogRecord(LogManageRec *LogRecord)
+{
+	int	nRet=0;
+	
+	//---------------- 변수할당
+	nSys_id = LogRecord->get_nSystemId();
+	nSvc_id = LogRecord->get_nSvcId();
+	nGroup_type = LogRecord->get_nGrpType();
+	nProc_type = LogRecord->get_nProcType();
+	nProc_sn = LogRecord->get_nProcSerial();
+	nProc_remark = LogRecord->get_nProcRemark();
+	nLog_type = LogRecord->get_nLogType();
+	nLog_sw = LogRecord->get_nLogSwGlag();
+	nLog_md = LogRecord->get_nLogMdType();
+	
+	strcpy(Log_file, LogRecord->get_LogFilePath());
+	
+	//---------------- 변수할당
+	
+	// UPdate 하기 
+	cout << "DELETE....." << endl;
+	EXEC SQL delete  FROM t_log_manage 
+	
+					WHERE sys_id=:nSvc_id and group_type=:nGroup_type and proc_type=:nProc_type 
+					      and proc_sn = :nProc_sn and  proc_remark=:nProc_remark
+					      and log_type = :nLog_type;
+		
+		
+	if (sqlca.sqlcode == 0)  EXEC SQL COMMIT WORK;
+	else
+	{
+		cout << "[DELETE] T_LOG_MANAGE ERROR : " << sqlca.sqlcode << endl;
+		EXEC SQL ROLLBACK;
+	}
+	
+ 	return (nRet);		
+}
+
+
+//------------------------------------------------------------------------------
+int LogManage::Set_LogManage(int logtype, int logsw, int logmd, char *filepath)
+{
+	int	nRet=0;
+	
+	//---------------- 변수할당
+	nSys_id = sys_id;
+	nSvc_id = svc_id;
+	nGroup_type = group_type;
+	nProc_type = proc_type;
+	nProc_sn = proc_sn;
+	nProc_remark = proc_remark;
+	nLog_type = logtype;
+	nLog_sw = logsw;
+	nLog_md = logmd;
+	strcpy(Log_file, filepath);
+	//---------------- 변수할당
+	
+	cout << "INSERT....." << endl;
+	EXEC SQL INSERT INTO t_log_manage(sys_id, svc_id, group_type, proc_type, 
+											proc_sn, proc_remark, log_type, 
+											log_sw_glag, log_md_type, log_file_path)
+					values(:nSys_id, :nSvc_id, :nGroup_type, :nProc_type, :nProc_sn,
+					       :nProc_remark, :nLog_type, :nLog_sw, :nLog_md, :Log_file);
+	
+	nRet = sqlca.sqlcode;
+	if (sqlca.sqlcode == 0)  EXEC SQL COMMIT WORK;
+	else
+	{
+		cout << "[INSERT] T_LOG_MANAGE ERROR : " << (int)sqlca.sqlcode << endl;
+		EXEC SQL ROLLBACK;
+	}	
+	
+	
+	if(nRet == -1) 
+	{	// 추가에러 UPdate 하기 
+		cout << "UPDATE....." << endl;
+		EXEC SQL UPDATE t_log_manage SET log_sw_glag=:nLog_sw, 
+										log_md_type=:nLog_md, 
+										log_file_path=:Log_file
+					WHERE sys_id=:nSvc_id and group_type=:nGroup_type and proc_type=:nProc_type 
+					      and proc_sn = :nProc_sn and  proc_remark=:nProc_remark
+					      and log_type = :nLog_type;
+		
+		
+		if (sqlca.sqlcode == 0)  EXEC SQL COMMIT WORK;
+		else
+		{
+			cout << "[UPDATE] T_LOG_MANAGE ERROR : " << sqlca.sqlcode << endl;
+			EXEC SQL ROLLBACK;
+		}	
+	}
+	
+
+ 	//clsDbConnect.disconnect();
+
+ 	return (nRet);
+}
+
+
+//--------------------------------------------------------------------
+/*
+int main(int argc, char *argv[])
+{
+	
+	if(argc<6) 
+	{
+		cout << " Usage:" << argv[0] << "[systemid] [serviceid] [groupid] [processtype] [serialno] [remarks]" << endl;
+		exit(1);
+	}
+	
+	int			nRet;
+	DbConnect	clsDbConnect;
+
+	nRet = clsDbConnect.connect();
+	if (nRet < 0)
+	{
+		cout << "DB Connect Failure [" << nRet << "]" << endl;
+		return nRet;
+	}else cout << "DB Connect Success " << endl;
+	
+	
+	
+	LogManage EventHst(atoi(argv[1]),atoi(argv[2]),atoi(argv[3]),atoi(argv[4]),atoi(argv[5]), atoi(argv[6]));
+	EventHst.Set_LogManage(4, 0, 0, "aaaaaaaaaaaaaaaaaaaaa");
+	EventHst.Set_LogManage(4, 1, 1, "bbbbbbbbbbbbbbbbbbbbb");
+	
+	clsDbConnect.disconnect();
+	exit(1);
+}
+*/

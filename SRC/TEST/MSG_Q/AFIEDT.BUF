@@ -1,0 +1,8 @@
+select * from t_shm_info where 
+sys_id      = 1
+and svc_id      = 1
+and group_type  = 5
+and proc_type   = 2
+and proc_sn     = 0
+and proc_remark = 0
+/

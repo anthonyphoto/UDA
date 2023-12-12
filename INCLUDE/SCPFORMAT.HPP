@@ -1,0 +1,651 @@
+/****************************************************************************/
+/* 파 일 명 : scpformat.hpp			    									*/
+/* 작 성 자 : KSI / 조상영								                    */
+/* 기    능 : Agg, Filter, 고객관리와의 MQ정의								*/
+/* 작성일자 : 2000년 10월 23일                                              */
+/* 변경일자 :     년   월   일                                              */
+/* 관련화일 : SRchannel_IF.hpp, scp_msg.hpp									*/
+/* 기    타 :                                                               */
+/****************************************************************************/
+
+#ifndef _SCPFORMAT_HPP
+#define _SCPFORMAT_HPP
+
+//#include <SharedConf.hpp>
+//#include <TempMsgQ1.hpp> // message queue
+#include <UDR.hpp>
+
+typedef unsigned short 	sint;
+typedef unsigned int 	uint;
+typedef unsigned char	uchar;
+
+
+//specific
+//--------------------------------------------------------------------
+class SCPA_TYPE
+{
+	private:
+		uchar 	SpecificKey;
+		char	MSID[15];
+	public:
+		SCPA_TYPE()									{ SpecificKey=0x00; memset(MSID, NULL, sizeof(MSID)); }
+		void	set_Key(uchar key) 					{ SpecificKey = key; }
+		void	set_MSID(const char* strValue) 		{ memcpy(MSID, strValue, 15); }
+		uchar	get_Key()							{ return SpecificKey; }
+		char*	get_MsId()							{ return MSID; }
+		
+		void	prn_Key(void)		{ printf("[SpecificKey] %d\n", SpecificKey); }
+		void	prn_MSID(void)		{ 
+									  printf("[MSID       ] ");
+									  for(int i=0; i<15; i++) printf("%c", MSID[i]);
+									  printf("\n");
+									 }
+	
+};
+
+
+//--------------------------------------------------------------------
+class SCPA2_TYPE
+{
+	private:
+		uchar 	SpecificKey;
+		uint	Min;
+		
+	public:
+		SCPA2_TYPE()					{ SpecificKey=0x00; Min=0; }
+		void	set_Key(uchar key) 		{ SpecificKey = key; }
+		void	set_Min(uint key)		{	Min=key; }
+		uchar	get_Key()				{ 	return SpecificKey; }
+		uint	get_Min(void)			{	return Min; }
+		
+		void	prn_Key(void)			{ printf("[SpecificKey] %d\n", SpecificKey); }
+		void	prn_Min(void)			{ printf("[Min        ] %d\n", Min); }
+	
+};
+
+
+//--------------------------------------------------------------------	
+class SCPB_TYPE
+{
+	private:
+		uint	OperId;
+		char	AccSessionId[8];
+		char	CorreId[8];
+		
+	public:
+		SCPB_TYPE()	
+		{ 
+			OperId=0x00; 
+			memset(AccSessionId, NULL, sizeof(AccSessionId)); 
+			memset(CorreId, 	 NULL, sizeof(CorreId)); 
+		}
+		
+		void	set_OperId(uint key) 					{ OperId = key; }
+		void	set_AccSessionId(const char* strValue) 	{ memcpy(AccSessionId, strValue, 8); }
+		void	set_CorreId(const char* strValue) 		{ memcpy(CorreId, strValue, 8); }
+		
+		uint	get_OperId()							{ return OperId; }
+		char*	get_AccSessionId()						{ return AccSessionId; }
+		char*	get_CorreId()							{ return CorreId; }
+		
+		void	prn_OperId(void)		{ printf("[OperationId] %d\n", OperId); }
+		void 	prn_AccSessionId(void) 	{ 
+										  printf("[AccSession ] ");
+										  for(int i=0; i<8; i++) printf("%c", AccSessionId[i]);
+									  	  printf("\n");
+									 	}  
+		void 	prn_CorreId(void) 		{ 
+										  printf("[CorreIation ] ");
+										  for(int i=0; i<8; i++) printf("%c", CorreId[i]);
+									  	  printf("\n");
+									 	}  									 	
+};
+
+
+//--------------------------------------------------------------------
+class SCPC_TYPE
+{
+	private:
+		uint	StartT;
+		uint	EndT;
+		
+	public:
+		SCPC_TYPE()	
+		{ 
+			StartT=0x00;
+			EndT=0x00;
+		}
+		
+		void	set_StartT(uint key) 			{ StartT = key; }
+		void	set_EndT(uint key) 				{ EndT = key; }
+
+		uint	get_StartT() 					{ return StartT; }
+		uint	get_EndT() 						{ return EndT; }
+		
+		void	prn_StartT(void)	{ printf("[Start Time  ] %d\n", StartT); }
+		void	prn_EndT(void)		{ printf("[End   Time  ] %d\n", EndT); }
+		
+};
+
+
+//--------------------------------------------------------------------
+class SCPD_TYPE	
+{
+	private:
+		uint	LimitT;
+		uint	NTuseT;
+		
+	public:
+		SCPD_TYPE()	
+		{ 
+			LimitT=0x00;
+			NTuseT=0x00;
+		}
+		
+		void	set_LimitT(uint key) 			{ LimitT = key; }
+		void	set_NTuseT(uint key) 			{ NTuseT = key; }
+
+		uint	get_LimitT() 					{ return LimitT; }
+		uint	get_NTuseT() 					{ return NTuseT; }
+		
+		void	prn_LimitT(void)	{ printf("[Limit Money ] %d\n", LimitT); }
+		void	prn_NTuseT(void)	{ printf("[N-Top Time  ] %d\n", NTuseT); }
+};
+
+
+
+//-------- N.TOP ------------------------------------------- 2000.12.21
+class SCPE_TYPE	
+{
+	private:
+		uint	ServiceId;		// n-Top 서비스 : 1
+		uint	CgClass;		// 1.저속 2.고속
+		uint	PacketN1;		// 비할인 패킷개수
+		uint	PacketN2;		// 할인 패킷개수
+		uint	PacketN3;		// 심야 패킷개수
+		uint	UseMoney;		// 사용요금
+		
+	public:
+		SCPE_TYPE()	
+		{ 
+			ServiceId=0;
+			CgClass=0;
+			PacketN1=0;
+			PacketN2=0;
+			PacketN3=0;
+			UseMoney=0;
+		}
+		
+		void	set_ServiceId(uint num) 		{ ServiceId = num; }
+		void	set_CgClass(uint num) 			{ CgClass = num; }
+		void	set_PacketN1(uint num) 			{ PacketN1 = num; }
+		void	set_PacketN2(uint num) 			{ PacketN2 = num; }
+		void	set_PacketN3(uint num) 			{ PacketN3 = num; }
+		void	set_UseMoney(uint num) 			{ UseMoney = num; }
+
+		uint	get_ServiceId() 				{ return ServiceId; }
+		uint	get_CgClass() 					{ return CgClass; }
+		uint	get_PacketN1() 					{ return PacketN1; }
+		uint	get_PacketN2() 					{ return PacketN2; }
+		uint	get_PacketN3() 					{ return PacketN3; }
+		uint	get_UseMoney() 					{ return UseMoney; }
+		
+};
+
+
+
+//--------------------------------------------------------------------	
+//SCP-IF --> SCP에 소켓전송포멧
+class SCPFormat
+{
+	private:
+		
+	public:
+		SCPA_TYPE	stItemA;	
+		SCPB_TYPE	stItemB;
+		SCPC_TYPE	stItemC;
+		SCPD_TYPE	stItemD;
+		SCPE_TYPE	stItemE;
+
+		SCPA_TYPE*	get_ItemA(void) 	{	return (&stItemA);	}
+		SCPB_TYPE*	get_ItemB(void) 	{	return (&stItemB);	}
+		SCPC_TYPE*	get_ItemC(void) 	{	return (&stItemC);	}
+		SCPD_TYPE*	get_ItemD(void) 	{	return (&stItemD);	}
+		SCPE_TYPE*	get_ItemE(void) 	{	return (&stItemE);	}
+
+		void	setItem(const SCPA_TYPE* stItem)
+		{	memcpy((char*)&stItemA, (char*)stItem, sizeof(SCPA_TYPE));	}
+		void	setItem(const SCPB_TYPE* stItem)
+		{	memcpy((char*)&stItemB, (char*)stItem, sizeof(SCPB_TYPE));	}
+		void	setItem(const SCPC_TYPE* stItem)
+		{	memcpy((char*)&stItemC, (char*)stItem, sizeof(SCPC_TYPE));	}
+		void	setItem(const SCPD_TYPE* stItem)
+		{	memcpy((char*)&stItemD, (char*)stItem, sizeof(SCPD_TYPE));	}
+		void	setItem(const SCPE_TYPE* stItem)
+		{	memcpy((char*)&stItemE, (char*)stItem, sizeof(SCPE_TYPE));	}
+};
+
+
+//--------------------------------------------------------------------	
+// Agg와 SCP-IF 간의 MQ정의 (Agg -> SCP-IF)
+class SCPFormatAgg
+{
+	private:
+		
+	public:
+		SCPA2_TYPE	stItemA2;	
+		SCPB_TYPE	stItemB;
+		SCPC_TYPE	stItemC;
+		SCPD_TYPE	stItemD;
+		SCPE_TYPE	stItemE;
+
+		SCPA2_TYPE*	get_ItemA2(void) 	{	return (&stItemA2);	}
+		SCPB_TYPE*	get_ItemB(void) 	{	return (&stItemB);	}
+		SCPC_TYPE*	get_ItemC(void) 	{	return (&stItemC);	}
+		SCPD_TYPE*	get_ItemD(void) 	{	return (&stItemD);	}
+		SCPE_TYPE*	get_ItemE(void) 	{	return (&stItemE);	}
+
+		void	setItem(const SCPA2_TYPE* stItem)
+		{	memcpy((char*)&stItemA2, (char*)stItem, sizeof(SCPA_TYPE));	}
+		void	setItem(const SCPB_TYPE* stItem)
+		{	memcpy((char*)&stItemB, (char*)stItem, sizeof(SCPB_TYPE));	}
+		void	setItem(const SCPC_TYPE* stItem)
+		{	memcpy((char*)&stItemC, (char*)stItem, sizeof(SCPC_TYPE));	}
+		void	setItem(const SCPD_TYPE* stItem)
+		{	memcpy((char*)&stItemD, (char*)stItem, sizeof(SCPD_TYPE));	}
+		void	setItem(const SCPE_TYPE* stItem)
+		{	memcpy((char*)&stItemE, (char*)stItem, sizeof(SCPE_TYPE));	}
+};
+
+
+
+//--------------------------------------------------------------------
+// SCP의 R-Channel로 부터 받은 한도정보
+class SCPResultFormat
+{
+	
+	private:
+		
+	public:
+		SCPA_TYPE	stItemA;
+		SCPB_TYPE	stItemB;
+		SCPD_TYPE	stItemD;
+
+		SCPA_TYPE*	get_ItemA(void) 	{	return (&stItemA);	}
+		SCPB_TYPE*	get_ItemB(void) 	{	return (&stItemB);	}
+		SCPD_TYPE*	get_ItemD(void) 	{	return (&stItemD);	}
+
+		void	setItem(const SCPA_TYPE* stItem)
+		{	memcpy((char*)&stItemA, (char*)stItem, sizeof(SCPA_TYPE));	}
+		void	setItem(const SCPB_TYPE* stItem)
+		{	memcpy((char*)&stItemB, (char*)stItem, sizeof(SCPB_TYPE));	}
+		void	setItem(const SCPD_TYPE* stItem)
+		{	memcpy((char*)&stItemD, (char*)stItem, sizeof(SCPD_TYPE));	}
+	
+};
+
+
+/*
+//--------------------------------------------------------------------
+// Filter에서 SCP-IF가보낸 UDR변형을 이용하기 위해서..
+// (Ex) SCPFormatForFT  *scpReFm;							
+//		scpReFm = (SCPFormatForFT *)&UFormat;
+class SCPFormatForFT
+{
+	
+	private:
+		
+	public:
+		SCPA_TYPE	stItemA;			// 16
+		char		temp[32-16];		// 16 = 32(UDRHEAD size)
+		SCPB_TYPE	stItemB;			// 20
+		SCPD_TYPE	stItemD;			// 8
+
+		SCPA_TYPE*	get_ItemA(void) 	{	return (&stItemA);	}
+		SCPB_TYPE*	get_ItemB(void) 	{	return (&stItemB);	}
+		SCPD_TYPE*	get_ItemD(void) 	{	return (&stItemD);	}
+
+		void	setItem(const SCPA_TYPE* stItem)
+		{	memcpy((char*)&stItemA, (char*)stItem, sizeof(SCPA_TYPE));	}
+		void	setItem(const SCPB_TYPE* stItem)
+		{	memcpy((char*)&stItemB, (char*)stItem, sizeof(SCPB_TYPE));	}
+		void	setItem(const SCPD_TYPE* stItem)
+		{	memcpy((char*)&stItemD, (char*)stItem, sizeof(SCPD_TYPE));	}
+	
+};
+
+
+//--------------------------------------------------------------------
+// SCP-IF 와 Filter 간의 MQ정의 (SCP-IF -> Filter)
+// UdrFormat을 이용
+class UdrFormatForSCP
+{
+	private:
+		
+	public:
+		UDRHEAD_TYPE	stItemHead;		// 32 put_nUdrType(int nValue) , put_nMin1(int nValue), put_nMin1(int nValue)
+		SCPB_TYPE	stItemB;			// 20
+		SCPD_TYPE	stItemD;			// 8
+		char		temp[320-60];		// UdrFormat크기 320을 맞추기 위해
+
+		UDRHEAD_TYPE*	get_ItemHead(void)	{	return (&stItemHead);}
+		SCPB_TYPE*		get_ItemB(void)		{	return (&stItemB);	}
+		SCPD_TYPE*		get_ItemD(void)		{	return (&stItemD);	}
+
+		void	setItem(const UDRHEAD_TYPE* stItem)
+		{	memcpy((char*)&stItemHead, (char*)stItem, sizeof(UDRHEAD_TYPE));	}
+		void	setItem(const SCPB_TYPE* stItem)
+		{	memcpy((char*)&stItemB, (char*)stItem, sizeof(SCPB_TYPE));	}
+		void	setItem(const SCPD_TYPE* stItem)
+		{	memcpy((char*)&stItemD, (char*)stItem, sizeof(SCPD_TYPE));	}
+};
+*/
+
+/*
+//--------------------------------------------------------------------
+// SCP-IF 와 고객관리간의 MQ정의 (SCP-IF -> 고객관리)
+// 2000.11.15 : 변경될 가입자번호 추가
+class CustFormat {
+	private:
+		
+	public:
+		uchar	Code;		// 0x11
+		char	JobCode[2];	// A1:신규가입 Z1:가입해지 D1:번호변경
+		char	Min[10];	
+		char	Min2[10];	
+		char	AccInfo[2];	// 01:TTL
+		
+		//uint	UTransactionID;	// SCP고객정보 수정에 대한요청 처리결과를 돌려줄때 필요
+		
+		CustFormat()
+		{
+			Code=0;
+			memset(JobCode, 0x00, sizeof(JobCode));
+			memset(Min, 	0x00, sizeof(Min));
+			memset(Min2, 	0x00, sizeof(Min2));
+			memset(AccInfo, 0x00, sizeof(AccInfo));
+			//UTransactionID=0;				
+		}
+		
+		void	set_Code(uint key)					{	Code=key; }
+		void	set_JobCode(const char *strValue)	{	memcpy(JobCode, strValue, sizeof(JobCode)); }
+		void	set_Min(const char *strValue)		{	memcpy(Min, 	strValue, sizeof(Min)); 	}
+		void	set_Min2(const char *strValue)		{	memcpy(Min2, 	strValue, sizeof(Min2)); 	}
+		void	set_AccInfo(const char *strValue)	{	memcpy(AccInfo,	strValue, sizeof(AccInfo));	}
+		//void	set_UTransactionID(uint key)		{	UTransactionID=key; }
+		
+		uchar	get_Code(void)			{	return Code; }
+		char*	get_JobCode(void)		{	return JobCode; }
+		char*	get_Min(void)			{	return Min; }
+		char*	get_Min2(void)			{	return Min2; }
+		char*	get_AccInfo(void)		{	return AccInfo; }
+		//uint	get_UTransactionID(void){	return UTransactionID; }
+		
+		void	prn_Code(void)			{ printf("[Code      ] %d\n", Code); }
+		void	prn_JobCode(void)		
+				{ 
+					char imsi[4];
+					memset(imsi, 0x00, sizeof(imsi));
+					memcpy(imsi, JobCode, sizeof(JobCode));
+					printf("[JobCode   ] %s\n", imsi); 
+				}
+		void	prn_Min(void)		
+				{ 
+					char imsi[12];
+					memset(imsi, 0x00, sizeof(imsi));
+					memcpy(imsi, Min, sizeof(Min));
+					printf("[Min       ] %s\n", imsi); 
+				}
+		void	prn_Min2(void)		
+				{ 
+					char imsi[12];
+					memset(imsi, 0x00, sizeof(imsi));
+					memcpy(imsi, Min2, sizeof(Min2));
+					printf("[Min       ] %s\n", imsi); 
+				}				
+		void	prn_AccInfo(void)		
+				{ 
+					char imsi[4];
+					memset(imsi, 0x00, sizeof(imsi));
+					memcpy(imsi, AccInfo, sizeof(AccInfo));
+					printf("[AccInfo   ] %s\n", imsi); 
+				}				
+		//void	prn_UTransactionID(void){ printf("[UTransacID] %d\n",UTransactionID); }				
+								
+		void	prn_All(void)
+		{
+			prn_Code();
+			prn_JobCode();
+			prn_Min();
+			prn_Min2();
+			prn_AccInfo();
+			//prn_UTransactionID();
+		}
+		
+};
+*/
+/*
+//--------------------------------------------------------------------
+// SCP-IF 와 고객관리간의 MQ정의 (SCP-IF -> 고객관리)
+class CustFormat {
+	private:
+		
+	public:
+		uint	Provider;
+		uint	Min1;
+		uint	Min2;
+		char	EventDate[8];
+		char	EventTime[6];
+		sint	ServiceType;
+		char	PricePlan[5];
+		char	CustStatus;
+		uint	UTransactionID;	// SCP고객정보 수정에 대한요청 처리결과를 돌려줄때 필요
+		
+		CustFormat()
+		{
+			Provider=0;
+			Min1=0;
+			Min2=0;
+			memset(EventDate, 0x00, sizeof(EventDate));
+			memset(EventTime, 0x00, sizeof(EventTime));
+			ServiceType=0;
+			memset(PricePlan, 0x00, sizeof(PricePlan));
+			CustStatus=0;		
+			UTransactionID=0;				
+		}
+		
+		void	set_Provider(uint key)				{	Provider=key; }
+		void	set_Min1(uint key)					{	Min1=key; }
+		void	set_Min2(uint key)					{	Min2=key; }
+		void	set_EventDate(const char* strValue)	{ 	memcpy(EventDate, strValue, sizeof(EventDate)); }
+		void	set_EventTime(const char* strValue)	{	memcpy(EventTime, strValue, sizeof(EventTime)); }
+		void	set_ServiceType(sint key)			{	ServiceType=key; }
+		void	set_PricePlan(const char* strValue)	{	memcpy(PricePlan, strValue, sizeof(PricePlan)); }
+		void	set_CustStatus(char key)			{	CustStatus=key; }
+		void	set_UTransactionID(uint key)		{	UTransactionID=key; }
+		
+		uint	get_Provider(void)		{	return Provider; }
+		uint	get_Min1(void)			{	return Min1; }
+		uint	get_Min2(void)			{	return Min2; }
+		char*	get_EventDate(void)		{ 	return EventDate; }
+		char*	get_EventTime(void)		{	return EventTime; }
+		sint	get_ServiceType(void)	{	return ServiceType; }
+		char*	get_PricePlan(void)		{	return PricePlan; }
+		char	get_CustStatus(void)	{	return CustStatus; }
+		uint	get_UTransactionID(void){	return UTransactionID; }
+		
+		void	prn_Provider(void)		{ printf("[Provider  ] %d\n", Provider); }
+		void	prn_Min1(void)			{ printf("[Min1      ] %d\n", Min1); }
+		void	prn_Min2(void)			{ printf("[Min2      ] %d\n", Min2); }
+		void	prn_EventDate(void)		
+				{ 
+					char imsi[10];
+					memset(imsi, 0x00, sizeof(imsi));
+					memcpy(imsi, EventDate, sizeof(EventDate));
+					printf("[EventDate ] %s\n", imsi); 
+				}
+		void	prn_EventTime(void)		{ printf("[EventTime ] %s\n", EventTime); }
+		void	prn_ServiceType(void)	{ printf("[ServiceType]%d\n",ServiceType); }
+		void	prn_PricePlan(void)		{ printf("[PricePlan ] %s\n",PricePlan); }
+		void	prn_CustStatus(void)	{ printf("[CustStatus] %d\n",CustStatus); }
+		void	prn_UTransactionID(void){ printf("[UTransacID] %d\n",UTransactionID); }
+		
+		void	prn_All(void)
+		{
+			prn_Provider();
+			prn_Min1();
+			prn_Min2();
+			prn_EventDate();
+			prn_EventTime();
+			prn_ServiceType();
+			prn_PricePlan();
+			prn_CustStatus();
+			prn_UTransactionID();
+		}
+		
+};
+*/
+
+//--------------------------------------------------------------------
+// MDB Data Structure
+// Add Han Guen-Hee 2000. 11. 02
+class CustFormatMdb {
+	private:
+		
+	public:
+		uint	MsID;
+		char	EventDate[8];
+		char	EventTime[6];
+		sint	ServiceType;
+		char	PricePlan[5];
+		char	CustStatus;
+		
+		CustFormatMdb()
+		{
+			MsID=0;
+			memset(EventDate, 0x00, sizeof(EventDate));
+			memset(EventTime, 0x00, sizeof(EventTime));
+			ServiceType=0;
+			memset(PricePlan, 0x00, sizeof(PricePlan));
+			CustStatus=0;		
+		}
+		
+		void	set_MsID(uint key)					{	MsID=key; }
+		void	set_EventDate(const char* strValue)	{ 	memcpy(EventDate, strValue, sizeof(EventDate)); }
+		void	set_EventTime(const char* strValue)	{	memcpy(EventTime, strValue, sizeof(EventTime)); }
+		void	set_ServiceType(sint key)			{	ServiceType=key; }
+		void	set_PricePlan(const char* strValue)	{	memcpy(PricePlan, strValue, sizeof(PricePlan)); }
+		void	set_CustStatus(char key)			{	CustStatus=key; }
+		
+		uint	get_MsID(void)			{	return MsID; }
+		char*	get_EventDate(void)		{ 	return EventDate; }
+		char*	get_EventTime(void)		{	return EventTime; }
+		sint	get_ServiceType(void)	{	return ServiceType; }
+		char*	get_PricePlan(void)		{	return PricePlan; }
+		char	get_CustStatus(void)	{	return CustStatus; }
+		
+		void	prn_MsID(void)			{ printf("[MsID      ] %d\n", MsID); }
+		void	prn_EventDate(void)		{ printf("[EventDate ] %s\n", EventDate); }
+		void	prn_EventTime(void)		
+				{ 
+					char imsi[10];
+					memset(imsi, 0x00, sizeof(imsi));
+					memcpy(imsi, EventDate, sizeof(EventDate));
+					printf("[EventDate ] %s\n", imsi); 
+				}
+		void	prn_ServiceType(void)	{ printf("[ServiceType]%d\n",ServiceType); }
+		void	prn_PricePlan(void)		{ printf("[PricePlan ] %s\n",PricePlan); }
+		void	prn_CustStatus(void)	{ printf("[CustStatus] %d\n",CustStatus); }
+		
+		void	prn_All(void)
+		{
+			prn_MsID();
+			prn_EventDate();
+			prn_EventTime();
+			prn_ServiceType();
+			prn_PricePlan();
+			prn_CustStatus();
+		}
+		
+};
+
+
+//--------------------------------------------------------------------
+// SCP-IF 와 고객관리간의 MQ정의 (고객관리 -> SCP-IF)
+// SCPIF  R과 S의 MQ정의 (SCPIF_S -> SCPIF_R)
+class ReCustFormat {
+	private:
+
+	public:
+		sint	Result;			// 0:FA 1:SC
+		uint	UTransactionID;	// SCP고객정보 수정에 대한요청 처리결과를 돌려줄때 필요
+		
+		ReCustFormat()
+		{
+			Result=0; 
+			UTransactionID=0;				
+		}
+		
+		void	set_Result(uint key)				{	Result=key; }
+		void	set_UTransactionID(uint key)		{	UTransactionID=key; }
+		
+		uint	get_Result(void)		{	return Result; }
+		uint	get_UTransactionID(void){	return UTransactionID; }
+		
+		void	prn_Result(void)		{ printf("[Result        ] %d\n", Result); }
+		void	prn_UTransactionID(void){ printf("[UTransactionID] %d\n", UTransactionID); }
+		
+};
+
+	
+
+//--------------------------------------------------------------------
+#define SCP_JOBID	6
+#define SCP_PROID	0
+#define SCP_JOBID2	10
+#define SCP_PROID	0
+
+
+#define AGG_JOBID	15	// SCP_if <-> AGG
+#define AGG_PROID	0
+
+#define GUE_JOBID	17	// SCP_if <-> 고객관리
+#define GUE_PROID	0
+
+#define PARSER_JOBID	2
+#define PARSER_PROID	0
+
+#define	FILTER_JOBID	5
+#define	FILTER_PROID	0
+
+/*
+// scpif to Aggregator 
+//SCPFormat			fmSCP;
+SCPFormatAgg		fmSCP;
+//UdrFormatForSCP		fmReSCP;
+CustFormat			fmCust;		// SCP-IF   -> 고객관리
+ReCustFormat		fmReCust;	// 고객관리 -> SCP-IF
+UdrFormat			UFormat;
+*/
+
+// AGG -> Scp-if(S)
+//MessageQueue<SCPFormatAgg> mqSCP("scpformat.txt",    3000,  AGG_JOBID,  AGG_PROID, SCP_JOBID, SCP_PROID);
+
+// Scp-if (R) -> parser to filter 
+//MessageQueue<UdrFormat> mqUDR("udr_r.txt",		  3000,  PARSER_JOBID, PARSER_PROID, FILTER_JOBID, FILTER_PROID); 
+
+// Scp-if(R) to 고객관리
+//MessageQueue<CustFormat> mqCUST("scptocust.txt",  3000,  SCP_JOBID, SCP_PROID, GUE_JOBID, GUE_PROID);
+
+// 고객관리 to SCP-IF(S)
+//MessageQueue<ReCustFormat> mqReCUST("custtoscp.txt",  3000,  GUE_JOBID, GUE_PROID, SCP_JOBID2, SCP_PROID);
+
+
+
+/*  [SCPFormat]
+	MSG_ID			//Message ID
+	CmdID_UDA		//UDA가 발생하는 Download Transaction ID
+	CmdID_SCP		//SCP가 발생하는 Upload Transaction ID => 고객관리모듈에서 필요
+	Data			//Data
+*/
+#endif

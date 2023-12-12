@@ -1,0 +1,227 @@
+#define SQLCA_STORAGE_CLASS extern
+EXEC SQL INCLUDE    SQLCA;
+
+EXEC SQL INCLUDE "../INCLUDE/headermanager.hpp";
+//////////////////////////////////////////////////////////////////////
+//
+//   Function Name  : CHeaderMannager
+//   Usage          : header(file,block)을 생성하는 함수의 생성자
+//	 Argument		: char* strMappingName (기본 meta table key)
+//					  char* strActVer      (기본 meta table key)
+//	 Return			: 
+//   DATE           : 2001. 4 .
+//   LAST UPDATE    :
+//   AUTHOR         : Jung Seung jin	(sjjung@neomnt.com)
+//   History        :
+//
+//////////////////////////////////////////////////////////////////////
+CHeaderMannager::CHeaderMannager(char *strMappingName,char *strActVer) : CLoadActTable(strMappingName, strActVer)
+{
+	nInputCnt = 0;		
+	nInTotLen = 0;			
+	
+	//	header를 저장 변수 선언 및 초기화 
+	strHeaderData 	= new char[MAX_OUT_DATA_LEN];
+	memset (strHeaderData, NULL, MAX_OUT_DATA_LEN);
+	
+	char strTempLog[64];	
+    sprintf(strTempLog, "%s%s",strMappingName, "log");
+    LogHeader	= new FileLogWrite(".", strTempLog);
+    LogHeader->Write("-------------------------\n");
+	nActIndex 	= m_nActStartRecIndex;		//	action table에서 start 정보를 가져온다 (seq_no가 0이다)
+	
+	//	meta talbe seq_no = 0 정보 저장 
+	nFieldCnt	= m_ActionTable[nActIndex].In_Field_Offset;		//	field의 갯수 
+	nOutTotLen 	= m_ActionTable[nActIndex].Out_Field_Length;	// 	out data length 
+
+	//	indata 정보 저장값 선언
+	nInOneLen 	= new int[nFieldCnt+1];		// 	0번지는 사용을 하지 않으므로 +1을 한다 
+	nInOffset 	= new int[nFieldCnt+1];		// 	0번지는 사용을 하지 않으므로 +1을 한다 
+	nDataType	= new int[nFieldCnt+1];		// 	0번지는 사용을 하지 않으므로 +1을 한다 
+
+	++nActIndex;
+	++nInputCnt;
+
+	for(; nInputCnt <= nFieldCnt ; nInputCnt++)
+	{
+	    nDataType[nInputCnt]   = atoi(m_ActionTable[nInputCnt].Data_Type);
+	}
+	
+	nInputCnt = 1;
+	
+	LogHeader->Write("[headerManager]nActIndex = %d",nActIndex);
+	LogHeader->Write("[headerManager]nFieldCnt = %d",nFieldCnt);
+	LogHeader->Write("[headerManager]nOutTotLen = %d",nOutTotLen);
+}
+
+//	소멸자 
+CHeaderMannager::~CHeaderMannager()
+{
+	delete LogHeader;
+	delete[] nInOneLen;
+	delete[] nInOffset;
+	delete[] nDataType;
+	
+}
+
+//////////////////////////////////////////////////////////////////////
+//
+//   Function Name  : headerRule
+//   Usage          : UDR을 file 만들어 주는 collector에서 data를 변형
+//					  해 주는 함수 
+//	 Argument		: char* indata 		(input data record)
+//					  char* outdata     (변형을 한 output data record)
+//	 Return			: int (FAILheaderManager : -1 , OKheaderManager : 1)
+//   DATE           : 2001. 4 .
+//   LAST UPDATE    :
+//   AUTHOR         : Jung Seung jin	(sjjung@neomnt.com)
+//   History        :
+//
+//////////////////////////////////////////////////////////////////////
+int CHeaderMannager::headerRule (char* indata, char *outdata)
+{
+	CCollectorRule		hdRule;
+	int 			nTempNullCnt;
+	int 			nActionCode;
+	char 			strSubAction;
+	int 			nOutOffset;
+	
+
+	strOutOneData 		= new char[MAX_OUT_DATA_LEN];
+
+	LogHeader->Write("[headerManager||headerRule]nActIndex = %d",nActIndex);
+    for(;nActIndex<=nFieldCnt;nActIndex++)
+    {
+		// loop에서 필요한 정보 초기화 
+		nTempNullCnt = 0;
+		memset (strOutOneData, NULL, MAX_OUT_DATA_LEN);
+		
+		//	구성정보 얻는 부분
+		nOutOffset  = m_ActionTable[nActIndex].Out_Field_Offset;
+	    nActionCode = atoi(m_ActionTable[nActIndex].Action_Code);
+	    memcpy(&strSubAction, m_ActionTable[nActIndex].Sub_Action_Code, 1);
+	    nOutOneLen  = m_ActionTable[nActIndex].Out_Field_Length;
+		
+		LogHeader->Write("[headerManager||headerRule]nInOffset    = %d",nInOffset);
+		LogHeader->Write("[headerManager||headerRule]nDataType    = %d",nDataType);
+		LogHeader->Write("[headerManager||headerRule]nActionCode  = %d",nActionCode);
+		LogHeader->Write("[headerManager||headerRule]strSubAction = %d",strSubAction);
+		LogHeader->Write("[headerManager||headerRule]nOutOneLen   = %d",nOutOneLen);
+		
+        //	one field 처리 
+        memcpy(strOutOneData, hdRule.oneField(strHeaderData,nInOffset[nActIndex],nInOneLen[nActIndex],
+        					  nOutOneLen,nDataType[nActIndex],nActionCode,strSubAction), hdRule.get_OneFieldLen());
+        
+		LogHeader->Write("[headerManager||headerRule]strOutOneData   = %s",strOutOneData);
+
+/*        //	one field의 data가 없을 경우 처리 (false 처리)
+        for(int i = 0; i < MAX_OUT_DATA_LEN ; i++)
+        {
+        	if (strOutOneData[i] == NULL)
+        	{
+        		nTempNullCnt++;
+        	}
+        }
+        if (nTempNullCnt == MAX_OUT_DATA_LEN)
+        {
+			delete[] strOutOneData;
+        	return FAILHEADERMANAGER;
+        } */
+       	DataMove(strOutOneData, outdata, nOutOffset);			//	변형된 header one data를 out buffer에 저장
+    }
+   	DataMove(indata, outdata, nOutTotLen);						// 	header data에 input data를 덧붙이기 
+
+	//	다음 data를 위한 초기화 
+	nActIndex = 1;	
+	nInputCnt = 1;
+	nInTotLen = 0;
+   	memset(strHeaderData, NULL, MAX_OUT_DATA_LEN);
+	delete[] strOutOneData;
+    return OKHEADERMANAGER;
+}	
+
+//////////////////////////////////////////////////////////////////////
+//
+//   Function Name  : DataMove
+//   Usage          : 하나의 처리된 결과를 out buffer에 쌓아주는 부분 
+//	 Argument		: char* indata 		(input data record)
+//					  char* outdata     (변형을 한 output data record)
+//	 Return			: 
+//   DATE           : 2001. 4 .
+//   LAST UPDATE    :
+//   AUTHOR         : Jung Seung jin	(sjjung@neomnt.com)
+//   History        :
+//
+//////////////////////////////////////////////////////////////////////
+void CHeaderMannager::DataMove(char *InBuf, char *OutBuf, int nTempOutOffset)
+{
+	LogHeader->Write("[headerManager||DataMove]nOutOffSet   = %d",nTempOutOffset);
+	LogHeader->Write("[headerManager||DataMove]nOutLen      = %d\n",nOutOneLen);
+    memcpy(OutBuf+nTempOutOffset,InBuf,nOutOneLen);
+}
+
+//////////////////////////////////////////////////////////////////////
+//
+//   Function Name  : put_Data
+//   Usage          : header에 필요한 input정보를 저장하는 함수 
+//	 Argument		: void* value 		(header에 들어갈 value)
+//	 Return			: 
+//   DATE           : 2001. 4 .
+//   LAST UPDATE    :
+//   AUTHOR         : Jung Seung jin	(sjjung@neomnt.com)
+//   History        :
+//
+//////////////////////////////////////////////////////////////////////
+void CHeaderMannager::put_Data(void* value)
+{
+	int 	nInDataType;
+
+	nInDataType = nDataType[nInputCnt] / 10;
+	switch (nInDataType)
+	{
+		case  0 :  
+		case  1 :  
+		case  2 :  
+		case  3 :  
+		case  9 :  
+					nInOneLen[nInputCnt] = sizeof(int);
+					nInTotLen += nInOneLen[nInputCnt] ; 
+					nInOffset[nInputCnt] = nInTotLen - sizeof(int);
+					LogHeader->Write("[headerManager||put_Data]nInputCnt              = %d",nInputCnt);
+					LogHeader->Write("[headerManager||put_Data]nInOneLen[nInputCnt]   = %d",nInOneLen[nInputCnt]);
+					LogHeader->Write("[headerManager||put_Data]nInTotLen              = %d",nInTotLen);
+					LogHeader->Write("[headerManager||put_Data]nInOffset[nInputCnt]   = %d",nInOffset[nInputCnt]);
+					break;
+		case  5 :
+		case  6 :
+					nInOneLen[nInputCnt] = sizeof(short);
+					nInTotLen += nInOneLen[nInputCnt] ; 
+					nInOffset[nInputCnt] = nInTotLen - sizeof(short);
+					LogHeader->Write("[headerManager||put_Data]nInputCnt              = %d",nInputCnt);
+					LogHeader->Write("[headerManager||put_Data]nInOneLen[nInputCnt]   = %d",nInOneLen[nInputCnt]);
+					LogHeader->Write("[headerManager||put_Data]nInTotLen              = %d",nInTotLen);
+					LogHeader->Write("[headerManager||put_Data]nInOffset[nInputCnt]   = %d",nInOffset[nInputCnt]);
+					break;
+		case  7 :
+					nInOneLen[nInputCnt] = sizeof(char);
+					nInTotLen += nInOneLen[nInputCnt] ; 
+					nInOffset[nInputCnt] = nInTotLen - sizeof(char);
+					LogHeader->Write("[headerManager||put_Data]nInputCnt              = %d",nInputCnt);
+					LogHeader->Write("[headerManager||put_Data]nInOneLen[nInputCnt]   = %d",nInOneLen[nInputCnt]);
+					LogHeader->Write("[headerManager||put_Data]nInTotLen              = %d",nInTotLen);
+					LogHeader->Write("[headerManager||put_Data]nInOffset[nInputCnt]   = %d",nInOffset[nInputCnt]);
+					break;
+		case  8 : 
+					nInOneLen[nInputCnt] = strlen((char*)value);
+					nInTotLen += nInOneLen[nInputCnt] ; 
+					nInOffset[nInputCnt] = nInTotLen - strlen((char*)value);
+					LogHeader->Write("[headerManager||put_Data]nInputCnt              = %d",nInputCnt);
+					LogHeader->Write("[headerManager||put_Data]nInOneLen[nInputCnt]   = %d",nInOneLen[nInputCnt]);
+					LogHeader->Write("[headerManager||put_Data]nInTotLen              = %d",nInTotLen);
+					LogHeader->Write("[headerManager||put_Data]nInOffset[nInputCnt]   = %d",nInOffset[nInputCnt]);
+					break;
+	}
+	DataMove((char*)value, strHeaderData, nInOffset[nInputCnt]);
+	++nInputCnt;
+}
+

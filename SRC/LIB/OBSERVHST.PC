@@ -1,0 +1,83 @@
+#include <ObservHst.hpp>
+
+#define SQLCA_STORAGE_CLASS extern
+EXEC    SQL     INCLUDE SQLCA;
+
+EXEC SQL BEGIN DECLARE SECTION;
+int			nTran_type;
+int			nTran_count;
+char		SDate[DATE_LEN+1];
+char		EDate[DATE_LEN+1];
+EXEC SQL END DECLARE SECTION;
+
+
+int ObservHist::SetObservHist(int trantype, int trancount, char *sdate, char *edate)
+{
+	int	nRet;
+	
+	
+	//---------------- 변수할당
+	nTran_type = trantype;
+	nTran_count = trancount;
+	strcpy(SDate, sdate);
+	strcpy(EDate, edate);
+	//---------------- 변수할당
+	
+	cout << "INSERT....." << endl;
+	EXEC SQL INSERT INTO t_observ_hist(transac_type, transac_count, start_date_time, end_date_time)
+					values(:nTran_type, :nTran_count,TO_DATE(:SDate, 'YYYYMMDDHH24MISS'),TO_DATE(:EDate, 'YYYYMMDDHH24MISS')); 
+	
+	nRet = sqlca.sqlcode;
+	if (sqlca.sqlcode == 0)  EXEC SQL COMMIT WORK;
+	else
+	{
+		cout << "[INSERT] T_OBSERV_HIST ERROR : " << (int)sqlca.sqlcode << endl;
+		EXEC SQL ROLLBACK;
+	}	
+	
+	/*
+	if(nRet == -1) 
+	{	// 추가에러 UPdate 하기 
+		cout << "UPDATE....." << endl;
+		EXEC SQL UPDATE t_observ_hist SET start_date_time=TO_DATE(:SDate, 'YYYYMMDDHH24MISS'),
+										  end_date_time=TO_DATE(:EDate, 'YYYYMMDDHH24MISS')
+					WHERE transac_type=:nTran_type and transac_count=:nTran_count;
+		
+		
+		if (sqlca.sqlcode == 0)  EXEC SQL COMMIT WORK;
+		else
+		{
+			cout << "[UPDATE] T_OBSERV_HIST ERROR : " << sqlca.sqlcode << endl;
+			EXEC SQL ROLLBACK;
+		}	
+	}
+	*/
+	
+
+ 	return (nRet);
+}
+
+
+//--------------------------------------------------------------------
+int main(void)
+{
+	
+	int			nRet;
+	DbConnect	clsDbConnect;
+
+	nRet = clsDbConnect.connect();
+	if (nRet < 0)
+	{
+		cout << "DB Connect Failure [" << nRet << "]" << endl;
+		return nRet;
+	}else cout << "DB Connect Success " << endl;
+	
+	
+	
+	ObservHist custhist;
+	custhist.SetObservHist(1, 1, "20001115121250", "20001116121250");
+	custhist.SetObservHist(1, 1, "20001116121250", "20001120121250");
+	
+	clsDbConnect.disconnect();
+	exit(1);
+}

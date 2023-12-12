@@ -1,0 +1,26 @@
+include /home/uda1/common/env_proc_32.mk
+include /home/uda1/common/env_uda.mk
+LOCALFLAGS=-I$(HOME)/user/ghhan/TPL_AGR/INCLUDE
+
+MFLAGS=-D_SVC1
+EXE = Aggregator
+#OBJS = Aggregator.o RateRule.o $(UDASQLLIBES) $(UDALINKLIBES)
+OBJS = Aggregator.o $(UDASQLLIBES) $(UDALINKLIBES)
+
+all : $(EXE)
+
+$(EXE) : $(OBJS)
+	$(CC) -o $@ $(OBJS) $(CFLAGS) $(PROLDLIBS) $(UDASQLLIBES) $(UDALINKLIBES)
+
+install : $(EXE)
+	strip $(EXE)
+	$(INSTALL2) $(EXE) $(COMMBINPATH)/
+	rm -rf $(EXE) *.o core 
+
+clean :	
+	rm -rf $(EXE) *.o core 
+	touch *.pc *.cpp
+
+
+
+

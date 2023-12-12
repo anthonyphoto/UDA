@@ -1,0 +1,39 @@
+#include <string.h>
+#include "../INCLUDE/dblib.hpp"
+EXEC SQL INCLUDE sqlca;
+
+// DataBase Connect
+int CDblib::connectDB(char *i, char *p)
+{
+	strcpy(userid, i);
+	strcpy(userpass, p);
+
+	EXEC SQL WHENEVER SQLERROR GOTO _sqlerr_;
+	
+	EXEC SQL BEGIN DECLARE SECTION;
+		char id[20];
+		char pass[20];
+	EXEC SQL END DECLARE SECTION;
+	
+	strcpy(id, i);	
+	strcpy(pass, p);
+
+	EXEC SQL CONNECT :id IDENTIFIED BY :pass;
+	
+	return OK;
+	
+_sqlerr_:
+	return FAIL;
+}
+
+// DataBase Disconnect
+int CDblib::disconnectDB()
+{
+	EXEC SQL WHENEVER SQLERROR GOTO _sqlerr_;
+	EXEC SQL COMMIT WORK RELEASE;
+	return OK;
+
+_sqlerr_:
+	
+	return FAIL;
+}

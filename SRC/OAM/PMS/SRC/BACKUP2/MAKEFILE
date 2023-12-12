@@ -1,0 +1,29 @@
+include $(HOME)/common/env_proc_32.mk
+include $(HOME)/common/env_uda.mk
+
+all : CPmsMain 
+LOCALFLAGS = +W 829 -I/home/uda1/include -I../INCLUDE -I../COMMON/INCLUDE -D_OUTPUT_ -I/home/uda1/include
+
+CCP = aCC
+LFLAGS = -L$(COMMLIBPATH) -L$(LOCALLIBPATH) $(LLIBTHREAD)
+PROCOPTION = sqlcheck=semantics code=cpp cpp_suffix=cpp userid=uda/uda thread=yes
+
+OBJS= pmsMain.o Cpms.o CPmsDbHandler.o ../COMMON/SRC/pmslib.a $(UDASQLLIBES) $(UDALINKLIBES)
+
+CPmsMain: $(OBJS) 
+	$(CCP) -o $@ $(OBJS) $(CFLAGS) $(PROLDLIBS) $(UDASQLLIBES) $(UDALINKLIBES)
+#	cp $@ $(HOME)/bin
+clean: 
+	rm *.o 
+
+####################################
+#
+# if you can use pms web version, using pmsClient unix program
+#
+####################################
+
+pmsClient: pmsClient.o
+	$(CCP) -o $@ pmsClient.o $(PROLDLIBS)  $(CFLAGS)
+
+
+

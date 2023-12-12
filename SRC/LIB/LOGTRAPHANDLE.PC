@@ -1,0 +1,58 @@
+#define SQLCA_STORAGE_CLASS extern
+EXEC SQL INCLUDE    sqlca;
+
+// DECLARE SECTION을 hpp에 선언할때
+EXEC SQL INCLUDE "/home/uda1/include/LogTrapHandle.hpp";
+//EXEC SQL INCLUDE "LogTrapHandle.hpp";
+
+LogTrapHandle::LogTrapHandle(char* DBName, char* DBPwd)
+{
+	EXEC SQL BEGIN DECLARE SECTION;
+		char	strDBName[128];
+		char 	strDBPwd[128];
+	EXEC SQL END   DECLARE SECTION;
+	
+	memcpy (strDBName, DBName, strlen(DBName));
+	memcpy (strDBPwd,  DBPwd,  strlen(DBPwd));
+
+//	EXEC SQL CONNECT :strDBName IDENTIFIED BY :strDBPwd;		//	data base connect
+	EXEC SQL CONNECT : "uda/uda";
+
+}
+
+LogTrapHandle::~LogTrapHandle()
+{
+	EXEC SQL ROLLBACK WORK RELEASE;
+}
+
+void LogTrapHandle::insertTrap(int TrapNo, char* TrapName, int TrapValue, char* ErrorMsg)
+{
+
+    EXEC SQL BEGIN DECLARE SECTION;
+		char *h_ptrRecvTime;
+		int  nTrapNo;
+		char strTrapName[128];
+		int  nTrapValue;
+		char  strErrorMsg[2048];
+    EXEC SQL END   DECLARE SECTION;
+    
+    nTrapNo = TrapNo;
+    strcpy (strTrapName, TrapName);
+    nTrapValue = TrapValue;
+    strcpy (strErrorMsg, ErrorMsg);
+
+
+    DateTime Itime;                                // time class object
+    h_ptrRecvTime = Itime.get_MDateTime(1);        // 년월일시분초천분의일초 ex) '20010522211523332'
+ 
+    EXEC SQL INSERT INTO T_TRAP_LOG (recv_time, trap_no, trap_name, trap_value, trap_desc)
+                    VALUES (:h_ptrRecvTime, :nTrapNo, :strTrapName, :nTrapValue, :strErrorMsg);
+
+    if (sqlca.sqlcode != 0) {                     
+		cout << "trap log insert error : [" << sqlca.sqlcode << "]" << endl;
+        EXEC SQL ROLLBACK WORK;
+    }
+    else {
+        EXEC SQL COMMIT WORK;
+    }
+}	

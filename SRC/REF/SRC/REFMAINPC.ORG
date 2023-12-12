@@ -1,0 +1,320 @@
+/******************************************************************
+* 파 일 명     
+      : RefMain.pc                
+* 기   능                                                          
+     : Parser와 PDSN Interface로 부터 Service provider가 017인 UDR이 MQ로 들어온다.
+       Parsing된 UDR운 Pdsn format에 맞게 변형한 다음, 변형된 UDR을 파일에 기록한다.
+       PDSN Interface로 부터 들어온 UDR은 변형없이 파일에 기록한다. 
+* 작 성 자     
+     : 신미연                         
+* first data  
+     : 2001. 03. 21                      
+* last updata 
+     : 2000. 03. 29                  
+* 관 련 화 일  
+     : 
+* program history                                
+                           
+* Version
+  : 1.1 ( 2001. 05. 21 )                                           
+******************************************************************/
+
+
+#define SQLCA_STORAGE_CLASS extern
+#include <sqlca.h>
+
+#include <signal.h>
+#include <StatusFile.hpp>
+#include <MsgFormat.hpp>
+#include <SendLogManage.hpp>
+#include <TempMsgQ_file.hpp>
+#include <reformat.hpp>
+#include <ConfigCTRL.hpp>
+#include <UDR.hpp>
+#include <SqlCommon.hpp>
+
+EXEC SQL INCLUDE  "../INCLUDE/refmanager.hpp";
+
+#define REQUEST_CODE	4
+
+MessageQueue<MsgPmsStatus>  *PMSMQ;		// PMS MQ
+MessageQueue<CPdsnMsg>		*PDSNMQ;	// PDSN에서 Service Provider가 017인 원시Udr을 보내주는 MQ		
+MessageQueue<UdrFormat>		*PARSERMQ;	// Parser에서 Service Provider가 017인 원시Udr만을 보내주는 MQ
+SendLogManage				*clsLogM;	// Log Manager
+ConfigCTRL					*clsCfgCTRL;// Reformat 구성정보를 Config File에 Write or Read하기 위함 
+// [t_ref_action] table정보를 가지고 Input Record를 Output Type에 따라 변환한 후,
+// Output format(Type, Length, Value)에 맞게 저장한다.
+CRefMannager       			*clsRfObj;  
+CPdsnMsg					clsPdsnMsg;
+DbConnect					clsDbConnect;
+
+char*	strInBuf;				// Input으로 한 레코드를 저장함
+int		systemId;						// System ID
+int		serviceId;						// Service ID
+int		groupId;						// Process Type
+int		processType;					// Process Type	
+int		pserialNo;						// Serial Number
+int		pRemark;						// Process Remark
+char	gstrAtribut[SIZE_MAX_ATTRIBUTE];//Output format에 따라 저장된 값들 
+
+
+int		ProcesingPdsn();			// Pdsn MQ로 들어오는 017 Udr을 파일로 만든 후, Config file에 구성정보를 write한다.
+int		ProcesingParser(char* strInputBuf);
+void	showPdsnHeader();
+void	writePMSMQ(int sigNo);			// PMS에게 Process의 상태를 알려 준다.	
+void	sigCapture(int sigNo);			// Signal 처리
+void	Destructor();				// 동적 생성된 객체를 delete한다.
+
+
+
+//==============================================================================
+int main(int argc, char* argv[])
+{
+
+	if(argc != 7 ){
+		cout << "Usage: Reformat [SysId][SvcId][GroupId][ProcId][ProcSn][ProcRemark]" <<endl;
+    	return -1;
+    }
+
+    //signal(SIGNULL, sigCapture);
+	signal(SIGHUP,  sigCapture);	
+	signal(SIGINT,  sigCapture);
+	signal(SIGQUIT, sigCapture);
+	signal(SIGKILL, sigCapture);
+	signal(SIGSTOP, sigCapture);
+	signal(SIGTSTP, sigCapture);
+	signal(SIGCONT, sigCapture);
+	signal(SIGUSR1, sigCapture);
+	
+	systemId    = atoi(argv[1]);
+	serviceId   = atoi(argv[2]);
+	groupId     = atoi(argv[3]);
+	processType = atoi(argv[4]);
+	pserialNo   = atoi(argv[5]);
+	pRemark     = atoi(argv[6]); 
+
+
+    int			nInRecSize = 0;			// 한 Input Record의 크기
+	UdrFormat	clsUdrFm;				// Parser MQ로 들어오는 Udr Format
+
+	PMSMQ 	   = new MessageQueue<MsgPmsStatus>(systemId, 0, 1, 1, 0, 10, 1000);
+    clsLogM	   = new SendLogManage(systemId, serviceId, groupId, processType, pserialNo, pRemark);
+
+	*clsLogM << clsLogM->ErrorCode(0) << "=====START RFCMAIN=====" << endl;
+	clsLogM->put_EventHistData(FLAG_START, FLAG_PROC_START);
+	writePMSMQ(FLAG_PROC_START);
+
+	if(clsDbConnect.connect()!=0)
+	{
+		*clsLogM<<"Error No = ["<<clsLogM->ErrorCode(9001)<<"] Fail DB Connect"<<endl;	
+		clsLogM->put_EventHistData(FLAG_END, -1);
+ 		delete PMSMQ; 		
+ 		delete clsLogM;
+ 		exit(-1);
+	}			
+
+	PDSNMQ     = new MessageQueue<CPdsnMsg>	(systemId, serviceId, groupId, processType, pserialNo, 11, 1000);
+	PARSERMQ   = new MessageQueue<UdrFormat>(systemId, serviceId, groupId, processType, pserialNo, 10, 1000);
+
+	char strProcName[50];
+	memset(strProcName, 0x00, sizeof(strProcName));
+	sprintf(strProcName, "%d%dREF%02dX", systemId, serviceId, pserialNo);
+
+	clsCfgCTRL = new ConfigCTRL(serviceId, pserialNo, 1);
+	clsRfObj   = new CRefMannager(strProcName, argv[2]);
+	nInRecSize = clsRfObj->get_InTotLen(); //[t_clt_action]table에서 한 Input Record의 크기를 읽어옴
+	strInBuf   = new char[nInRecSize+1];
+
+    clsCfgCTRL->set_iNum();
+	memset((char*)&clsPdsnMsg, 0x00, sizeof(clsPdsnMsg));
+    
+    
+    /*--------------------------------------------------------------------*/
+    while (1)
+    {
+	    if(PDSNMQ->recvMsg(&clsPdsnMsg) != FLAG_MQ_IS_EMPTY)//017 Pdsn Udr 처리
+        {		
+			*clsLogM<<clsLogM->ErrorCode(0)<<endl;
+			*clsLogM<<clsLogM->ErrorCode(0)<<"------------------------------------"<<endl;
+			*clsLogM<<clsLogM->ErrorCode(0)<<"-Received Udr from PDSN."        <<endl;
+
+        	if(ProcesingPdsn() < 0)
+        	{
+        		clsLogM->put_EventHistData(FLAG_END, -1);
+        		Destructor();
+        		exit(-1);
+        	}
+
+			memset((char*)&clsPdsnMsg, 0x00, sizeof(clsPdsnMsg));
+		}
+
+		if(PARSERMQ->recvMsg(&clsUdrFm) != FLAG_MQ_IS_EMPTY)//017 Parser Udr 처리
+		{
+			*clsLogM<<clsLogM->ErrorCode(0)<<endl;
+			*clsLogM<<clsLogM->ErrorCode(0)<<"------------------------------------"<<endl;
+			*clsLogM<<clsLogM->ErrorCode(0)<<"-Received Udr from Parser."  <<endl;
+			*clsLogM<<clsLogM->ErrorCode(0)<<"-Udr Type     : ["<<clsUdrFm.stItemHead.get_nUdrType()   <<"]"<<endl;
+			*clsLogM<<clsLogM->ErrorCode(0)<<"-Udr File Seq : ["<<clsUdrFm.stItemHead.get_nUdrFileSeq()<<"]"<<endl;
+			*clsLogM<<clsLogM->ErrorCode(0)<<"-Udr Seq      : ["<<clsUdrFm.stItemHead.get_nUdrSeqNo()  <<"]"<<endl;			
+			*clsLogM<<clsLogM->ErrorCode(0)<<"-Svc Provider : ["<<clsUdrFm.stItemHead.get_nServiceProvider()<<"]"<<endl;			
+			*clsLogM<<clsLogM->ErrorCode(0)<<"-MIN1         : ["<<clsUdrFm.stItemHead.get_nMin1()      <<"]"<<endl;			
+			*clsLogM<<clsLogM->ErrorCode(0)<<"-MIN2         : ["<<clsUdrFm.stItemHead.get_nMin2()      <<"]"<<endl;			
+			
+			memset(strInBuf	  , 0x00, nInRecSize+1);
+	   		memset(gstrAtribut, 0x00, sizeof(gstrAtribut));
+			memcpy(strInBuf   , (char*)&clsUdrFm, nInRecSize);
+
+			if(ProcesingParser(strInBuf) < 0)
+			{
+				clsLogM->put_EventHistData(FLAG_END, -1);
+				Destructor();
+				exit(-1);
+			}
+
+			memset((char*)&clsPdsnMsg, 0x00, sizeof(clsPdsnMsg));
+		}
+		
+		usleep(1000);
+	}	
+	/*--------------------------------------------------------------------*/	
+
+	clsLogM->put_EventHistData(FLAG_END, EXIT_SUCCESS);
+	Destructor();
+	return 0;
+}		
+
+
+
+
+//------------------------------------------------------------------------------
+// Pdsn MQ로 들어오는 017 Udr을 파일로 만든 후, Config file에 구성정보를 write한다.
+int ProcesingPdsn()
+{
+	if(clsCfgCTRL->write_Udr(&clsPdsnMsg) < 0)
+	{
+		*clsLogM << "Error No = [" << clsLogM->ErrorCode(9002)<<"] Cannot Open  File for Write PDSN Udr. " << endl;
+		return -1;
+	}
+
+	*clsLogM<<clsLogM->ErrorCode(0)<<"-Header Id    : ["<< (int)clsPdsnMsg.get_ucIdentifier()<<"]"<<endl;
+	*clsLogM<<clsLogM->ErrorCode(0)<<"-Success Write to File PDSN Udr."    << endl;
+	*clsLogM<<clsLogM->ErrorCode(0)<<"------------------------------------"<<endl;		
+	
+	return 1;
+
+}	 
+
+
+
+
+//------------------------------------------------------------------------------
+// Parser MQ로 들어오는 017 Udr을 원시Pdsn Udr로 변환하여 파일로 만든 후, 
+// Config file에 구성정보를 write한다.
+int ProcesingParser(char* strInputBuf)
+{
+	if(clsRfObj->pdsnRule(strInputBuf, gstrAtribut)<0)
+	{
+		*clsLogM<<"Error No = ["<<clsLogM->ErrorCode(9003)<<"] Fail Conversion from Parsing Udr to Pdsn Udr format"<<endl; 
+		return -1;
+	}	
+
+	clsPdsnMsg.set_ucCode(REQUEST_CODE);
+	clsPdsnMsg.set_usLength(clsRfObj->get_OutTotLen()+ SIZE_HEADER);
+
+	memcpy(clsPdsnMsg.strAttribute, gstrAtribut, sizeof(gstrAtribut));
+
+	if(clsCfgCTRL->write_Udr(&clsPdsnMsg) < 0)
+	{
+		*clsLogM<<"Error No = ["<<clsLogM->ErrorCode(9004)<<"] Cannot Open  File for Write Reformat Udr. " << endl;
+		return -1;
+	}
+
+	*clsLogM<<clsLogM->ErrorCode(0)<<"-Header Id    : ["<< (int)clsPdsnMsg.get_ucIdentifier()<<"]"<<endl;
+	*clsLogM<<clsLogM->ErrorCode(0)<<"-Success Write to File Reformat Udr."<< endl;
+	*clsLogM<<clsLogM->ErrorCode(0)<<"------------------------------------"<<endl;		
+
+	return 1;
+}	
+
+
+
+//------------------------------------------------------------------------------
+// PMS에게 Process의 상태를 알려 준다.
+void writePMSMQ(int sigNo)
+{
+	int i = 0;
+	char PMSMQ_NO[2];
+	MsgPmsStatus	OneRec(MSG_STATUS, systemId, serviceId, groupId, processType, pserialNo, 10);
+
+	OneRec.set_nStatus(sigNo);
+	
+	sprintf(PMSMQ_NO, "%d", systemId);
+	
+	while(1)
+	{
+		i++;
+		if (PMSMQ->sendMsg(&OneRec) == FLAG_MQ_IS_FULL)
+		{
+			*clsLogM<<"Error No = ["<<clsLogM->ErrorCode(9005)<<"] PMSMQIS FULL sleep(1)...!"<<endl;
+			sleep(1);
+			if (i >= 10)
+			{
+				kill(0,SIGINT);
+			}
+		}
+		else
+		{
+			break;
+		}
+	}
+}
+
+
+
+//------------------------------------------------------------------------------
+// Signal 처리
+void sigCapture(int sigNo)
+{
+	*clsLogM<<"Error No = ["<<clsLogM->ErrorCode(9006)<<"] Got Signal...Process End!!!" << endl;
+	
+	switch(sigNo)
+	{
+		case SIGINT :
+		case SIGQUIT :
+		case SIGKILL :
+		case SIGTERM :
+				writePMSMQ(FLAG_PROC_KILL);//-1//프로세스 비정상 stop (killed)
+				clsLogM->put_EventHistData(FLAG_END, -1);
+				Destructor();
+				exit(-1);
+				break;
+		case SIGUSR1:
+				writePMSMQ(FLAG_PROC_TERM);//0//프로세스정상stop (Client업무명령)
+				clsLogM->put_EventHistData(FLAG_END, 0);
+				Destructor();
+				exit(0);
+				break;
+		default:
+				writePMSMQ(FLAG_PROC_KILL);//-1//프로세스 비정상 stop (killed)
+				clsLogM->put_EventHistData(FLAG_END, -1);
+				Destructor();
+				exit(-1);
+				break;
+	}
+}
+
+
+
+//------------------------------------------------------------------------------
+// 동적 생성된 객체를 delete한다.
+void Destructor()
+{
+	clsDbConnect.disconnect();
+	delete [] strInBuf;
+	delete PDSNMQ;
+	delete PARSERMQ;
+	delete PMSMQ;				
+	delete clsLogM;
+	delete clsCfgCTRL;
+	delete clsRfObj;
+}

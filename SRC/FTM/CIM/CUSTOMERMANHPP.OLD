@@ -1,0 +1,73 @@
+/****************************************************************************/
+/* 파 일 명 : CustmerMan.hpp		    									*/
+/* 작 성 자 : KSI / 한근희								                    */
+/* 기    능 : CCustomerMan Class 정의	                            		*/
+/* 작성일자 : 2000년 11월 7일                                              */
+/* 변경일자 :     년   월   일                                              */
+/* 관련화일 : SharedMemLegacy.hpp, scpformat.hpp							*/
+/* 기    타 :                                                               */
+/****************************************************************************/
+#ifndef CUSTOMERMAN_HPP
+#define CUSTOMERMAN_HPP
+                        
+#include <iostream.h>   
+#include <TempMsgQ_new.hpp>
+#include <MsgFormat.hpp>
+#include "CustMdbMan.hpp"
+
+#define  EVENT_DATE_LEN  8 
+#define  EVENT_TIME_LEN  6
+#define  PRICE_PLAN_LEN  5
+#define  DB_USERNAME  "uda"
+#define  DB_PASSWORD  "uda"
+
+static int	SystemId;
+static int	ServiceId;
+static int	GroupId;
+static int	ProcessType;
+static int 	PserialNo;
+static int	PreMark;
+
+// Scp-if(R) to 0m040|8.
+MessageQueue<CustFormat> *mqCUST;
+// 0m040|8. to SCP-IF(S)
+MessageQueue<ReCustFormat> *mqReCUST;
+// PMS MQ
+MessageQueue<MsgPmsStatus>* mqPMS;
+
+const    int				CUSTOMER_DEBUG=1;
+void sigCapture(int sigNo );
+void WritePMSMQ(int sigNo);
+class CCustomerMan
+{
+	public:
+								CCustomerMan(); 
+								~CCustomerMan();
+		int         		    nTransactionID;
+	
+		int            		    TransactInsert( CustFormat stCustFormat );
+		int						TransactDelete( CustFormat stCustFormat );
+		void 					ReadDataToMQ( void );
+		int        		        ReponseToMQ( ReCustFormat* pSendUdr );
+		int						SearchMdbTemp( int nSearchMin );
+		int 					ConnectToDB( void );
+
+		/*
+		TransactUpdate();
+		
+		*/
+
+	private:
+		CustFormat				cRecvData;
+		ReCustFormat    		cSendData;
+		CustFormatMdb 			cCustFormatMdb;
+		CCustMdbMan*			cCustMdbMan;
+		
+		int 					InsertCustDb( CustFormat cRecvUdr );
+		int 					deleteCustDb( CustFormat stCustFormat );
+	
+		int 					MatchToDb( CustFormat stCustFormat );
+		void					PrintCustFormat( ostream& output );
+};
+
+#endif

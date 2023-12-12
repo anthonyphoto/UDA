@@ -1,0 +1,114 @@
+#include <ShardMemLegacy.hpp>
+
+EXEC SQL INCLUDE sqlca;
+
+const int  KEYFILE_LEN  = 30;
+const int  KEYID_LEN	= 1;
+const char DB_USERNAME  = "uda";
+const char DB_PASSWORD  = "uda";
+
+// select Items from T_SHM_INFO
+int		  nGroupId;
+int		  nProcessId;
+VARCHAR	  strKeyFile[KEYFILE_LEN+1]; // Shared memory key file path
+char	  strKeyId[KEYID_LEN+1];       // Shared memory key value
+int		  nRecSize;                  // unit record size
+int		  nMaxRecord;                // max record count
+// end
+// values for shared memory creation
+ShmMemory *shmMemoryC;    // ShmMemory class Instance
+int		  nMemorySize;	  // nMemorySize=nRecSize*nMaxRecord
+char	  strK[KEYID_LEN];// Shared memory key ID
+// end
+// upadate t_shm_info value 
+int		  nPtrAddr;       // Shared memory pointer address
+
+int ConnectToDB()
+{
+	VARCHAR	username[32];
+	VARCHAR	passwd[32];
+
+	strcpy((char *) username.arr, DB_USERNAME);
+	username.len = (unsigned short) strlen(DB_USERNAME);
+
+	strcpy((char *) passwd.arr, DB_PASSWORD);
+	passwd.len = (unsigned short) strlen(DB_PASSWORD);
+
+	EXEC SQL whenever sqlerror goto db_error;
+	EXEC SQL connect :username identified by :passwd;
+
+	return(0);
+
+db_error:
+	return(sqlca.sqlcode);
+}
+
+int makeShm()
+{	
+	char strPath[30];
+	memset(strPath,0x00,sizeof(strPath));
+	
+	EXEC SQL whenever sqlerror goto db_error;
+	EXEC SQL declare shm_cur cursor for
+		select gid, pid, keypath, keyid, rsize, rcount
+		from t_shm_info
+	
+	EXEC SQL open shm_cur;
+	EXEC SQL whenever not found do break;
+
+	// 전체 shared memmory resource를 만들어 놓는다.
+	i = 0;
+	for (;;) {
+		EXEC SQL fetch shm_cur into
+			:nGroupId, ;nProcessId, :strKeyFile, :strKeyId, :nRecSize, :nMaxRecord;
+		
+		nMemorySize = nRecSize*nMaxRecord;
+		memcpy(strPath,strKIDeyIdFile.arr,strKIDeyIdFile.len);
+		memcpy(strK,strKeyId,KEYID_LEN);
+		
+		shmMemoryC = new ShmMemory(strPath, strK, nMemorySize);
+		nPtrAddr = shsmMemoryC.ShmKey();
+		
+		EXEC SQL update t_shm_info 
+				 set    paddr = nPtrAddr
+				 where  gid = :nGroupId and pid=:nProcessId;
+
+		EXEC SQL COMMIT WORK;
+		delete shmMemoryC;
+	}
+
+	EXEC SQL close shm_cur;
+	return(0);
+
+db_error:
+	return(sqlca.sqlcode);
+}
+
+int makeShm(int nGId, nPId)
+{	
+	char strPath[30];
+	memset(strPath,0x00,sizeof(strPath));
+	
+	EXEC SQL whenever sqlerror goto db_error;
+
+	// 특정 shared memmory resource를 만들어 놓는다.
+	EXEC SQL select keypath, keyid, rsize, rcount 
+ 			 into :strKeyFile, :strKeyId, :nRecSize, :nMaxRecord;
+		
+	nMemorySize = nRecSize*nMaxRecord;
+	memcpy(strPath,strKIDeyIdFile.arr,strKIDeyIdFile.len);
+	memcpy(strK,strKeyId,KEYID_LEN);
+	
+	shmMemoryC = new ShmMemory(strPath, strK, nMemorySize);
+	nPtrAddr = shsmMemoryC.ShmKey();
+		
+	EXEC SQL update t_shm_info 
+			 set    paddr = nPtrAddr
+			 where  gid = :nGId and pid=:nProcessId;
+
+	delete shmMemoryC;
+	return(0);
+
+db_error:
+	return(sqlca.sqlcode);
+}

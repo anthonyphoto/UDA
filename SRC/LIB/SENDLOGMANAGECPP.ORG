@@ -1,0 +1,364 @@
+#include <SendLogManage.hpp>
+#include <LogManageSM.hpp>
+
+SendLogManage::SendLogManage(	int		nSystemId,
+								int		nServiceId,
+								int		nGroupId,
+								int		nProcessType,
+								int		nSerialNo,
+								int		nRemark
+							)
+	:	HeaderOfMessage		(			0,
+										nSystemId,
+										nServiceId,
+										nGroupId,
+										nProcessType,
+										nSerialNo,
+										nRemark
+							)
+{
+	LogQ		= new MessageQueue<MsgLog>			( nSystemId, 1, 1, 2, 0, 10, 1000 );
+	performMQ	= new MessageQueue<ProcPerformData>	( nSystemId, 1, 1, 2, 0, 11, 1000 );
+	eventHstMQ	= new MessageQueue<ProcEventData>	( nSystemId, 1, 1, 2, 0, 12, 1000 );
+	errorLogMQ	= new MessageQueue<ProcErrInfo>		( nSystemId, 1, 1, 2, 0, 13, 1000 );
+
+	clsLogMgrSM	= new LogManageSM					( nSystemId, 1, 1, 2, 0 , 0 );
+
+	clsMsgLog	= new MsgLog			(	MSG_LOG,
+											nSystemId,
+		             						nServiceId,
+											nGroupId,
+											nProcessType,
+											nSerialNo,
+											nRemark		);
+
+	clsPerForm	= new ProcPerformData	(	nSystemId,
+		             						nServiceId,
+											nGroupId,
+											nProcessType,
+											nSerialNo,
+											nRemark		);
+
+	clsEventHist = new ProcEventData	(	nSystemId,
+		             						nServiceId,
+											nGroupId,
+											nProcessType,
+											nSerialNo,
+											nRemark		);
+
+
+	clsErrLog	= new ProcErrInfo		(	nSystemId,
+		             						nServiceId,
+											nGroupId,
+											nProcessType,
+											nSerialNo,
+											nRemark		);
+
+	m_ostring	= new ostrstream();
+
+	clsLogMgrSM->Set_Init();
+}
+
+SendLogManage::~SendLogManage()
+{
+	delete	clsMsgLog;
+	delete	clsPerForm;
+	delete	clsEventHist;
+	delete	clsErrLog;
+	delete  clsLogMgrSM;
+	delete	m_ostring;
+}
+
+SendLogManage& SendLogManage::operator<<(const char* str)
+{
+    *m_ostring << str;
+    return *this;
+}
+
+SendLogManage& SendLogManage::operator<<(int n)
+{
+   	*m_ostring << n;
+    return *this;
+}
+
+SendLogManage& SendLogManage::operator<<(err_t n)
+{
+    if (n.nErrCode != 0)
+    	*m_ostring << n.nErrCode;
+    return *this;
+}
+
+SendLogManage& SendLogManage::operator<<(unsigned int n)
+{
+    *m_ostring << n;
+    return *this;
+}
+
+SendLogManage& SendLogManage::operator<<(char c)
+{
+    *m_ostring << c;
+    return *this;
+}
+
+SendLogManage& SendLogManage::operator<<(short s)
+{
+    *m_ostring << s;
+    return *this;
+}
+
+SendLogManage& SendLogManage::operator<<(long l)
+{
+    *m_ostring << l;
+    return *this;
+}
+
+SendLogManage& SendLogManage::operator<<(float f)
+{
+    *m_ostring << f;
+    return *this;
+}
+
+SendLogManage& SendLogManage::operator<<(double d)
+{
+    *m_ostring << d;
+    return *this;
+}
+
+SendLogManage& SendLogManage::operator<<(unsigned char c)
+{
+    *m_ostring << c;
+    return *this;
+}
+
+SendLogManage& SendLogManage::operator<<(unsigned short s)
+{
+    *m_ostring << s;
+    return *this;
+}
+
+SendLogManage& SendLogManage::operator<<(unsigned long l)
+{
+    *m_ostring << l;
+    return *this;
+}
+
+SendLogManage& SendLogManage::operator<<(void* v)
+{
+    *m_ostring << v;
+    return *this;
+}
+
+SendLogManage& SendLogManage::operator<<(ostream&(*)(ostream&))
+{
+    int		nRet;
+    char	strTemp[513];
+
+    *m_ostring << ends;
+
+//	clsMsgLog->put_strMsg(get_string(), get_StringLength());
+
+    clsErrLog->put_strDate();
+    clsErrLog->put_strTime();
+
+	memcpy(strTemp, get_string(), get_StringLength());
+    strTemp[get_StringLength()] = NULL;
+
+    clsErrLog->put_ProcErrInfo(atoi(clsErrLog->get_nErrCode()), strTemp );
+
+//	Delete After TEST
+//	cout << "Error String= [" << strTemp << "]" << endl;
+//	cout << "Error String= [" << clsErrLog->get_strErrDetail() << "]" << endl;
+//	clsErrLog->displayHeader();
+//	Delete After TEST
+
+
+	if	(	clsLogMgrSM->Get_SWGLAG	(	get_nSystemId(),
+											get_nSvcId(),
+											get_nGrpType(),
+											get_nProcType(),
+											get_nProcSerial(),
+											get_nProcRemark(),
+											ERR_LOG_TYPE
+										)	== 1)				//	if Flag is ON
+	{
+	    nRet = errorLogMQ->sendMsg(clsErrLog);
+	    if (nRet != 0)
+	    {
+	    	clsErrLog->write_ErrorLog();
+		}
+	}
+
+
+	ostrstream newostream;		//	m_ostring의 초기화를 위해 임시로 사용
+	newostream << m_ostring->rdbuf() << endl;   // old streambuf flush;
+
+	delete	m_ostring;
+	m_ostring	= new ostrstream();
+
+    return *this;
+}
+
+const char* SendLogManage::get_string(void)
+{
+    return m_ostring->str();
+}
+
+int SendLogManage::get_StringLength(void)
+{
+	return (strlen(m_ostring->str()));
+}
+
+int SendLogManage::writeLog()
+{
+	fLogFile = new ofstream(clsMsgLog->get_ProcessId(), ios::out );
+
+	fLogFile->write(reinterpret_cast<const char*>(clsMsgLog), sizeof(MsgLog));
+	fLogFile->close();
+
+	delete fLogFile;
+
+	return 0;
+}
+
+err_t	SendLogManage::ErrorCode(int	nValue)
+{
+	clsMsgLog->put_nErrorCode(nValue);
+	clsErrLog->put_nErrorCode(nValue);
+	err_t	n;
+
+	n.nErrCode = nValue;
+
+	return (n);
+}
+
+void SendLogManage::put_PerformanceData	(	int				nFlag,
+											int 			nDataType,
+											unsigned int	unFileNo,
+											unsigned int 	unUdrCnt,
+											unsigned int 	nQueryCnt
+										)
+{
+	clsPerForm->put_strDateTime(nFlag);
+
+	clsPerForm->put_PerformData	(	nDataType,
+									unFileNo,
+									unUdrCnt,
+									nQueryCnt
+								);
+
+	if ((nFlag == FLAG_END) &&
+		(clsLogMgrSM->Get_SWGLAG	(	get_nSystemId(),
+											get_nSvcId(),
+											get_nGrpType(),
+											get_nProcType(),
+											get_nProcSerial(),
+											get_nProcRemark(),
+											ERR_LOG_TYPE
+									)	== 1))				//	if Flag is ON
+
+	//if (nFlag == FLAG_END)
+	{
+		performMQ->sendMsg(clsPerForm);
+	}
+
+
+}
+void SendLogManage::put_EventHistData(	int		nFlag,
+										int		nExitCode)
+{
+	clsEventHist->put_strEventDateTime();
+	clsEventHist->put_ProcEventData(nExitCode);
+
+	if ((nFlag == FLAG_END || nFlag== FLAG_START) &&
+		(clsLogMgrSM->Get_SWGLAG	(	get_nSystemId(),
+											get_nSvcId(),
+											get_nGrpType(),
+											get_nProcType(),
+											get_nProcSerial(),
+											get_nProcRemark(),
+											ERR_LOG_TYPE
+									)	== 1))				//	if Flag is ON
+
+	//if (nFlag == FLAG_END || nFlag== FLAG_START)
+	{
+		eventHstMQ->sendMsg(clsEventHist);
+	}
+
+}
+
+
+//--------------------------------------------------------------------------------
+// 기       능 : HexDump시 offset를 설정한다.
+void SendLogManage::InitBuf(char *Buf,long Cnt)
+{
+    sprintf((char *)Buf, "%80s", "");
+    sprintf((char *)Buf, "%04X:%04X", (int)((Cnt&0xFF00)>>8), (int)(Cnt&0x00FF));
+    Buf[9] = ' ';
+}
+
+
+
+//--------------------------------------------------------------------------------
+// 기       능 : 한Byte 한Byte를 Hex값으로 변환하여 보여준다.
+// 기       타 : RBuf 크기는 BufLen*5 이상되여야한다.
+void SendLogManage::GetHexDump(char *RBuf, const char *Buf,long BufLen)
+{
+    long 	BufCnt = 0;
+    char 	DispBuf[100];
+    int  	Cnt = 1;
+    int		Rn=0;
+
+    InitBuf(DispBuf, BufCnt);
+    for(BufCnt = 0L; BufCnt < BufLen; BufCnt++){
+        sprintf((char *)&DispBuf[Cnt*3+9], "%02X", (unsigned char)Buf[BufCnt]);
+        DispBuf[Cnt*3+9+2] = ' ';
+        if(Buf[BufCnt]<0x20)sprintf(&DispBuf[Cnt+61], "%c", '.');
+        else sprintf(&DispBuf[Cnt+61], "%c", Buf[BufCnt]);
+        if(Cnt%16 == 0){
+            Cnt = 0;
+            //printf("%-79.79s\r\n", DispBuf);
+            sprintf((char *)&RBuf[Rn*81], "%-79.79s\r\n",  DispBuf);
+            InitBuf(DispBuf, BufCnt+1);
+            Rn++;
+        }
+        Cnt++;
+    }
+    //printf("%-79.79s\r\n", DispBuf);
+    sprintf((char *)&RBuf[Rn*81], "%-79.79s\r\n",  DispBuf);
+    Rn++;
+    RBuf[Rn*81]=0;
+}
+
+
+
+//--------------------------------------------------------------------------------
+// 기       능 : HexDump를 로그 화일에 출력한다.
+int SendLogManage::WriteHexLog(char *Buf,	long BufLen)
+{
+
+	char		strFileName[100];
+	char		strDump[8192];
+	DateTime	clsDateTime;
+
+
+	sprintf(strFileName, 	"/SVC%1d/LOG/%1d_%1d_%02d_%02d.%8s",
+							get_nSvcId(),			//	SERVICE ID
+							get_nGrpType(),			//	GROUP ID
+							get_nProcType(),		//	PROCESS TYPE
+							get_nProcSerial(),		//	PROCESS SERIAL NUMBER
+							get_nProcRemark(),		//	PROCESS REMARK
+							clsDateTime .get_date());
+
+	ofstream	ErrLogFile(strFileName, ios::out |  ios::app);
+
+	if (!ErrLogFile)
+		return -1;
+
+	GetHexDump(strDump, Buf, BufLen);
+
+	ErrLogFile 	<<	strDump << endl;
+
+	ErrLogFile.close();
+	return 0;
+}
+

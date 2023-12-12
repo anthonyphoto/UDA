@@ -1,0 +1,17 @@
+2001.10.05 17:44 B D:\UDA\src\SCP\lucent\ama_org\amatps+.x <-- uda1 /home/uda1/src/SCP/lucent/ama_org amatps+.x
+2001.10.05 17:44 B D:\UDA\src\SCP\lucent\ama_org\amatps.h <-- uda1 /home/uda1/src/SCP/lucent/ama_org amatps.h
+2001.10.05 17:44 B D:\UDA\src\SCP\lucent\ama_org\amatps.x <-- uda1 /home/uda1/src/SCP/lucent/ama_org amatps.x
+2001.10.05 17:44 B D:\UDA\src\SCP\lucent\ama_org\amatps_api.h <-- uda1 /home/uda1/src/SCP/lucent/ama_org amatps_api.h
+2001.10.05 17:44 B D:\UDA\src\SCP\lucent\ama_org\amatps_clnt.c <-- uda1 /home/uda1/src/SCP/lucent/ama_org amatps_clnt.c
+2001.10.05 17:44 B D:\UDA\src\SCP\lucent\ama_org\amatps_clnt.o <-- uda1 /home/uda1/src/SCP/lucent/ama_org amatps_clnt.o
+2001.10.05 17:44 B D:\UDA\src\SCP\lucent\ama_org\amatps_svc.c <-- uda1 /home/uda1/src/SCP/lucent/ama_org amatps_svc.c
+2001.10.05 17:44 B D:\UDA\src\SCP\lucent\ama_org\amatps_xdr.c <-- uda1 /home/uda1/src/SCP/lucent/ama_org amatps_xdr.c
+2001.10.05 17:44 B D:\UDA\src\SCP\lucent\ama_org\amatps_xdr.o <-- uda1 /home/uda1/src/SCP/lucent/ama_org amatps_xdr.o
+2001.10.05 17:44 B D:\UDA\src\SCP\lucent\ama_org\client.c <-- uda1 /home/uda1/src/SCP/lucent/ama_org client.c
+2001.10.05 17:44 B D:\UDA\src\SCP\lucent\ama_org\client.o <-- uda1 /home/uda1/src/SCP/lucent/ama_org client.o
+2001.10.05 17:44 B D:\UDA\src\SCP\lucent\ama_org\erun <-- uda1 /home/uda1/src/SCP/lucent/ama_org erun
+2001.10.05 17:44 B D:\UDA\src\SCP\lucent\ama_org\example <-- uda1 /home/uda1/src/SCP/lucent/ama_org example
+2001.10.05 17:44 B D:\UDA\src\SCP\lucent\ama_org\example.c <-- uda1 /home/uda1/src/SCP/lucent/ama_org example.c
+2001.10.05 17:44 B D:\UDA\src\SCP\lucent\ama_org\example.h <-- uda1 /home/uda1/src/SCP/lucent/ama_org example.h
+2001.10.05 17:44 B D:\UDA\src\SCP\lucent\ama_org\example.o <-- uda1 /home/uda1/src/SCP/lucent/ama_org example.o
+2001.10.05 17:44 B D:\UDA\src\SCP\lucent\ama_org\Makefile <-- uda1 /home/uda1/src/SCP/lucent/ama_org Makefile

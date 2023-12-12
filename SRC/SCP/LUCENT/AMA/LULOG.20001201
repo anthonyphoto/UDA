@@ -1,0 +1,21 @@
+Connect RPC Completed : 0
+set_trace() : -31
+Could not connect : scid : -31
+[AMA_ERROR] Reconnect : waiting 10s..!!
+Connect RPC Completed : 0
+set_trace() : 0
+connect_session() succeeded : scid : 12
+poll_primary() : OK : ret : 0
+fhdrp->fssno   : 0
+fhdrp->fnamlen : 5
+fhdrp->fcode   : 1
+fhdrp->flen    : 1531
+Send ACK : OK 
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!
+AMAT has no primary AMA data : ret : 1
+[AMA_LOG] No Data : waiting 60s..!!

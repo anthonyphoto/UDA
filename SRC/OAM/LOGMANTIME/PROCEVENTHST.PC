@@ -1,0 +1,138 @@
+/******************************************************************
+* 파 일 명     
+      : ProcEventHst.pc                
+* 기   능                                                          
+     : Process Event 정보를  [t_proc_event_hist] table에 insert or update한다.
+* 작 성 자     
+     : 조상영                         
+* first data  
+     :                    
+* last updata 
+     :                 
+* 관 련 화 일  
+     : ProcEventHst.hpp                     
+* program history                                
+
+* Version
+  : 1.1 ( 2001. 05. 21 )                                           
+******************************************************************/
+
+
+#include <ProcEventHst.hpp>
+
+#define SQLCA_STORAGE_CLASS extern
+EXEC    SQL     INCLUDE SQLCA;
+
+EXEC SQL BEGIN DECLARE SECTION;
+static int		nSys_id;
+static int		nSvc_id;
+static int		nGroup_type;
+static int		nProc_type;
+static int		nProc_sn;
+static int		nProc_remark;
+static char		SDate[DATE_LEN+1];
+static int		nExitCode;
+EXEC SQL END DECLARE SECTION;
+
+
+//------------------------------------------------------------------------------
+int ProcEventHist::Set_EventHist(char	*date, int exitcode)
+{
+	int	nRet;
+	
+	
+	//---------------- 변수할당
+	nSys_id = sys_id;
+	nSvc_id = svc_id;
+	nGroup_type = group_type;
+	nProc_type = proc_type;
+	nProc_sn = proc_sn;
+	nProc_remark = proc_remark;
+	strcpy(SDate, date);
+	nExitCode = exitcode;
+	//---------------- 변수할당
+	
+//	cout << "nSys_id   = "   << nSys_id   		<< endl;
+//	cout << "nSvc_id    = "  << nSvc_id    		<< endl;
+//	cout << "nGroup_type = " << nGroup_type 	<< endl;
+//	cout << "nProc_type   = "<< nProc_type  	<< endl;
+//	cout << "nProc_sn = "    << nProc_sn 		<< endl;
+//	cout << "nProc_remark = "<< nProc_remark 	<< endl;
+//	cout << "nExitCode	 = " << nExitCode	 	<< endl;
+	
+	
+	cout << "INSERT.....T_PROC_EVENT_HIST" << endl;
+	EXEC SQL INSERT INTO t_proc_event_hist(sys_id, svc_id, group_type, proc_type, 
+											proc_sn, proc_remark, event_date_time,
+											event_code)
+					values(:nSys_id, :nSvc_id, :nGroup_type, :nProc_type, :nProc_sn,
+					       :nProc_remark, 
+					       TO_DATE(:SDate, 'YYYYMMDDHH24MISS'), 
+					       :nExitCode);
+	
+	
+	nRet = sqlca.sqlcode;
+	if (sqlca.sqlcode == 0)  EXEC SQL COMMIT WORK;
+	else
+	{
+		cout << "[INSERT] T_PROC_EVENT_HIST ERROR : " << (int)sqlca.sqlcode << endl;
+		EXEC SQL ROLLBACK;
+	}	
+	
+	
+	if(nRet == -1) 
+	{	// 추가에러 UPdate 하기 
+		cout << "UPDATE....." << endl;
+		EXEC SQL UPDATE t_proc_event_hist SET 	event_date_time=TO_DATE(:SDate, 'YYYYMMDDHH24MISS'),
+												event_code=:nExitCode
+					WHERE sys_id=:nSys_id and svc_id=:nSvc_id and group_type=:nGroup_type and proc_type=:nProc_type 
+					      and proc_sn = :nProc_sn and  proc_remark=:nProc_remark;
+		
+		
+		if (sqlca.sqlcode == 0)  EXEC SQL COMMIT WORK;
+		else
+		{
+			cout << "[UPDATE] T_PROC_EVENT_HIST ERROR : " << sqlca.sqlcode << endl;
+			EXEC SQL ROLLBACK;
+		}	
+	}
+	
+	nRet = (int)sqlca.sqlcode;
+
+ 	//clsDbConnect.disconnect();
+
+ 	return (nRet);
+}
+
+/*
+//--------------------------------------------------------------------
+int main(int argc, char *argv[])
+{
+	
+	if(argc<6) 
+	{
+		cout << " Usage:" << argv[0] << "[systemid] [serviceid] [groupid] [processtype] [serialno] [remarks]" << endl;
+		exit(1);
+	}
+	
+	int			nRet;
+	DbConnect	clsDbConnect;
+
+	nRet = clsDbConnect.connect();
+	if (nRet < 0)
+	{
+		cout << "DB Connect Failure [" << nRet << "]" << endl;
+		return nRet;
+	}else cout << "DB Connect Success " << endl;
+	
+	
+	
+	ProcEventHist EventHst(atoi(argv[1]),atoi(argv[2]),atoi(argv[3]),atoi(argv[4]),atoi(argv[5]), atoi(argv[6]));
+	EventHst.Set_EventHist("@@@", "20001111121220", "20001115121250", 10);
+	
+	
+	
+	clsDbConnect.disconnect();
+	exit(1);
+}
+*/

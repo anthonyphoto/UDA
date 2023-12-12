@@ -1,0 +1,1036 @@
+/******************************************************************
+* 파 일 명     : CustmerMan.pc			     					  *
+* 기   능                                                          *
+* : 고객정보를 CDS I/F MQ로부터 읽어들여, 고객정보MDB와 t_cust_info     *
+*    table을 변경시켜주는 역할을 하는 프로그램.	   					  *
+* 작 성 자     : Han Guen Hee                    				  *
+* first data  : 2000. 11. 07       	     						  *
+* last updata : 2000. 12. 21        		 					  *
+* 관 련 화 일  : CustmerMan.hpp                					  *
+* program history                        						  *
+*                         	        	 				 		  *
+* bug fix                        	     						  *
+*                         	        	 						  *
+******************************************************************/
+#include "CustomerMan.hpp"
+
+#define SQLCA_STORAGE_CLASS extern
+EXEC    SQL     INCLUDE SQLCA;
+
+// T_CUST_INFO Table변수에 접근하기 위한 변수.
+EXEC SQL BEGIN DECLARE SECTION;
+VARCHAR          custusername[32];
+VARCHAR          custpasswd[32];
+int              nProvider;
+int 			 nMin;
+int 			 nMin2;
+char             strEvent_Date[EVENT_DATE_LEN+1];
+char             strEvent_Time[EVENT_TIME_LEN+1];
+int				 nSvc_Type;
+char             strPrice_Plan[PRICE_PLAN_LEN+1]; 
+int              nCust_Status;
+EXEC SQL END DECLARE SECTION;
+
+// Oracle DB에서 record를 fetch해오기 위한 cursor를 정의.
+EXEC SQL declare shm_cur cursor for
+		select  provider,min,event_date,event_time,svc_type,cust_status
+		from    t_cust_info;
+	//	where   provider=:nProvider and min=:nMin;
+
+// Constructor
+CCustomerMan::CCustomerMan()
+{
+}
+//===============================================================
+// Constructor Method											=
+//  : Customer MDB Object를 할당한다.                        		=
+// argument : 프로세스 형상구분 6가지								=
+// return value : None											=
+//																=
+//===============================================================
+CCustomerMan::CCustomerMan( int nSystemId, int nServiceId, int nGroupId, int nProcessType, int nPserialNo, int nPreMark )
+{
+	char   cId='A';
+	
+	*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+		<< "CCustomerMan Contructor!!" << endl;
+	
+	memset( strEvent_Date, 0x00, sizeof( strEvent_Date) );
+    memset( strEvent_Time, 0x00, sizeof( strEvent_Time) );
+    memset( strPrice_Plan, 0x00, sizeof( strPrice_Plan) );
+    
+	sprintf( PATH_NAME_CUSTOMER, "/SVC%d/DATA/SubsShm.cfg",nServiceId );
+    cCustMdbMan = new CCustMdbMan( PATH_NAME_CUSTOMER, cId, nSystemId,nServiceId,nGroupId,nProcessType,nPserialNo,nPreMark );
+}
+// destructor
+CCustomerMan::~CCustomerMan()
+{
+	delete cCustMdbMan;
+}
+//===============================================================
+// ReadDataToMQ Method						   					=
+//  : 외부에서 최초로 Customer Manager를 시작하는 method.      		=
+// argument     : None											=
+// return value : None											=
+//																=
+//===============================================================
+void CCustomerMan::ReadDataToMQ( void )
+{
+	int 		nErrorNo;
+	char		cJobCode[JOBCODE_LEN+1];	// A1:신규가입 Z1:가입해지 D1:변경
+	CustFormat 	stTempCustFormat;
+	
+	*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+					<< "CCustomerMan : ReadDataToMQ!!" << endl;
+	while( 1 )
+	{
+		//SCP I/F로부터 한도관리고객정보를 읽어온다.
+		memset( ( char* )&cRecvData, NULL, sizeof( CdsCustFormat ) );
+		if ( mqCUST->recvMsg( &cRecvData ) == FLAG_MQ_IS_EMPTY )
+		{
+	//	    cout << "==Recv=NO DATA IN MessageQueue====="   << endl;
+			sleep( 1 );
+		}
+		else 
+		{
+			memcpy( cJobCode, cRecvData.get_CustFormat()->get_JobCode(), JOBCODE_LEN );
+			memcpy( (char *)&stTempCustFormat, cRecvData.get_CustFormat(), sizeof( CustFormat ) );
+			
+			// 신규가입이라면..
+			if( !memcmp( cJobCode, "A1", 2 ) )
+			{
+				// 읽어온 정보를 DB에 넣어준다.
+				if( TransactInsert( stTempCustFormat ) )
+				{
+					// 응답하기위한 구조체를 만들어 준다.
+				/*
+					cSendData.set_Result(1);
+					cSendData.set_UTransactionID( cRecvData.get_UTransactionID() );
+				*/
+					// 처리결과를 SCP I/F에 보내준다.	
+					/*
+					if( ReponseToMQ( &cSendData ) )
+					{
+						cout << "Reponse Success!!" << endl;
+					}
+					else
+					{
+						cout << "Error Reponse in ReponseToMQ" << endl;
+					}
+					*/
+					if( CUSTOMER_DEBUG )
+					{
+						*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+							<< "Insert Receive Data Complete!!" << endl;
+					}
+					
+				}
+				else
+				{
+				//	cSendData.set_Result(0);
+				//	cSendData.set_UTransactionID( cRecvData.get_UTransactionID() );
+				/*
+					if( ReponseToMQ( &cSendData ) )
+					{
+						cout << "Reponse Success!!" << endl;
+					}
+					else
+					{
+						cout << "Error Reponse in ReponseToMQ" << endl;
+					}
+					*/
+					if( CUSTOMER_DEBUG )
+					{
+						*CustomerManLogM << CustomerManLogM->ErrorCode(5001) 
+							<< "Error DB Insert in ReadDataToMQ!!" << endl;
+					}
+				}
+			} // else
+			// 가입해지라면..
+			else if( !memcmp( cJobCode, "Z1", 2 ) )
+			{
+				// 읽어온 정보를 DB에서 삭제한다.
+				if( TransactDelete( stTempCustFormat ) )
+				{
+					// 응답하기위한 구조체를 만들어 준다.
+				//	cSendData.set_Result(1);
+				//	cSendData.set_UTransactionID( cRecvData.get_UTransactionID() );
+
+					// 처리결과를 SCP I/F에 보내준다.	
+					/*
+					if( ReponseToMQ( &cSendData ) )
+					{
+						cout << "Reponse Success!!" << endl;
+					}
+					else
+					{
+						cout << "Error Reponse in ReponseToMQ" << endl;
+					}
+					*/
+					if( CUSTOMER_DEBUG )
+					{
+						*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+							<< "TransactDelete Receive Data Complete!!" << endl;
+					}
+					
+				}
+				else
+				{
+				//	cSendData.set_Result(0);
+				//	cSendData.set_UTransactionID( cRecvData.get_UTransactionID() );
+
+					/*
+					if( ReponseToMQ( &cSendData ) )
+					{
+						cout << "Reponse Success!!" << endl;
+					}
+					else
+					{
+						cout << "Error Reponse in ReponseToMQ" << endl;
+					}
+					*/
+					if( CUSTOMER_DEBUG )
+					{
+						*CustomerManLogM << CustomerManLogM->ErrorCode(5002) 
+							<< "Error TransactDelete in ReadDataToMQ!!" << endl;
+					}
+					
+				}
+			} // else if
+			// 정보변경이라면...
+			else if( !memcmp( cJobCode, "D1", 2 ) )
+			{
+				if( cCustMdbMan->UpdateCustMdb( stTempCustFormat ) )
+				{
+					*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+						<< "Complete!! Update Memory DB !!" << endl;
+				}
+				else
+				{
+					*CustomerManLogM << CustomerManLogM->ErrorCode(5007) 
+						<< "fail!! Update Memory DB!!" << endl;
+				}
+				if( UpdateCustDb( stTempCustFormat ) )
+				{
+					*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+						<< "Complete!! Update Oracle DB !!" << endl;
+				}
+				else
+				{
+					*CustomerManLogM << CustomerManLogM->ErrorCode(5008) 
+						<< "fail!! Update Oracle DB!!" << endl;
+				}
+			} // else if
+			else
+			{
+				*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+							<< "Different customer status!!" << endl;
+			} // else
+		} // else
+	}// while
+}
+//===============================================================
+// ReponseToMQ Method						   					=
+//  : 처리된 결과를 SCP I/F에게 보내준다. 				       		=
+// argument     :  pSendUdr -> 응답을 하기위한 format				=
+// return value : 1-> success									=
+//                0-> fail										=
+//																=
+//===============================================================
+/*
+int CCustomerMan::ReponseToMQ( ReCustFormat* pSendUdr )
+{
+	
+	*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+					<< "CCustomerMan : ReponseToMQ!!" << endl;
+	while(1)
+    {
+		if( mqReCUST->sendMsg( pSendUdr ) == FLAG_MQ_IS_FULL )
+	    {
+	    	cout << "MSG Queue FULL!!" <<  endl;
+			return 0;
+	    }
+		else break;
+    }
+	return 1;
+}
+*/
+//===============================================================
+// TransactDelete Method					   					=
+//  : 해당 data를 MDB와 Oracle DB에서 삭제해 준다.		       		=
+// argument     :  stCustFormat -> 삭제하기위한 format.			=
+// return value : 1-> success									=
+//                0-> fail										=
+//																=
+//===============================================================
+int	CCustomerMan::TransactDelete( CustFormat stCustFormat )
+{
+	
+	*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+			<< "CCustomerMan : TransactDelete!!" << endl;
+	// Memory DB에서 삭제해 준다.
+	if( cCustMdbMan->DeleteCustMdb( stCustFormat ) )
+	{
+		*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+			<< "Complete!! Delete Memory DB !!" << endl;
+	}
+	else
+	{
+		*CustomerManLogM << CustomerManLogM->ErrorCode(5004) 
+			<< "fail!! Delete Memory DB!!" << endl;
+		return 0;
+	}
+	// Oracle DB에서 삭제해 준다.
+	if( deleteCustDb( stCustFormat ) )
+	{
+		*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+			<< "Complete!! Delete Oracle DB!!" << endl;
+	}
+	else
+	{
+		*CustomerManLogM << CustomerManLogM->ErrorCode(5005) 
+			<< "fail!! Delete Oracle DB!!" << endl;
+		return 0;
+	}
+	return 1;
+}
+//===============================================================
+// deleteCustDb Method						   					=
+//  : 해당 data를 실제로 Oracle DB에서 삭제해 준다.		       		=
+// argument     :  stCustFormat -> 삭제하기위한 format.			=
+// return value : 1-> success									=
+//                0-> fail										=
+//																=
+//===============================================================
+int CCustomerMan::deleteCustDb( CustFormat stCustFormat )
+{
+	*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+			<< "CCustomerMan : deleteCustDb!!" << endl;
+	// CustFormat형식을 DB Data형식으로 바꾸어 준다.
+	if( MatchToDb( stCustFormat ) )
+    {
+		if( CUSTOMER_DEBUG )
+		{
+			*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+				<< "Success Conversion CustFormat -> DB Format!!" << endl;
+		}
+    }
+    else
+	{
+		if( CUSTOMER_DEBUG )
+		{
+			*CustomerManLogM << CustomerManLogM->ErrorCode(5006) 
+				<< "Error Conversion CustFormat->DB Format!!" << endl;
+		}
+		return 0;
+	}  
+	if( 0 )
+	{
+		PrintCustFormat( cout );
+	}
+    
+    EXEC SQL DELETE FROM t_cust_info
+        where  provider=:nProvider and min=:nMin;
+    EXEC SQL COMMIT WORK;
+    
+    return 1;
+}
+//===============================================================
+// TransactInsert Method					   					=
+//  : 해당 data를 MDB와 Oracle DB에 Insert해준다.  	       		=
+// argument     :  stCustFormat -> 삽입하기위한 format.			=
+// return value : 1-> success									=
+//                0-> fail( Memory overflow )					=
+//																=
+//===============================================================
+int CCustomerMan::TransactInsert( CustFormat stCustFormat )
+{
+	unsigned long 	divtemp;
+	char			cMin[MIN_LEN+1];
+	int				nCount;
+	unsigned int	nMin = 0;
+	int				nTempFlag;
+	unsigned int    temp;
+
+	*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+			<< "CCustomerMan : TransactInsert!!" << endl;
+	// Min을 변환한다.	
+	memcpy( cMin, stCustFormat.get_Min(), MIN_LEN );
+	
+	nCount=9;	
+	divtemp=1000000000;
+	for( int i=0; i<10; i++ )
+	{
+		temp = (unsigned int)( cMin[i]-48 );
+		nMin += (unsigned int)( temp * divtemp );
+		divtemp /= 10;
+		nCount--;
+	}
+	if ( 0 )
+	{
+		cout << "========================" << endl;
+		cout << "nMin=" << nMin << endl;
+		cout << "========================" << endl;
+	}
+	// 1이면 Update, 0이면 Insert
+	nTempFlag=cCustMdbMan->SearchMdb( nMin );
+	
+	// Update
+	if( nTempFlag)
+	{
+		if( cCustMdbMan->UpdateCustMdb( stCustFormat ) )
+		{
+			*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+				<< "Complete!! Update Memory DB !!" << endl;
+		}
+		else
+		{
+			*CustomerManLogM << CustomerManLogM->ErrorCode(5007) 
+				<< "fail!! Update Memory DB!!" << endl;
+			return 0;
+		}
+		//if( UpdateCustDb( stCustFormat ) )
+		if( InsertCustDb( stCustFormat ) )//jjk
+		{
+			*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+				<< "Complete!! Update Oracle DB !!" << endl;
+		}
+		else
+		{
+			*CustomerManLogM << CustomerManLogM->ErrorCode(5008) 
+				<< "fail!! Update Oracle DB!!" << endl;
+			return 0;
+		}
+	} // if
+	// Insert
+	else
+	{
+		cout << "TransactInsert : TransactInsert Insert" << endl;
+		if( cCustMdbMan->InsertCustMdb( stCustFormat ) )
+		{
+			*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+				<< "Complete!! Insert Memory DB !!" << endl;
+		}
+		else
+		{
+			*CustomerManLogM << CustomerManLogM->ErrorCode(5009) 
+				<< "fail!! Insert Memory  DB!!" << endl;
+			return 0;
+		}
+		if( InsertCustDb( stCustFormat ) )
+		{
+			*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+				<< "Complete!! Insert Oracle DB !!" << endl;
+		}
+		else
+		{
+			*CustomerManLogM << CustomerManLogM->ErrorCode(5010) 
+				<< "fail!! Insert Oracle  DB!!" << endl;
+			return 0;
+		}
+	} // else
+
+	return 1;
+}
+//===============================================================
+// ConnectToDB Method					   						=
+//  : Db Connection								 	       		=
+// argument     :  None											=
+// return value : 0-> success									=
+//                sql code-> fail           					=
+//																=
+//===============================================================
+int CCustomerMan::ConnectToDB( void )
+{
+	*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+			<< "CCustomerMan : ConnectToDB!!" << endl;
+	strcpy((char *) custusername.arr, DB_USERNAME);
+	custusername.len = (unsigned short) strlen(DB_USERNAME);
+
+	strcpy((char *) custpasswd.arr, DB_PASSWORD);
+	custpasswd.len = (unsigned short) strlen(DB_PASSWORD);
+
+	EXEC SQL connect :custusername identified by :custpasswd;
+
+	if( CUSTOMER_DEBUG )
+	{
+		*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+				<< "ConnectToDB sqlcode: " << sqlca.sqlcode << endl;
+	}
+
+	return(0);
+}
+//===============================================================
+// Db_close Method						   						=
+//  : Db Close									 	       		=
+// argument     :  None											=
+// return value : sql code		 								=
+//																=
+//===============================================================
+int CCustomerMan::Db_close()
+{
+	EXEC	SQL	COMMIT	WORK	RELEASE;
+
+	return(sqlca.sqlcode); 
+}
+//===============================================================
+// InsertCustDb Method						   					=
+//  : 해당 data를 실제로 Oracle DB에 Insert해준다.  	       		=
+// argument     :  stCustFormat -> 삽입하기위한 format.			=
+// return value : 1-> success									=
+//                0-> fail( Memory overflow )					=
+//																=
+//===============================================================
+int CCustomerMan::InsertCustDb( CustFormat stUdr )
+{
+	*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+			<< "CCustomerMan : InsertCustDb!!" << endl;
+    if( MatchToDb( stUdr ) )
+    {
+		if( CUSTOMER_DEBUG )
+		{
+			*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+				<< "Success Conversion CustFormat -> DB Format!!" << endl;
+		}
+    }
+    else
+	{
+		if( CUSTOMER_DEBUG )
+		{
+			*CustomerManLogM << CustomerManLogM->ErrorCode(5006) 
+				<< "Error Conversion CustFormat->DB Format!!" << endl;
+		}
+		return 0;
+	}  
+
+	if( 0 )
+	{
+		PrintCustFormat( cout );
+	}
+
+	nSvc_Type = 0;
+	nCust_Status = 1;
+	
+    EXEC SQL INSERT INTO t_cust_info(provider,min,event_date,event_time,svc_type,cust_status)
+		values(:nProvider,:nMin,:strEvent_Date,:strEvent_Time,:nSvc_Type,:nCust_Status);
+
+	if (sqlca.sqlcode == 0) 
+	{
+		EXEC SQL COMMIT WORK;
+		return 1;
+	}
+	*CustomerManLogM << CustomerManLogM->ErrorCode(0)<< "Insert sqlcode:"<<sqlca.sqlcode << endl;
+}
+//===============================================================
+// MatchToDb Method						   						=
+//  : 해당 data를 실제로 Oracle DB Format에 맞게 Reformat     		=
+// argument     :  stCustFormat									=
+// return value : 1-> success									=
+//                0-> fail( Memory overflow )					=
+//																=
+//===============================================================
+int CCustomerMan::MatchToDb( CustFormat stCustFormat )
+{
+    unsigned char 	cCode;		// 0x11
+	char			cJobCode[JOBCODE_LEN+1];	// A1:신규가입 Z1:가입해지 D1:번호변경
+	char			cMin[MIN_LEN+1];	
+	char			cMin2[MIN_LEN+1];
+	char			cAccInfo[ACCINFO_LEN+1];	// 01:TTL	
+	char 			cDate[20];  
+    char 			cTime[20];
+	unsigned int    temp;
+	unsigned long 	divtemp;
+    time_t 			curtime;
+    struct 			tm *loctime;
+    int				nCount,i,j;
+
+	*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+							<< "CCustomerMan : MatchToDb!!" << endl;
+    curtime = time( NULL );
+    loctime = localtime( &curtime);
+ 
+	strftime( cDate,20, "%Y%m%d", loctime );              
+    strftime( cTime,20, "%H%M%S", loctime);                 
+
+	cCode = stCustFormat.get_Code();
+	
+	memcpy( cJobCode, stCustFormat.get_JobCode(), JOBCODE_LEN );
+	memcpy( cMin, stCustFormat.get_Min(), MIN_LEN );
+	memcpy( cMin2, stCustFormat.get_Min2(), MIN_LEN );
+	memcpy( cAccInfo, stCustFormat.get_AccInfo(), ACCINFO_LEN );
+
+	if( 0 )
+	{
+		cout << "cCode: " << cCode << endl;
+		cout << "cJobCode: " << cJobCode << endl;
+		cout << "cMin: " << cMin << endl;
+		cout << "cMin2: " << cMin2 << endl;
+		cout << "cAccInfo: " << cAccInfo << endl;
+	}
+	
+	memcpy( strEvent_Date, cDate, EVENT_DATE_LEN );
+	memcpy( strEvent_Time, cTime, EVENT_TIME_LEN );
+	// 아직 정의되지 않아서 NULL을 유지한다.
+	memcpy( strPrice_Plan, 0x00, PRICE_PLAN_LEN );
+	
+	if( !memcmp( cAccInfo, "01", 2 ) )
+		nSvc_Type = 1;
+	else
+		nSvc_Type = 0;
+		
+	// Min을 DB에 넣을수 있도록 하나의 unsigned int형으로 만들어 준다.
+	nProvider = 0;
+	nMin = 0;
+	if( !memcmp( &cMin[0], "0", 1 ) )
+	{
+		nCount = 2;
+		divtemp=100;
+		for( i=0; i<3; i++ )
+		{
+			temp = (unsigned int)( cMin[i]-48 );
+			nProvider += (unsigned int)( temp * divtemp );
+			divtemp /= 10;
+			nCount--;
+		}
+		nCount = 6;
+		divtemp=1000000;
+		for( j=3; j<10; j++ )
+		{
+			temp = (unsigned int)( cMin[j]-48 );
+			nMin += (unsigned int)( temp * divtemp );
+			divtemp /= 10;
+			nCount--;
+		}
+	}
+	else
+	{
+		nCount = 1;
+		divtemp=10;
+		for( i=0; i<2; i++ )
+		{
+			temp = (unsigned int)( cMin[i]-48 );
+			nProvider += (unsigned int)( temp * divtemp );
+			divtemp /= 10;
+			nCount--;
+		}
+		nCount = 7;
+		divtemp=10000000;
+		for( j=2; j<10; j++ )
+		{
+			temp = (unsigned int)( cMin[j]-48 );
+			nMin += (unsigned int)( temp * divtemp );
+			divtemp /= 10;
+			nCount--;
+		}
+	}
+	// A1: 신규가입
+	if( !memcmp( cJobCode, "A1", 2 ) )
+	{
+		nCust_Status = 1;
+	}
+	// Z1: 가입해지
+	else if( !memcmp( cJobCode, "Z1", 2 ) )
+	{
+		nCust_Status = 2;
+	}
+	// D1 : 번호변경 
+/*	else if( !memcmp( cJobCode, "D1", 2 ) )
+	{
+		nCust_Status = 1;
+		nProvider = 0;
+		nMin  = 0;
+		if( !memcmp( &cMin[0], "0", 1 ) )
+		{
+			nCount = 2;
+			divtemp=100;
+			for( i=0; i<3; i++ )
+			{
+				temp = (unsigned int)( cMin[i]-48 );
+				nProvider += (unsigned int)( temp * divtemp );
+				divtemp /= 10;
+				nCount--;
+			}
+			nCount = 6;
+			divtemp=1000000;
+			for( int j=3; j<10; j++ )
+			{
+				temp = (unsigned int)( cMin[j]-48 );
+				nMin += (unsigned int)( temp * divtemp );
+				divtemp /= 10;
+				nCount--;
+			}
+		}
+		else
+		{
+			nCount = 1;
+			divtemp=10;
+			for( int i=0; i<2; i++ )
+			{
+				temp = (unsigned int)( cMin[i]-48 );
+				nProvider += (unsigned int)( temp * divtemp );
+				divtemp /= 10;
+				nCount--;
+			}
+			nCount = 7;
+			divtemp=10000000;
+			for( int j=2; j<10; j++ )
+			{
+				temp = (unsigned int)( cMin[j]-48 );
+				nMin += (unsigned int)( temp * divtemp );
+				divtemp /= 10;
+				nCount--;
+			}
+		}
+	}*/
+	else if( !memcmp( cJobCode, "D1", 2 ) )
+	{
+		char strMin[8];
+		nCust_Status = 1;
+		nProvider = 11;
+		nMin2 = 0;
+		
+		memset(strMin,0x00,8);
+		
+		if( !memcmp( &cMin2[0], "0", 1 ) )
+		{
+			memcpy(strMin,&cMin2[3],7);
+			nMin2 = (unsigned int) atoi(strMin);
+		}
+		else
+		{
+			 memcpy(strMin,&cMin2[2],8);
+			 nMin2 = (unsigned int) atoi(strMin);
+		}
+		
+	}
+	else
+	{
+		*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+					<< "Different customer status!!" << endl;
+		return 0;
+	}
+	return 1;
+}
+//===============================================================
+// UpdateCustDb Method						   					=
+//  : 해당 data를 실제로 Oracle DB에 Update해준다.  	       		=
+// argument     :  stCustFormat -> 갱신하기위한 format.			=
+// return value : 1-> success									=
+//                0-> fail 										=
+//																=
+//===============================================================
+int CCustomerMan::UpdateCustDb( CustFormat stCustFormat )
+{
+	*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+			<< "CCustomerMan : UpdateCustDb!!" << endl;
+	
+	if( MatchToDb( stCustFormat ) )
+    {
+		if( CUSTOMER_DEBUG )
+		{
+			*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+				<< "Success Conversion CustFormat -> DB Format!!" << endl;
+		}
+    }
+    else
+	{
+		if( CUSTOMER_DEBUG )
+		{
+			*CustomerManLogM << CustomerManLogM->ErrorCode(5006) 
+				<< "Error Conversion CustFormat->DB Format!!" << endl;
+		}
+		return 0;
+	}  
+	if( 0 )
+	{
+		PrintCustFormat( cout );
+	}
+	*CustomerManLogM << CustomerManLogM->ErrorCode(0) << "D3 min:"<< nMin<<"NewMin:"<<nMin2<< endl;
+	
+	EXEC SQL update t_cust_info
+		 set    provider=:nProvider,min=:nMin2,event_date=:strEvent_Date,event_time=:strEvent_Time,svc_type=:nSvc_Type,price_plan=:strPrice_Plan,cust_status=:nCust_Status
+		 where   provider=:nProvider and min=:nMin;
+	
+	if( sqlca.sqlcode == 0 ) 
+		EXEC SQL COMMIT WORK;
+	else if( sqlca.sqlcode == 1403 ) {
+		EXEC SQL INSERT INTO t_cust_info(provider,min,event_date,event_time,svc_type,price_plan,cust_status)
+		values(:nProvider,:nMin2,:strEvent_Date,:strEvent_Time,:nSvc_Type,:strPrice_Plan,:nCust_Status);
+		EXEC SQL COMMIT WORK;
+		
+	}else if( sqlca.sqlcode == -1 ) {
+		EXEC SQL delete from t_cust_info where min=:nMin;
+		EXEC SQL COMMIT WORK;
+	}
+	
+	*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+				<< "update select sqlcode = " << sqlca.sqlcode << endl;
+    return 1;
+}
+//===============================================================
+// FetchData Method						   						=
+//  : Db Fetch									 	       		=
+// argument     :  None											=
+// return value : sql code		 								=
+//																=
+//===============================================================
+int CCustomerMan::FetchData()
+{
+	*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+			<< "CCustomerMan : FetchData!!" << endl;
+			
+	EXEC SQL	fetch	shm_cur 
+				into 	:nProvider, :nMin, :strEvent_Date, :strEvent_Time, :nSvc_Type, :nCust_Status;
+	*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+				<< "fetch sqlcode = " << sqlca.sqlcode << endl;
+	return(sqlca.sqlcode);
+}
+//===============================================================
+// SearchMdbTemp Method					   						=
+//  : MDB를 검색해주는 Method.					 	       		=
+// argument     :  nSearchMin -> 찾고자 하는 Min					=
+// return value : 0-> Not Found	 								=
+//				  1-> Found										=
+//===============================================================
+int	CCustomerMan::SearchMdbTemp( int nSearchMin )
+{
+	return cCustMdbMan->SearchMdb( nSearchMin );
+}
+//===============================================================
+// UploadDb Method							   					=
+//  : DB의 내용을 MDB로 복구시켜주는 메소드.  	     		  		=
+// argument     :  None											=
+// return value : 1-> success									=
+//                0-> fail 										=
+//																=
+//===============================================================
+int	CCustomerMan::UploadDb( )
+{
+	CustFormatMdb		cTempCustFormatMdb;
+	int					nTempMin;
+	int					nSqlcode;
+	
+	*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+			<< "CCustomerMan : UploadDb!!" << endl;
+	EXEC SQL OPEN shm_cur;
+	for (;;) 
+	{
+		nSqlcode = FetchData();
+		if( nSqlcode != 0 || nSqlcode == 1403)
+		{
+			*CustomerManLogM << CustomerManLogM->ErrorCode(5011) 
+				<< "T_CUST_INFO : Sql Fetch Error " << endl;
+			return 0;
+		}
+		if( nMin > 9999999 )
+		{
+			nTempMin=(nProvider*100000000)+nMin;
+		}
+		else
+		{
+			nTempMin=(nProvider*10000000)+nMin;
+		} 
+		cTempCustFormatMdb.set_MsID( nTempMin );
+		cTempCustFormatMdb.set_EventDate(strEvent_Date);
+		cTempCustFormatMdb.set_EventTime(strEvent_Time);
+		cTempCustFormatMdb.set_ServiceType(nSvc_Type);
+		//cTempCustFormatMdb.set_PricePlan(strPrice_Plan);
+		cTempCustFormatMdb.set_CustStatus(nCust_Status);
+		
+		if( cCustMdbMan->UploadDbToMdb( cTempCustFormatMdb ) )
+		{
+			*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+				<< "Complete Lode DB!!" << endl;
+		}
+		else
+		{
+			*CustomerManLogM << CustomerManLogM->ErrorCode(5012) 
+				<< "Error Upload Db To Mdb" << endl;
+			return 0;
+		}
+	}
+	EXEC SQL COMMIT WORK;
+	EXEC SQL CLOSE shm_cur;
+	
+	return 1;
+}
+//===============================================================
+// PrintCustFormat Method					   					=
+//  : CustFormat을 echo print해주기 위한 method.     		  		=
+// argument     :  output -> 출력되는 대상.						=
+// return value : None											=
+//																=
+//===============================================================
+void CCustomerMan::PrintCustFormat( ostream& output )
+{
+	output << setiosflags( ios::left) 
+		   << setw( 11 ) << "Provider"
+		   << setw( 11) << "Min"
+		   << setw( 11) << "EventDate"
+		   << setw( 11) << "EventTime"
+		   << setw( 11) << "ServiceType"
+		   << setw( 11) << "PricePlan"
+		   << setw( 11) << "CustStatus" << '\n';
+	output << setiosflags( ios::left) 
+		   << setw( 11) << nProvider
+		   << setw( 11) << nMin
+		   << setw( 11) << strEvent_Date
+		   << setw( 11) << strEvent_Time
+		   << setw( 11) << nSvc_Type
+		   << setw( 11) << strPrice_Plan
+		   << setw( 11) << nCust_Status << '\n';
+}
+
+int main( int argc, char* argv[] )
+{
+	CCustomerMan* CustomerMan;
+	int nErrorNo;
+
+	if( argc != 7 )
+	{
+		cout << "Usage CustomerMan [SysId][SerId][GroupId][ProcessId][SerialNumber][Remark]" << endl;
+		exit( 1 );
+	}
+	
+	SystemId=atoi(argv[1]);
+	ServiceId=atoi(argv[2]);
+	GroupId=atoi(argv[3]);
+	ProcessType=atoi(argv[4]);
+	PserialNo=atoi(argv[5]);
+	PreMark=atoi(argv[6]);
+	
+	CustomerManLogM	= new SendLogManage(SystemId,ServiceId,GroupId ,ProcessType ,PserialNo, PreMark );
+	CustomerManLogM->put_EventHistData(FLAG_START, FLAG_PROC_START);
+	
+	
+	*CustomerManLogM << "[" << CustomerManLogM->ErrorCode(0) << "]"
+			<< "Start Customer Db Manager!!" << endl;
+	
+	//signal(SIGNULL,sigCapture);	//0
+	signal(SIGHUP,sigCapture);
+	signal(SIGINT,sigCapture);
+	signal(SIGQUIT,sigCapture);
+	signal(SIGKILL,sigCapture);
+	signal(SIGTERM,sigCapture);
+	signal(SIGSTOP,sigCapture);
+	signal(SIGTSTP,sigCapture);
+	signal(SIGCONT,sigCapture);	//26
+	signal(SIGUSR1,sigCapture);
+
+	CustomerMan= new CCustomerMan( SystemId,ServiceId,GroupId,ProcessType,PserialNo,PreMark );
+	
+	mqCUST = new MessageQueue<CdsCustFormat>(SystemId,ServiceId,GroupId ,ProcessType ,PserialNo ,10 ,1000);
+	//mqCUST = new MessageQueue<CustFormat>(SystemId,ServiceId,GroupId ,ProcessType ,PserialNo ,10 ,1000);
+	//mqReCUST = new MessageQueue<ReCustFormat>(SystemId,ServiceId,4,1,0,11,1000 );
+	mqPMS = new MessageQueue<MsgPmsStatus>(SystemId, 0,1,1,0,10, 1000);
+	WritePMSMQ(FLAG_PROC_START);
+	
+	
+	if( nErrorNo=CustomerMan->ConnectToDB() )
+	{
+		*CustomerManLogM << CustomerManLogM->ErrorCode(5013) 
+				<< "DB Connection Error!! Error Number= " << nErrorNo <<endl;
+	}
+	CustomerMan->ReadDataToMQ();
+	
+	*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+			<< "End Customer DB Manager!!" << endl;
+	
+	if( nErrorNo=CustomerMan->Db_close() )
+	{
+		*CustomerManLogM << CustomerManLogM->ErrorCode(5013) 
+				<< "DB Connection Error!! Error Number= " << nErrorNo <<endl;
+	}		
+	delete mqCUST;
+	//delete mqReCUST;
+	delete mqPMS;
+	delete CustomerMan;
+	CustomerManLogM->put_EventHistData(FLAG_END, 0);
+	delete CustomerManLogM;
+	return 0;
+}
+//===============================================================
+// WritePMSMQ Method		     			   					=
+//  : PMS에게 Process의 상태를 보고하기 위한 Method					=
+//	                                    						=
+// argument     :  sigNo -> Signal Number						=
+// return value : None											=
+//																=
+//===============================================================
+void WritePMSMQ(int sigNo)
+{
+	int 			i=0;
+	char 			PMSMQ_NO[2];
+	MsgPmsStatus	OneRec(MSG_STATUS, SystemId, ServiceId, GroupId, ProcessType, PserialNo, PreMark);
+
+	
+	sprintf(PMSMQ_NO, "%d", SystemId);
+	OneRec.set_nStatus(sigNo);
+	
+	while(1)
+	{
+		i++;
+		if (mqPMS->sendMsg(&OneRec) == FLAG_MQ_IS_FULL)
+		{
+			cout << "[ERROR] PMSMQ " << PMSMQ_NO << " IS FULL sleep(1)...!"	<< endl;
+			sleep(1);
+			if (i >= 10)
+			{
+				kill(0,SIGINT);
+			}
+		}else break;
+	}
+}
+//===============================================================
+// sigCapture Method		     			   					=
+//  : Process에서 signal capture	하는 Method      				=
+//	                                    						=
+// argument     :  sigNo -> Signal Number						=
+// return value : None											=
+//																=
+//===============================================================
+void sigCapture(int sigNo)
+{
+	*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+			<< "SIGNAL :: CustomerMan Process End!!" << endl;
+	delete mqCUST;
+//	delete mqReCUST;
+	
+	
+	switch(sigNo)
+	{
+		case SIGINT :
+		case SIGQUIT :
+		case SIGKILL :
+		case SIGTERM :
+				*CustomerManLogM << CustomerManLogM->ErrorCode(5014) 
+					<< "CustomerMan Process Killed!! " <<endl;
+				WritePMSMQ(FLAG_PROC_KILL);//-1//프로세스 비정상 stop (killed)
+				delete mqPMS;
+				CustomerManLogM->put_EventHistData(FLAG_END, -1);
+				delete CustomerManLogM;
+				exit(-1);
+				break;
+		case SIGUSR1:
+				*CustomerManLogM << CustomerManLogM->ErrorCode(0) 
+					<< "CustomerMan Process Normal Stop!! " <<endl;
+				WritePMSMQ(FLAG_PROC_TERM);//0//프로세스정상stop (Client업무명령)
+				delete mqPMS;
+				CustomerManLogM->put_EventHistData(FLAG_END,0);
+				delete CustomerManLogM;
+				exit(0);
+				break;
+		default:
+				*CustomerManLogM << CustomerManLogM->ErrorCode(5014) 
+					<< "CustomerMan Process Killed!! " <<endl;
+				WritePMSMQ(FLAG_PROC_KILL);//-1//프로세스 비정상 stop (killed)
+				delete mqPMS;
+				CustomerManLogM->put_EventHistData(FLAG_END, -1);
+				delete CustomerManLogM;
+				exit(-1);
+				break;
+	}
+}
+
+
+

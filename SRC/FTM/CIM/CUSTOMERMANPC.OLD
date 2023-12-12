@@ -1,0 +1,572 @@
+/****************************************************************************/
+/* 파 일 명 : CustmerMan.pc			    									*/
+/* 작 성 자 : KSI / 한근희								                    */
+/* 기    능 : SCP I/F로부터 고객정보를 받아, MDB와 oracle에 insert			*/
+/* 작성일자 : 2000년 11월 7일                                              */
+/* 변경일자 :     년   월   일                                              */
+/* 관련화일 : CustomerMan.hpp               								*/
+/* 기    타 :                                                               */
+/****************************************************************************/
+#include "CustomerMan.hpp"
+
+#define SQLCA_STORAGE_CLASS extern
+EXEC    SQL     INCLUDE SQLCA;
+
+// T_CUST_INFO Table변수에 접근하기 위한 변수.
+EXEC SQL BEGIN DECLARE SECTION;
+VARCHAR          custusername[32];
+VARCHAR          custpasswd[32];
+int              nProvider;
+int 			 nMin;
+char             strEvent_Date[EVENT_DATE_LEN+1];
+char             strEvent_Time[EVENT_TIME_LEN+1];
+int				 nSvc_Type;
+char             strPrice_Plan[PRICE_PLAN_LEN+1]; 
+int              nCust_Status;
+EXEC SQL END DECLARE SECTION;
+
+CCustomerMan::CCustomerMan()
+{
+	//int nErrorNo;
+	char   cPath[20];
+	char   cId='A';
+	
+	/*
+	if( nErrorNo=ConnectToDB() )
+	{
+		cout << "DB Connection Error!!" << endl;
+		cout << "Error Number is " << nErrorNo << endl;
+	}
+	*/
+	
+	memset( strEvent_Date, 0x00, sizeof( strEvent_Date) );
+    memset( strEvent_Time, 0x00, sizeof( strEvent_Time) );
+    memset( strPrice_Plan, 0x00, sizeof( strPrice_Plan) );
+    
+    memcpy(cPath, "/SVC1/MB/SUBS.mb", 20);
+    cCustMdbMan = new CCustMdbMan( cPath, cId );
+    
+}
+
+CCustomerMan::~CCustomerMan()
+{
+	delete cCustMdbMan;
+}
+
+void CCustomerMan::ReadDataToMQ( void )
+{
+	char	cJobCode[JOBCODE_LEN+1];	// A1:신규가입 Z1:가입해지
+	
+	while( 1 )
+	{
+		//SCP I/F로부터 한도관리고객정보를 읽어온다.
+		memset( ( char* )&cRecvData, NULL, sizeof( CustFormat ) );
+		if ( mqCUST->recvMsg( &cRecvData ) == FLAG_MQ_IS_EMPTY )
+		{
+		    cout << "==Recv=NO DATA IN MessageQueue====="   << endl;
+			sleep( 1 );
+		}
+		else 
+		{
+			memcpy( cJobCode, cRecvData.get_JobCode(), JOBCODE_LEN );
+			//memcpy( cJobCode, "Z1", JOBCODE_LEN );
+			if( !memcmp( cJobCode, "A1", 2 ) )
+			{
+				// 읽어온 정보를 DB에 넣어준다.
+				if( TransactInsert( cRecvData ) )
+				{
+					// 응답하기위한 구조체를 만들어 준다.
+					cSendData.set_Result(1);
+					cSendData.set_UTransactionID( cRecvData.get_UTransactionID() );
+
+					// 처리결과를 SCP I/F에 보내준다.	
+					if( ReponseToMQ( &cSendData ) )
+					{
+						cout << "Reponse Success!!" << endl;
+					}
+					else
+					{
+						cout << "Error Reponse in ReponseToMQ" << endl;
+					}
+					if( CUSTOMER_DEBUG )
+					{
+						cout << "Insert Receive Data Complete!!" << endl; 
+					}
+				}
+				else
+				{
+					cSendData.set_Result(0);
+					cSendData.set_UTransactionID( cRecvData.get_UTransactionID() );
+
+					if( ReponseToMQ( &cSendData ) )
+					{
+						cout << "Reponse Success!!" << endl;
+					}
+					else
+					{
+						cout << "Error Reponse in ReponseToMQ" << endl;
+					}
+					if( CUSTOMER_DEBUG )
+					{
+						cout << "Error DB Insert in ReadDataToMQ!!" << endl;
+					}
+				}
+			}
+			else if( !memcmp( cJobCode, "Z1", 2 ) )
+			{
+				// 읽어온 정보를 DB에서 삭제한다.
+				if( TransactDelete( cRecvData ) )
+				{
+					// 응답하기위한 구조체를 만들어 준다.
+					cSendData.set_Result(1);
+					cSendData.set_UTransactionID( cRecvData.get_UTransactionID() );
+
+					// 처리결과를 SCP I/F에 보내준다.	
+					if( ReponseToMQ( &cSendData ) )
+					{
+						cout << "Reponse Success!!" << endl;
+					}
+					else
+					{
+						cout << "Error Reponse in ReponseToMQ" << endl;
+					}
+					if( CUSTOMER_DEBUG )
+					{
+						cout << "TransactDelete Receive Data Complete!!" << endl; 
+					}
+				}
+				else
+				{
+					cSendData.set_Result(0);
+					cSendData.set_UTransactionID( cRecvData.get_UTransactionID() );
+
+					if( ReponseToMQ( &cSendData ) )
+					{
+						cout << "Reponse Success!!" << endl;
+					}
+					else
+					{
+						cout << "Error Reponse in ReponseToMQ" << endl;
+					}
+					if( CUSTOMER_DEBUG )
+					{
+						cout << "Error TransactDelete in ReadDataToMQ!!" << endl;
+					}
+				}
+				exit( 1 );
+			}
+			else
+				cout << "different customer status" << endl;
+		}
+	}
+}
+// 처리된 결과를 SCP I/F에게 보내준다.
+int CCustomerMan::ReponseToMQ( ReCustFormat* pSendUdr )
+{
+	while(1)
+    {
+		if( mqReCUST->sendMsg( pSendUdr ) == FLAG_MQ_IS_FULL )
+	    {
+	    	cout << "MSG Queue FULL!!" <<  endl;
+			return 0;
+	    }
+		else break;
+    }
+	return 1;
+}
+// return value : 1 -> delete success
+//                0 -> delete fail
+int	CCustomerMan::TransactDelete( CustFormat stCustFormat )
+{
+	if( cCustMdbMan->DeleteCustMdb( stCustFormat ) )
+	{
+		cout << "Complete!! Delete Memory DB " << endl;
+	}
+	else
+	{
+		cout << "fail!! Delete Memory DB " << endl;
+		return 0;
+	}
+	if( deleteCustDb( stCustFormat ) )
+	{
+		cout << "Complete!! Delete Oracle DB " << endl;
+	}
+	else
+	{
+		cout << "fail!! Delete Oracle DB " << endl;
+		return 0;
+	}
+	return 1;
+}
+// return value : 1 -> delete success
+//                0 -> delete fail
+int CCustomerMan::deleteCustDb( CustFormat stCustFormat )
+{
+	if( MatchToDb( stCustFormat ) )
+    {
+		if( CUSTOMER_DEBUG )
+		{
+			cout << "Success Conversion CustFormat -> DB Format" << endl;
+		}
+    }
+    else
+	{
+		if( CUSTOMER_DEBUG )
+		{
+			cout << "Error Conversion CustFormat -> DB Format" << endl;
+		}
+		return 0;
+	}  
+	if( CUSTOMER_DEBUG )
+	{
+		PrintCustFormat( cout );
+	}
+	
+	EXEC SQL    select  provider, min
+                into    :nProvider, :nMin
+                from    t_cust_info
+                where   provider=:nProvider and min=:nMin;
+  
+    cout << "destroy select sqlcode"<< sqlca.sqlcode << endl;
+    
+    if(sqlca.sqlcode == 1403)
+    {
+        cout<<"Can not find provider and min."<<endl;
+        return 0;
+    }else if(sqlca.sqlcode == 0){
+        EXEC SQL DELETE FROM t_cust_info
+             where  provider=:nProvider and min=:nMin;
+        EXEC SQL COMMIT WORK;
+    }
+    
+    return 1;
+}
+// return value : 1 -> insert success
+//                0 -> insert fail( Memory overflow )
+int CCustomerMan::TransactInsert( CustFormat stCustFormat )
+{
+	if( cCustMdbMan->InsertCustMdb( stCustFormat ) )
+	{
+		cout << "Complete!! Insert Memory DB " << endl;
+	}
+	else
+	{
+		cout << "fail!! Insert Memory DB " << endl;
+		return 0;
+	}
+	if( InsertCustDb( stCustFormat ) )
+	{
+		cout << "Complete!! Insert Oracle DB " << endl;
+	}
+	else
+	{
+		cout << "fail!! Insert Oracle DB " << endl;
+		return 0;
+	}
+
+	return 1;
+}
+
+int CCustomerMan::ConnectToDB( void )
+{
+
+	strcpy((char *) custusername.arr, DB_USERNAME);
+	custusername.len = (unsigned short) strlen(DB_USERNAME);
+
+	strcpy((char *) custpasswd.arr, DB_PASSWORD);
+	custpasswd.len = (unsigned short) strlen(DB_PASSWORD);
+
+	EXEC SQL connect :custusername identified by :custpasswd;
+
+	if( CUSTOMER_DEBUG )
+	{
+		cout << "ConnectToDB sqlcode:" << sqlca.sqlcode << endl;
+	}
+
+	return(0);
+}
+// 읽어온 정보를 MDB와 oracle DB에 넣어준다.
+// return value : 1 -> insert success
+//                0 -> insert fail
+int CCustomerMan::InsertCustDb( CustFormat stUdr )
+{
+    if( MatchToDb( stUdr ) )
+    {
+		if( CUSTOMER_DEBUG )
+		{
+			cout << "Success Conversion CustFormat -> DB Format" << endl;
+		}
+    }
+    else
+	{
+		if( CUSTOMER_DEBUG )
+		{
+			cout << "Error Conversion CustFormat -> DB Format" << endl;
+		}
+		return 0;
+	}  
+
+	if( CUSTOMER_DEBUG )
+	{
+		PrintCustFormat( cout );
+	}
+
+
+    EXEC SQL INSERT INTO t_cust_info(provider,min,event_date,event_time,svc_type,price_plan,cust_status)
+		values(:nProvider,:nMin,:strEvent_Date,:strEvent_Time,:nSvc_Type,:strPrice_Plan,:nCust_Status);
+
+	if (sqlca.sqlcode == 0) 
+	{
+		EXEC SQL COMMIT WORK;
+		return 1;
+	}
+	else 
+	{
+		EXEC SQL ROLLBACK;
+		return 0;
+	}
+}
+// return value : 1 -> MatchToDb success
+//                0 -> MatchToDb fail
+int CCustomerMan::MatchToDb( CustFormat stCustFormat )
+{
+    unsigned char 	cCode;		// 0x11
+	char			cJobCode[JOBCODE_LEN+1];	// A1:신규가입 Z1:가입해지
+	char			cMin[MIN_LEN+1];	
+	char			cAccInfo[ACCINFO_LEN+1];	// 01:TTL	
+	char 			cDate[20];  
+    char 			cTime[20];
+	unsigned int    temp;
+	unsigned long 	divtemp;
+    time_t 			curtime;
+    struct 			tm *loctime;
+    int				nCount;
+
+    curtime = time( NULL );
+    loctime = localtime( &curtime);
+ 
+	strftime( cDate,20, "%Y%m%d", loctime );              
+    strftime( cTime,20, "%H:%M", loctime);                 
+
+	cCode = stCustFormat.get_Code();
+	
+	memcpy( cJobCode, stCustFormat.get_JobCode(), JOBCODE_LEN );
+	memcpy( cMin, stCustFormat.get_Min(), MIN_LEN );
+	//memcpy( cMin, "1198604340", MIN_LEN );
+	memcpy( cAccInfo, stCustFormat.get_AccInfo(), ACCINFO_LEN );
+
+	if( CUSTMDB_DEBUG )
+	{
+		cout << "cCode: " << cCode << endl;
+		cout << "cJobCode: " << cJobCode << endl;
+		cout << "cMin: " << cMin << endl;
+		cout << "cAccInfo: " << cAccInfo << endl;
+	}
+	
+	memcpy( strEvent_Date, cDate, EVENT_DATE_LEN );
+	memcpy( strEvent_Time, cTime, EVENT_TIME_LEN );
+	// 아직 정의되지 않아서 NULL을 유지한다.
+	memcpy( strPrice_Plan, 0x00, PRICE_PLAN_LEN );
+	
+	if( !memcmp( cAccInfo, "01", 2 ) )
+		nSvc_Type = 1;
+	else
+		nSvc_Type = 0;
+		
+	if( !memcmp( cJobCode, "A1", 2 ) )
+		nCust_Status = 1;
+	else if( !memcmp( cJobCode, "Z1", 2 ) )
+		nCust_Status = 2;
+	else
+	{
+		cout << "different customer status" << endl;
+		return 0;
+	}
+	nProvider = 0;
+	nMin = 0;
+	cout << "cMin[0]: " << cMin[0] << endl;
+	if( !memcmp( &cMin[0], "0", 1 ) )
+	{
+		nCount = 2;
+		divtemp=100;
+		for( int i=0; i<3; i++ )
+		{
+			temp = (unsigned int)( cMin[i]-48 );
+			nProvider += (unsigned int)( temp * divtemp );
+			divtemp /= 10;
+			nCount--;
+		}
+		nCount = 6;
+		divtemp=1000000;
+		for( int j=3; j<10; j++ )
+		{
+			temp = (unsigned int)( cMin[j]-48 );
+			nMin += (unsigned int)( temp * divtemp );
+			divtemp /= 10;
+			nCount--;
+		}
+	}
+	else
+	{
+		nCount = 1;
+		divtemp=10;
+		for( int i=0; i<2; i++ )
+		{
+			temp = (unsigned int)( cMin[i]-48 );
+			nProvider += (unsigned int)( temp * divtemp );
+			divtemp /= 10;
+			nCount--;
+		}
+		nCount = 7;
+		divtemp=10000000;
+		for( int j=2; j<10; j++ )
+		{
+			temp = (unsigned int)( cMin[j]-48 );
+			nMin += (unsigned int)( temp * divtemp );
+			divtemp /= 10;
+			nCount--;
+		}
+	}
+	
+	return 1;
+}
+// return value : 1 -> find Success!!
+//                0 -> find fail!!
+int	CCustomerMan::SearchMdbTemp( int nSearchMin )
+{
+	return cCustMdbMan->SearchMdb( nSearchMin );
+}
+void CCustomerMan::PrintCustFormat( ostream& output )
+{
+	output << setiosflags( ios::left) 
+		   << setw( 11 ) << "Provider"
+		   << setw( 11) << "Min"
+		   << setw( 11) << "EventDate"
+		   << setw( 11) << "EventTime"
+		   << setw( 11) << "ServiceType"
+		   << setw( 11) << "PricePlan"
+		   << setw( 11) << "CustStatus" << '\n';
+	output << setiosflags( ios::left) 
+		   << setw( 11) << nProvider
+		   << setw( 11) << nMin
+		   << setw( 11) << strEvent_Date
+		   << setw( 11) << strEvent_Time
+		   << setw( 11) << nSvc_Type
+		   << setw( 11) << strPrice_Plan
+		   << setw( 11) << nCust_Status << '\n';
+}
+
+int main( int argc, char* argv[] )
+{
+	CCustomerMan CustomerMan;
+	int			 temp=1111111110;
+	int nErrorNo;
+
+	if( argc != 7 )
+	{
+		cout << "Usage CustomerMan [SysId][SerId][GroupId][ProcessId][SerialNumber][Remark]" << endl;
+		exit( 1 );
+	}
+	
+	SystemId=atoi(argv[1]);
+	ServiceId=atoi(argv[2]);
+	GroupId=atoi(argv[3]);
+	ProcessType=atoi(argv[4]);
+	PserialNo=atoi(argv[5]);
+	PreMark=atoi(argv[6]);
+	
+	//signal(SIGNULL,sigCapture);	//0
+	signal(SIGHUP,sigCapture);
+	signal(SIGINT,sigCapture);
+	signal(SIGQUIT,sigCapture);
+	signal(SIGKILL,sigCapture);
+	signal(SIGTERM,sigCapture);
+	signal(SIGSTOP,sigCapture);
+	signal(SIGTSTP,sigCapture);
+	signal(SIGCONT,sigCapture);	//26
+	
+	mqCUST = new MessageQueue<CustFormat>(SystemId,ServiceId,GroupId ,ProcessType ,PserialNo ,PreMark ,1000);
+	mqReCUST = new MessageQueue<ReCustFormat>(SystemId,ServiceId,4,1,0,10,1000 );
+	mqPMS = new MessageQueue<MsgPmsStatus>(SystemId, 0,1,1,0,10, 1000);
+
+	if( nErrorNo=CustomerMan.ConnectToDB() )
+	{
+		cout << "DB Connection Error!!" << endl;
+		cout << "Error Number is " << nErrorNo << endl;
+	}
+	
+	CustomerMan.ReadDataToMQ();
+	
+	/*
+	cout << "temp:" << temp << endl;
+	if( CustomerMan.SearchMdbTemp( temp ) )
+	{
+		cout << "Exist MsID" << endl;
+	}
+	else
+		cout << "Not Exist MsID" << endl;
+	*/
+	delete mqCUST;
+	delete mqReCUST;
+	delete mqPMS;
+	return 0;
+}
+//==============================================================================
+void WritePMSMQ(int sigNo)
+{
+	int 			i=0;
+	char 			PMSMQ_NO[2];
+	MsgPmsStatus	OneRec(MSG_STATUS, SystemId, ServiceId, GroupId, ProcessType, PserialNo, PreMark);
+
+	
+	sprintf(PMSMQ_NO, "%d", SystemId);
+	OneRec.set_nStatus(sigNo);
+	
+	while(1)
+	{
+		i++;
+		if (mqPMS->sendMsg(&OneRec) == FLAG_MQ_IS_FULL)
+		{
+			cout << "[ERROR] PMSMQ " << PMSMQ_NO << " IS FULL sleep(1)...!"	<< endl;
+			sleep(1);
+			if (i >= 10)
+			{
+				kill(0,SIGINT);
+			}
+		}else break;
+	}
+}
+
+
+
+//==============================================================================
+void sigCapture(int sigNo)
+{
+	cout << "SIGNAL :: CustomerMan Process End " << endl;
+	delete mqCUST;
+	delete mqReCUST;
+	
+	
+	switch(sigNo)
+	{
+		case SIGINT :
+		case SIGQUIT :
+		case SIGKILL :
+		case SIGTERM :
+				WritePMSMQ(FLAG_PROC_KILL);//-1//프로세스 비정상 stop (killed)
+				delete mqPMS;
+				exit(-1);
+				break;
+		case SIGUSR1:
+				WritePMSMQ(FLAG_PROC_TERM);//0//프로세스정상stop (Client업무명령)
+				delete mqPMS;
+				exit(0);
+				break;
+		default:
+				WritePMSMQ(FLAG_PROC_KILL);//-1//프로세스 비정상 stop (killed)
+				delete mqPMS;
+				exit(-1);
+				break;
+	}
+}
+

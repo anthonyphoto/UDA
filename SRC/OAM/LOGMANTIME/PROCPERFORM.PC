@@ -1,0 +1,179 @@
+/******************************************************************
+* 파 일 명     
+      : ProcPerform.pc                
+* 기   능                                                          
+     : UDR 정보(정상 UDR , 비정상 UDR 개수, 한도 질의 회수)를 
+       [t_proc_perform] table에 insert or update한다.                      
+* 작 성 자     
+     : 조상영                         
+* first data  
+     :                    
+* last updata 
+     :                 
+* 관 련 화 일  
+     : ProcPerform.hpp                     
+* program history  
+	   2001.06.14 파일별 성능 통계를 시간별 성능 통계로 바꿈                              
+
+* Version
+  : 1.1 ( 2001. 05. 21 )                                           
+******************************************************************/
+
+
+#include <ProcPerform.hpp>
+
+#define D_AGGREGATOR_ID			"21"				// smy 2001.06.14 (Aggregator 통계 정보를 이외의 process와 다르게 처리하기 위한 구분자)
+
+#define SQLCA_STORAGE_CLASS extern
+EXEC    SQL     INCLUDE SQLCA;
+
+
+EXEC SQL BEGIN DECLARE SECTION;
+static char		sProcessID[PROCESS_ID_LEN+1];
+static char		sProcessTime[PROCESS_TIME_LEN+1];
+static int		nNormal_udr_cnt;
+static int		nFail_udr_cnt;
+static int		nAggr_udr_cnt;
+static int		nNormal_file_cnt;
+static int		nQuery_count;
+EXEC SQL END DECLARE SECTION;
+
+
+//--------------------------------------------------------------------
+int ProcPerform::Set_PerForm(int fileflag, int udrcount, int failcount, int querycount, char *proctime)
+{
+	memset(sProcessID  , 0x00, sizeof(sProcessID));
+	memset(sProcessTime, 0x00, sizeof(sProcessTime));
+
+	//---------------- 변수할당
+	sprintf(sProcessID , "%d%d%d%d%02d%02d",	sys_id, svc_id, group_type, proc_type, proc_sn, proc_remark);
+	strcpy(sProcessTime, proctime);
+	//---------------- 변수할당//
+	
+	//---------------- select
+	cout <<"[Set_PerForm] SELECT ------------ " << endl;
+	EXEC SQL SELECT normal_udr_cnt, fail_udr_cnt, aggr_udr_cnt, normal_file_cnt, query_count
+	          INTO  :nNormal_udr_cnt, :nFail_udr_cnt, :nAggr_udr_cnt, :nNormal_file_cnt, :nQuery_count
+	          FROM  t_perform_test
+	          WHERE proc_id=:sProcessID AND process_time=:sProcessTime;
+	          
+	if(sqlca.sqlcode == 0)
+	{
+		//------------- 변수할당
+		if(strncmp(&sProcessID[2], D_AGGREGATOR_ID, 2) == 0)
+			nNormal_udr_cnt += udrcount - failcount;
+		else
+			nNormal_udr_cnt	+= udrcount; 
+		
+		nFail_udr_cnt	+= failcount;   
+		nAggr_udr_cnt	= nNormal_udr_cnt + nFail_udr_cnt;   
+
+		if(fileflag == 1)
+			nNormal_file_cnt++;
+		else
+			nNormal_file_cnt = 0;
+
+		nQuery_count	+= querycount;
+		//------------- 변수할당//    
+
+		cout << "[Set_PerForm] UPDATE ------------ "		<< endl;
+//		cout << "sProcessID       : [" << &sProcessID[2]    << "]" << endl;
+//		cout << "sProcessID       : [" << sProcessID		<< "]" << endl; 
+//		cout << "sProcessTime     : [" << sProcessTime		<< "]" << endl; 
+//		cout << "nNormal_udr_cnt  : [" << nNormal_udr_cnt	<< "]" << endl;
+//		cout << "nFail_udr_cnt    : [" << nFail_udr_cnt		<< "]" << endl;
+//		cout << "nAggr_udr_cnt    : [" << nAggr_udr_cnt		<< "]" << endl;
+//		cout << "nNormal_file_cnt : [" << nNormal_file_cnt	<< "]" << endl;
+//		cout << "nQuery_count     : [" << nQuery_count 		<< "]" << endl;
+		
+		//------------- update
+		EXEC SQL UPDATE t_perform_test
+		         SET    normal_udr_cnt=:nNormal_udr_cnt, 
+		                fail_udr_cnt=:nFail_udr_cnt,
+		                aggr_udr_cnt=:nAggr_udr_cnt,
+		                normal_file_cnt=:nNormal_file_cnt,
+		                query_count=:nQuery_count
+		          WHERE proc_id=:sProcessID AND process_time=:sProcessTime;
+		
+		
+		if(sqlca.sqlcode == 0)  EXEC SQL COMMIT WORK;
+		else EXEC SQL ROLLBACK;
+		
+		return ((int)sqlca.sqlcode);
+		
+	}
+	else 
+	{
+		
+		cout <<"[Set_PerForm] SELECT ERROR : " <<  (int)sqlca.sqlcode << endl;
+		cout <<"[Set_PerForm] INSERT ------------- "<< endl;
+		nNormal_udr_cnt=nFail_udr_cnt=nAggr_udr_cnt=nNormal_file_cnt=nQuery_count=0;
+
+		//------------- 변수할당
+		if(strncmp(&sProcessID[2], D_AGGREGATOR_ID, 2) == 0)
+			nNormal_udr_cnt = udrcount - failcount;
+		else
+			nNormal_udr_cnt	= udrcount; 
+		
+		nFail_udr_cnt	= failcount;   
+		nAggr_udr_cnt	= nNormal_udr_cnt + nFail_udr_cnt;   
+
+
+		if(fileflag == 1)
+			nNormal_file_cnt++;
+		else
+			nNormal_file_cnt = 0;
+
+		nQuery_count	= querycount;    
+		//------------- 변수할당//
+//		cout << "sProcessID       : [" << &sProcessID[2]    << "]" << endl;
+//		cout << "sProcessID       : [" << sProcessID		<< "]" << endl; 
+//		cout << "sProcessTime     : [" << sProcessTime		<< "]" << endl; 
+//		cout << "nNormal_udr_cnt  : [" << nNormal_udr_cnt	<< "]" << endl;
+//		cout << "nFail_udr_cnt    : [" << nFail_udr_cnt		<< "]" << endl;
+//		cout << "nAggr_udr_cnt    : [" << nAggr_udr_cnt		<< "]" << endl;
+//		cout << "nNormal_file_cnt : [" << nNormal_file_cnt	<< "]" << endl;
+//		cout << "nQuery_count     : [" << nQuery_count 		<< "]" << endl;
+		
+		EXEC SQL INSERT INTO t_perform_test(proc_id, process_time, normal_udr_cnt, fail_udr_cnt, aggr_udr_cnt, normal_file_cnt, query_count)
+		values(:sProcessID, :sProcessTime, :nNormal_udr_cnt, :nFail_udr_cnt, :nAggr_udr_cnt, :nNormal_file_cnt, :nQuery_count);
+	
+		cout << "sqlca.sqlcode : [" << sqlca.sqlcode << "]" << endl;
+		if (sqlca.sqlcode == 0)  EXEC SQL COMMIT WORK;
+		else EXEC SQL ROLLBACK;
+		
+		return ((int)sqlca.sqlcode);
+	}
+}
+
+
+/*
+//--------------------------------------------------------------------
+int main(int argc, char *argv[])
+{
+	
+	if(argc<6) 
+	{
+		cout << " Usage:" << argv[0] << "[systemid] [serviceid] [groupid] [processtype] [serialno] [remarks]" << endl;
+		exit(1);
+	}
+	
+	int			nRet;
+	DbConnect	clsDbConnect;
+
+	nRet = clsDbConnect.connect();
+	if (nRet < 0)
+	{
+		cout << "DB Connect Failure [" << nRet << "]" << endl;
+		return nRet;
+	}else cout << "DB Connect Success " << endl;
+	
+	ProcPerform Perform(atoi(argv[1]),atoi(argv[2]),atoi(argv[3]),atoi(argv[4]),atoi(argv[5]), atoi(argv[6]));
+	
+	//Perform.Set_PerForm(1, 20, 6, 20, "20001111121220", "20001111121250");
+	Perform.Set_PerForm(1, 20, 6, 100, "20001111121220", "20001115121250");
+	
+	clsDbConnect.disconnect();
+	exit(1);
+}
+*/

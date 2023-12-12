@@ -1,0 +1,24 @@
+include $(HOME)/common/env_proc_32.mk
+include $(HOME)/common/env_uda.mk
+
+EXE = RefMain_Drop 
+#EXE = test 
+OBJS = FileLogWrite.o RefMain.o refmanager.o t_meta_action.o t_017pdsn_out.o collectorRule.o pdsnRule_drop.o SqlErr.o convReFormat.o $(UDASQLLIBES) $(UDALINKLIBES)
+#OBJS = FileLogWrite.o refmanager.o headermanager.o t_meta_action.o t_017pdsn_out.o pdsnRulenum.o collectorRule.o SqlErr.o convReFormat.o $(UDASQLLIBES) $(UDALINKLIBES)
+
+all : $(EXE)
+
+$(EXE) : $(OBJS)
+	$(CC) -o $@ $(OBJS) $(CFLAGS) $(PROLDLIBS) $(UDASQLLIBES) $(UDALINKLIBES)
+
+install : $(EXE)
+	$(INSTALL2) $(EXE) $(COMMBINPATH)/
+	rm -rf $(EXE) *.o core 
+
+clean :	
+	rm -rf $(EXE) *.o core 
+	touch *.cpp *.pc
+
+
+
+

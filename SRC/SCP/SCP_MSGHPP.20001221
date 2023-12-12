@@ -1,0 +1,1081 @@
+/****************************************************************************/
+/* 파 일 명 : scp_msg.hpp													*/
+/* 작 성 자 : KSI / 조상영								                    */
+/* 기    능 : SCP-IF 관련 메시지를 생성하고 관리한다.						*/
+/* 작성일자 : 2000년 10월 23일                                              */
+/* 변경일자 :     년   월   일                                              */
+/* 관련화일 : SRchannel_IF.hpp, scpformat.hpp								*/
+/* 기    타 :                                                               */
+/****************************************************************************/
+
+#ifndef _SCPMSG_HPP
+#define _SCPMSG_HPP
+
+#define	DEBUG_LOG					/* @@@@@@@@ LOG LOG @@@@@@@@@@@@@@@ */
+
+#include <scpformat.hpp>
+#include "hexdump.h"
+#include <SendLogManage.hpp>
+
+// Message ID
+#define	SCHANNEL_CONNECT_REQ		1	//접속
+#define	SCHANNEL_CONNECT_REQ_ACK	2
+#define	RCHANNEL_CONNECT_REQ		3
+#define RCHANNEL_CONNECT_REQ_ACK	4
+
+#define	S_CONNECT_REQ				1	//접속(단축)
+#define	S_CONNECT_REQ_ACK			2
+#define	R_CONNECT_REQ				3
+#define R_CONNECT_REQ_ACK			4
+
+
+#define SCHANNEL_RELEASE_REQ		5	//종료
+#define SCHANNEL_RELEASE_REQ_ACK	6
+#define RCHANNEL_RELEASE_REQ		7
+#define RCHANNEL_RELEASE_REQ_ACK	8
+
+#define S_RELEASE_REQ				5	//종료(단축)
+#define S_RELEASE_REQ_ACK			6
+#define R_RELEASE_REQ				7
+#define R_RELEASE_REQ_ACK			8
+
+#define PROCESS_STATE_REQ			9	//서버상태확인
+#define	PROCESS_STATE_REQ_ACK		10
+
+#define DOWNLOAD_REQ				11	// client -> server 
+#define DOWNLOAD_REQ_ACK			12
+#define DOWNLOAD_RESULT				13
+#define DOWNLOAD_RESULT_ACK			14
+
+#define UPLOAD_REQ					15	// server -> client 
+#define UPLOAD_REQ_ACK				16
+#define UPLOAD_RESULT				17
+#define UPLOAD_RESULT_ACK			18
+
+//---------------------------------------------
+#define	SCHANNEL					1
+#define RCHANNEL					2
+
+
+//---------------------------------------------
+//UDA-SCP 메시지 HEADER
+struct SCPMSGHEADER {
+	uint	MessageId;
+	
+	struct {
+		char	Day[8];
+		uint	Num;
+	}	TransacId;
+	struct {
+		char	Day[8];
+		uint	Num;
+	}	UTransacId;
+	
+	char	SSytemId[6];
+	char	DSytemId[6];
+	char	SApplicationId[6];
+	char	DApplicationId[6];
+	
+	char	Dummy[8];
+	uint	DataSize;
+};	
+
+typedef SCPMSGHEADER	ScpHeader;
+
+#define	MHEADSIZE		64
+#define FA				0		// 메시지 에러
+#define SOCK_FA			-3		// 소켓에러..(ex) recv timeout!!
+#define	SC				1
+#define MSGERROR		0
+#define RELEASE_CLOSE	-2
+
+
+extern  uint	TransacNum;	
+extern  uint	STransacNum;
+extern 	char	TDay[10];			// date
+extern 	char	STDay[10];			// date
+extern 	SendLogManage*	LogM;
+
+	
+class ScpMsg {
+	
+	private :
+		char			msgBuf[2048];
+		char			sBuf[1024];			// S-Channel Data-Buffer
+		char			rBuf[1024];			// R-Channel Data-Buffer
+
+		ScpHeader		sHeader;			// S-Channel Header
+		ScpHeader		rHeader;			// R-Channel Header
+			
+		void SetDate(int op);				// Transaction-ID 에 시스템일자를 넣는다.
+		void SetBlank(int op, int uniq=0);	// uniq : Unique 메시지만 Blank로 만든다.
+		void HeaderPrn(int op); 			// header 정보를 출력한다.
+	
+		void LogViewOne(int op);			// 전송및 수신한 메시지의 Data 부분조회 (DataSize > 15)
+		void LogViewTwo(int op);
+		
+		void SetHeaderID(void);				// SYSTEMID, APPID 지정한다.
+		
+	public:
+		ScpMsg(void);
+		~ScpMsg(void){;}
+		
+		// 전송할 메시지를 만든다. 
+		void MK_Msg(int msg, SCPFormat* OneRecord=NULL);	
+		//void MK_Msg(int msg, ReCustFormat* OneRecord);
+		
+		// FA(실패) 메시지를 만들때 사용한다. re : 이유
+		void MK_MsgFA(int op, int re);		
+		
+		// 수신한 메시지를 검사한다.
+		int  CHK_Msg(int msg);
+		
+		char *GetMsgBuf(int op);			// SCP에 전송할 메시지를 리턴 (op: 채널)
+		int  SendLen(int op);				// SCP에 전송할 메시지 길이를 얻는다.
+		
+		// SCP에서 수신한 자료를 변수에 할당한다. (S-CHANNEL 경우 TransacId 비교 틀리면 0리턴)
+		int SetMsgBuf(ScpHeader imsiHeader, char *str, int msg);	
+		// SCP에서 받은 Result를 Filter에 전송할 MQ 형태로 얻는다.
+		int Get_MQMsg(int op, UdrFormat* OneRecord);
+		// SCP에서 받은 고객정보변경내역(UPLOAD_REQ)를 고객관리모듈에 전송할 MQ형태로 얻는다.
+		void Get_MQMsg(int op, CustFormat* fmSCP);
+		
+		
+};
+
+
+//--------------------------------------------------------------------
+ScpMsg::ScpMsg(void)
+{
+	memset(msgBuf, 0x00, sizeof(msgBuf));
+	memset(sBuf, 0x00, sizeof(sBuf));
+	memset(rBuf, 0x00, sizeof(rBuf));
+	
+	memset((char *)&sHeader, 0x00, sizeof(ScpHeader));
+	memset((char *)&rHeader, 0x00, sizeof(ScpHeader));
+	
+	SetHeaderID();
+}
+
+
+//--------------------------------------------------------------------
+void ScpMsg::SetHeaderID(void)
+{
+		
+	memcpy(sHeader.SSytemId, "UDA001", 6);
+	memcpy(sHeader.DSytemId, "SCP002", 6);
+	memcpy(sHeader.SApplicationId, "114100", 6);
+	memcpy(sHeader.DApplicationId, "TSH002", 6);
+	
+	memcpy(rHeader.SSytemId, "UDA001", 6);
+	memcpy(rHeader.DSytemId, "SCP002", 6);
+	memcpy(rHeader.SApplicationId, "114100", 6);
+	memcpy(rHeader.DApplicationId, "TSH002", 6);
+}
+
+
+//--------------------------------------------------------------------
+void ScpMsg::HeaderPrn(int op)
+{
+	char 	imsi[20];
+	
+	if(op==SCHANNEL)
+	{
+		printf("S-MsgID       : %d\n", sHeader.MessageId);
+		*LogM << "S-MsgID       : " << sHeader.MessageId <<  LogM->ErrorCode(0) << endl;
+		memset(imsi, 0x00, sizeof(imsi));
+		memcpy(imsi, sHeader.TransacId.Day, 8);
+		printf("D-Transaction : %s | %d\n", imsi, sHeader.TransacId.Num);
+		*LogM << "D-Transaction : "<< imsi << " : " << sHeader.TransacId.Num <<  LogM->ErrorCode(0) << endl;
+		
+		memset(imsi, 0x00, sizeof(imsi));
+		memcpy(imsi, sHeader.UTransacId.Day, 8);
+		printf("U-Transaction : %s | %d\n", imsi, sHeader.UTransacId.Num);
+		*LogM << "U-Transaction : "<< imsi << " : " << sHeader.UTransacId.Num <<  LogM->ErrorCode(0) << endl;
+		
+	}else
+	{
+		printf("R-MsgID       : %d\n", rHeader.MessageId);
+		*LogM << "R-MsgID       : " << rHeader.MessageId <<  LogM->ErrorCode(0) << endl;
+		memset(imsi, 0x00, sizeof(imsi));
+		memcpy(imsi, rHeader.TransacId.Day, 8);
+		printf("D-Transaction : %s | %d\n", imsi, rHeader.TransacId.Num);
+		*LogM << "D-Transaction : "<< imsi << " : " << rHeader.TransacId.Num <<  LogM->ErrorCode(0) << endl;
+		
+		memset(imsi, 0x00, sizeof(imsi));
+		memcpy(imsi, sHeader.UTransacId.Day, 8);
+		printf("U-Transaction : %s | %d\n", imsi, rHeader.UTransacId.Num);
+		*LogM << "U-Transaction : "<< imsi << " : " << rHeader.UTransacId.Num <<  LogM->ErrorCode(0) << endl;
+	}	
+	
+}
+
+//--------------------------------------------------------------------
+void ScpMsg::SetDate(int op)
+{
+	char		imsi[10];
+	time_t		Time;	
+	struct  tm *Tm;
+	
+	time(&Time);	
+	Tm = localtime(&Time);	
+	sprintf(imsi, "%04d%02d%02d",Tm->tm_year+1900, Tm->tm_mon+1, Tm->tm_mday);
+	if(op = SCHANNEL) {
+		//memset(TDay, 0x00, sizeof(TDay));
+		//memcpy(TDay, imsi, 8);
+		
+		memmove(sHeader.TransacId.Day, imsi, 8);
+		memmove(sHeader.UTransacId.Day, imsi, 8);
+	}else if(op = RCHANNEL) {
+		memmove(rHeader.TransacId.Day, imsi, 8);
+		memmove(rHeader.UTransacId.Day, imsi, 8);
+	}
+}
+
+
+//--------------------------------------------------------------------
+void ScpMsg::SetBlank(int op, int uniq)
+{
+	if(op == SCHANNEL) {
+		if(!uniq) {
+			memset(sHeader.TransacId.Day, ' ', 8);
+			sHeader.TransacId.Num=0x00;
+		}
+		memset(sHeader.UTransacId.Day, ' ', 8);
+		sHeader.UTransacId.Num=0x00;
+	}else if(op == RCHANNEL) {
+		if(!uniq) {
+			memset(rHeader.TransacId.Day, ' ', 8);
+			rHeader.TransacId.Num=0x00;
+		}
+		memset(rHeader.UTransacId.Day, ' ', 8);
+		rHeader.UTransacId.Num=0x00;
+	}	
+}
+
+
+
+//--------------------------------------------------------------------
+void ScpMsg::MK_MsgFA(int op, int re)
+{
+	if(op == SCHANNEL) 
+	{
+		memmove(sBuf, "FA", 2);
+		memmove((char *)sBuf[2], (char *)&re, 2);
+	}else
+	{
+		memmove(rBuf, "FA", 2);
+		memmove((char *)rBuf[2], (char *)&re, 2);
+	}
+}
+
+
+/*
+//--------------------------------------------------------------------
+void ScpMsg::MK_Msg(int msg, ReCustFormat* OneRecord)
+{
+	
+	switch(msg){
+		case UPLOAD_RESULT:
+			sHeader.MessageId = UPLOAD_RESULT;
+			SetDate(SCHANNEL);
+			sHeader.TransacId.Num = ++TransacNum;
+			sHeader.UTransacId.Num = OneRecord->get_UTransactionID();
+			sHeader.DataSize=2;
+			// 0:FA 1:SC
+			if(OneRecord->get_Result()==1) memmove(sBuf, "SC", 2);
+			else memmove(sBuf, "FA", 2);
+			//---- TEST ReCustFormat
+			//printf("[ReCustFormat] %d\n", OneRecord->get_Result());
+			//printf("[ReCustFormat] %d\n", OneRecord->get_UTransactionID());
+			//----
+			break;				
+	}	
+	
+}
+*/
+
+//--------------------------------------------------------------------
+void ScpMsg::MK_Msg(int msg, SCPFormat* OneRecord)
+{
+	sint 		reason=0;
+	uchar		chkey;
+	//SCPA_TYPE	*scpA;
+	
+	//memset(imsi, 0x00, sizeof(imsi));
+	switch(msg){
+		case S_CONNECT_REQ:	//S-Channel 접속요구
+			//memset((char *)&sHeader, 0x00, sizeof(ScpHeader));
+			sHeader.MessageId = S_CONNECT_REQ;
+			SetBlank(SCHANNEL);
+			sHeader.DataSize=0;
+			break;
+		
+		case R_CONNECT_REQ: //R-Channel 접속요구
+			//memset((char *)&rHeader, 0x00, sizeof(ScpHeader));
+			rHeader.MessageId = R_CONNECT_REQ;
+			SetDate(RCHANNEL);
+			
+			rHeader.TransacId.Num=STransacNum;	// SCP에서 수신한 마지막처리메시지
+			memmove(sHeader.TransacId.Day, STDay, 8); 
+			
+			SetBlank(RCHANNEL, 1);
+			rHeader.DataSize=0;
+			break;	
+			
+		case S_RELEASE_REQ: //S-Channel 접속해제요구
+			//memset((char *)&sHeader, 0x00, sizeof(ScpHeader));
+			sHeader.MessageId = S_RELEASE_REQ;
+			SetBlank(SCHANNEL);
+			sHeader.DataSize=0;
+			break;
+			
+		case R_RELEASE_REQ: //R-Channel 접속해제요구
+			//memset((char *)&rHeader, 0x00, sizeof(ScpHeader));
+			rHeader.MessageId = R_RELEASE_REQ;
+			SetBlank(RCHANNEL);
+			rHeader.DataSize=0;
+			break;
+			
+		case PROCESS_STATE_REQ:
+			//memset((char *)&sHeader, 0x00, sizeof(ScpHeader));
+			sHeader.MessageId = PROCESS_STATE_REQ;
+			SetDate(SCHANNEL);
+			SetBlank(SCHANNEL, 1);
+			sHeader.TransacId.Num=TransacNum;
+			sHeader.DataSize=0;			
+			break;			
+			
+		case DOWNLOAD_REQ: 
+			{
+			sHeader.MessageId = DOWNLOAD_REQ;
+			SetDate(SCHANNEL);
+			SetBlank(SCHANNEL, 1);
+			
+			sHeader.TransacId.Num = TransacNum; //++TransacNum; 2000.11.21
+			memmove(sHeader.TransacId.Day, TDay, 8);
+			
+			/*
+			//--------------------------------------------------
+			// 수정필요..SCPFormatAgg -> SCPFormat 변환
+			char		imsi[16];
+			SCPFormat	scpFM;
+			
+			//printf("--------SCPFormatAgg------\n");
+			//HexDump((char *)OneRecord, sizeof(SCPFormatAgg));
+			
+			sprintf(imsi, "%ld", OneRecord->get_ItemA2()->get_Min());
+			if(strlen(imsi)==9)
+				sprintf(imsi, "0%-14ld", OneRecord->get_ItemA2()->get_Min());
+			else sprintf(imsi, "%-15ld", OneRecord->get_ItemA2()->get_Min());
+			//printf("Min=%s \n", imsi);
+			
+			scpFM.get_ItemA()->set_Key(OneRecord->get_ItemA2()->get_Key());
+			scpFM.get_ItemA()->set_MSID(imsi);
+			scpFM.setItem(OneRecord->get_ItemB());
+			scpFM.setItem(OneRecord->get_ItemC());
+			scpFM.setItem(OneRecord->get_ItemD());
+			*/
+			
+			chkey=OneRecord->get_ItemA()->get_Key();
+			if(chkey==0x01)	sHeader.DataSize=sizeof(SCPA_TYPE)+sizeof(SCPB_TYPE);			
+			else if(chkey==0x02) sHeader.DataSize=sizeof(SCPFormat);			
+			else if(chkey==0x03) sHeader.DataSize=sizeof(SCPA_TYPE);
+			else if(chkey==0x04 || chkey==0x05) sHeader.DataSize=sizeof(SCPA_TYPE) + sizeof(SCPC_TYPE) + sizeof(SCPD_TYPE);
+			else 
+			{
+				printf("\n[ScpMsg::MK_Msg()] chkey ERROR!!]\n");
+				*LogM << "[ScpMsg::MK_Msg()] chkey ERROR!!" <<  LogM->ErrorCode(0) << endl;
+			}
+			
+			if(chkey!=0x04 && chkey!=0x05) memcpy(sBuf, (char *)OneRecord, sHeader.DataSize);
+			else {
+				memcpy(sBuf, (char *)OneRecord, sizeof(SCPA_TYPE));
+				memcpy((char *)&sBuf[sizeof(SCPA_TYPE)], (char *)OneRecord->get_ItemC(), sizeof(SCPC_TYPE));
+				memcpy((char *)&sBuf[sizeof(SCPA_TYPE)+sizeof(SCPC_TYPE)], (char *)OneRecord->get_ItemD(), sizeof(SCPD_TYPE));
+			}
+			}
+			break;			
+			
+		case DOWNLOAD_RESULT_ACK:			
+			rHeader.MessageId = DOWNLOAD_RESULT_ACK;
+			SetDate(RCHANNEL);
+			//rHeader.TransacId.Num = rHeader.TransacId.Num;
+			//rHeader.UTransacId.Num = rHeader.UTransacId.Num;
+			rHeader.DataSize=4;
+			memmove(rBuf, "SC", 2);
+			memmove((char *)&rBuf[2], (char *)&reason, 2);
+			break;
+
+		case UPLOAD_REQ_ACK:			
+			rHeader.MessageId = UPLOAD_REQ_ACK;
+			SetDate(RCHANNEL);
+			SetBlank(RCHANNEL, 1);
+			//rHeader.TransacId.Num = rHeader.TransacId.Num;
+			rHeader.DataSize=4;
+			memmove(rBuf, "SC", 2);
+			memmove((char *)&rBuf[2], (char *)&reason, 2);
+			break;
+			
+		case R_RELEASE_REQ_ACK:
+			rHeader.MessageId = R_RELEASE_REQ_ACK;
+			SetBlank(RCHANNEL);
+			rHeader.DataSize=4;
+			memmove(rBuf, "SC", 2);
+			memmove((char *)&rBuf[2], (char *)&reason, 2);
+			break;
+			
+		case S_RELEASE_REQ_ACK:
+			sHeader.MessageId = S_RELEASE_REQ_ACK;
+			SetBlank(SCHANNEL);
+			sHeader.DataSize=4;
+			memmove(sBuf, "SC", 2);
+			memmove((char *)&sBuf[2], (char *)&reason, 2);
+			break;			
+		/*
+		case UPLOAD_RESULT:
+			sHeader.MessageId = UPLOAD_RESULT;
+			SetDate(SCHANNEL);
+			sHeader.TransacId.Num = ++TransacNum;
+			sHeader.UTransacId.Num = 0; //MQ에서 받은번호
+			sHeader.DataSize=4;
+			memmove(sBuf, "SC", 2);
+			memmove((char *)&sBuf[2], (char *)&reason, 2);
+			break;			
+		*/
+			
+		case S_CONNECT_REQ_ACK:	//SCP서버만 발생 test용
+			sHeader.MessageId = S_CONNECT_REQ_ACK;
+			SetDate(SCHANNEL);
+			SetBlank(SCHANNEL, 1);
+			//rHeader.TransacId.Num = rHeader.TransacId.Num;	// 클라이언트와 TID를 맞춘다.
+			sHeader.DataSize=4;
+			memmove(sBuf, "SC", 2);
+			memmove((char *)&sBuf[2], (char *)&reason, 2);
+			break;
+			
+		case R_CONNECT_REQ_ACK:	//SCP만 발생 test용
+			rHeader.MessageId = R_CONNECT_REQ_ACK;
+			SetDate(RCHANNEL);
+			SetBlank(RCHANNEL, 1);
+			//rHeader.TransacId.Num = rHeader.TransacId.Num;
+			rHeader.DataSize=4;
+			memmove(rBuf, "SC", 2);
+			memmove((char *)&rBuf[2], (char *)&reason, 2);
+			break;			
+			
+		case PROCESS_STATE_REQ_ACK:	//SCP만 발생 test용
+			sHeader.MessageId = PROCESS_STATE_REQ_ACK;
+			SetDate(SCHANNEL);
+			SetBlank(SCHANNEL, 1);
+			sHeader.TransacId.Num=sHeader.TransacId.Num;
+			sHeader.DataSize=2;
+			reason=1; //정상 (2.비정상)
+			memmove(sBuf, (char *)&reason, 2);
+			break;	
+			
+		case DOWNLOAD_RESULT: //SCP만 발생 test용
+			{
+			static int		i=1;
+			uchar			ukey;
+			SCPResultFormat	reFormat; 	//A,B,D
+			SCPFormat		scFormat;	//A,B,C,D
+			FILE			*fp;
+			
+			fp=fopen("aggsend.dat", "r+b");
+			fread((void*)&ukey, 1, 1,  fp);
+			fclose(fp);
+			
+			fp=fopen("aggsend.dat", "r+b");
+			if(ukey==0x01) 	fread((void*)&scFormat, 36, 1, fp);
+			else if(ukey==0x02) fread((void*)&scFormat, 52, 1, fp);
+			fclose(fp);
+			
+			rHeader.MessageId = DOWNLOAD_RESULT;
+			SetDate(RCHANNEL);
+			rHeader.TransacId.Num=++STransacNum;
+			rHeader.UTransacId.Num=0;
+			rHeader.DataSize=sizeof(SCPResultFormat)+2;
+			memset((char*)&reFormat, 0x00, sizeof(reFormat));
+			
+			if(ukey==0x01) reFormat.get_ItemA()->set_Key(0x81);
+			else reFormat.get_ItemA()->set_Key(0x82);
+			reFormat.get_ItemA()->set_MSID(scFormat.get_ItemA()->get_MsId());	
+			reFormat.get_ItemB()->set_OperId(scFormat.get_ItemB()->get_OperId());
+			reFormat.get_ItemB()->set_AccSessionId(scFormat.get_ItemB()->get_AccSessionId());
+			reFormat.get_ItemB()->set_CorreId(scFormat.get_ItemB()->get_CorreId());
+			
+			reFormat.get_ItemD()->set_LimitT(1000-(100*i));
+			reFormat.get_ItemD()->set_NTuseT(500-(10*i));
+			i++;
+			
+			memcpy(rBuf, "SC", 2);
+			memcpy((char*)&rBuf[2], (char *)&reFormat, sizeof(SCPResultFormat));
+			unlink("aggsend.dat");
+			}
+			break;
+			
+		case DOWNLOAD_REQ_ACK: //SCP만 발생 test용
+			sHeader.MessageId = DOWNLOAD_REQ_ACK;
+			SetDate(SCHANNEL);
+			SetBlank(SCHANNEL, 1);
+			//sHeader.TransacId.Num = sHeader.TransacId.Num;
+			sHeader.DataSize=4;
+			memmove(sBuf, "SC", 2);
+			reason=1; //정상 (2.비정상)
+			memmove((char *)&sBuf[2], (char *)&reason, 2);
+			break;
+			
+		case UPLOAD_RESULT_ACK: //SCP만 발생 test용
+			sHeader.MessageId = UPLOAD_RESULT_ACK;
+			SetDate(SCHANNEL);
+			sHeader.DataSize=4;
+			memmove(sBuf, "SC", 2);
+			reason=1; //정상 (2.비정상)
+			memmove((char *)&sBuf[2], (char *)&reason, 2);
+			break;
+		case UPLOAD_REQ:	//SCP_R만 발생 test용
+			{ 
+				static int m1=9200, m2=5310; 
+				char		imsi[12];
+				CustFormat	cformat;
+				
+				rHeader.MessageId = UPLOAD_REQ;
+				SetDate(RCHANNEL);
+				rHeader.TransacId.Num=++STransacNum;
+				SetBlank(RCHANNEL, 1);
+				
+				rHeader.DataSize=sizeof(CustFormat);
+				memset((char*)&cformat, 0x00, sizeof(CustFormat));
+				cformat.set_Code(0x11);
+				cformat.set_JobCode("A1");
+				sprintf(imsi, "11%3d%4d", m1, m2+=205);
+				cformat.set_Min(imsi);
+				cformat.set_Min2(imsi);
+				cformat.set_AccInfo("01");
+				//cformat.set_UTransactionID(uint key)	
+				memcpy(rBuf, (char *)&cformat, rHeader.DataSize);
+			}
+			break;
+		default:			
+			printf("[@@ERROR@@] ScpMsg::MK_Msg(int msg, SCPFormat* OneRecord) : %d\n", msg);
+			*LogM << "[@@ERROR@@] ScpMsg::MK_Msg(int msg, SCPFormat* OneRecord) :" << msg << LogM->ErrorCode(0) << endl;
+			break;
+	}	
+}
+
+
+
+
+//--------------------------------------------------------------------
+int ScpMsg::CHK_Msg(int msg)
+{
+	sint	reason=0;
+	char 	imsi[4];
+	
+	memset(imsi, 0x00, sizeof(imsi));
+	switch(msg){
+		case S_CONNECT_REQ:
+			if(sHeader.MessageId!=S_CONNECT_REQ) {
+				printf("[ERROR] S_CONNECT_REQ : ServerMsgId [%d] \n", sHeader.MessageId);
+				*LogM << "[ERROR] S_CONNECT_REQ : ServerMsgId :" << sHeader.MessageId << LogM->ErrorCode(0) << endl;
+				return MSGERROR;
+			}
+			break;
+		case S_CONNECT_REQ_ACK:
+			if(sHeader.MessageId!=S_CONNECT_REQ_ACK) {
+				printf("[ERROR] S_CONNECT_REQ_ACK : ServerMsgId [%d] \n", sHeader.MessageId);
+				*LogM << "[ERROR] S_CONNECT_REQ_ACK : ServerMsgId :" << sHeader.MessageId << LogM->ErrorCode(0) << endl;
+				return MSGERROR;
+			}
+			
+			if(!strncmp("SC", (char *)&sBuf[0], 2)) return SC;
+			else {
+				memmove((char *)&reason, (char *)&sBuf[2], 2);
+				printf("[ERROR] S_CONNECT_REQ_ACK : Reason [%d]\n", reason);
+				*LogM << "[ERROR] S_CONNECT_REQ_ACK : Reason :" << reason << LogM->ErrorCode(0) << endl;
+				return FA;
+			}
+			break;
+			
+		case R_CONNECT_REQ_ACK:
+			if(rHeader.MessageId!=R_CONNECT_REQ_ACK) {
+				printf("[ERROR] R_CONNECT_REQ_ACK : ServerMsgId [%d] \n", rHeader.MessageId);
+				*LogM << "[ERROR] R_CONNECT_REQ_ACK : ServerMsgId :" << rHeader.MessageId << LogM->ErrorCode(0) << endl;
+				return MSGERROR;
+			}
+			
+			if(!strncmp("SC", (char *)&rBuf[0], 2)) return SC;
+			else {
+				memmove((char *)&reason, (char *)&rBuf[2], 2);
+				printf("[ERROR] R_CONNECT_REQ_ACK : Reason [%d]\n", reason);
+				*LogM << "[ERROR] R_CONNECT_REQ_ACK : Reason :" << reason << LogM->ErrorCode(0) << endl;
+				return FA;
+			}
+			break;
+			
+		case S_RELEASE_REQ_ACK:
+			if(sHeader.MessageId!=S_RELEASE_REQ_ACK) {
+				printf("[ERROR] S_RELEASE_REQ_ACK : ServerMsgId [%d] \n", sHeader.MessageId);
+				*LogM << "[ERROR] S_CONNECT_REQ_ACK : ServerMsgId :" << sHeader.MessageId << LogM->ErrorCode(0) << endl;
+				return MSGERROR;
+			}
+			
+			if(!strncmp("SC", (char *)&sBuf[0], 2)) return SC;
+			else {
+				memmove((char *)&reason, (char *)&sBuf[2], 2);
+				printf("[ERROR] S_RELEASE_REQ_ACK : Reason [%d]\n", reason);
+				*LogM << "[ERROR] S_CONNECT_REQ_ACK : Reason :" << reason << LogM->ErrorCode(0) << endl;
+				return FA;
+			}
+			break;	
+		
+		case R_RELEASE_REQ_ACK:
+			if(rHeader.MessageId!=R_RELEASE_REQ_ACK) {
+				printf("[ERROR] R_RELEASE_REQ_ACK : ServerMsgId [%d] \n", rHeader.MessageId);
+				*LogM << "[ERROR] R_RELEASE_REQ_ACK : ServerMsgId :" << rHeader.MessageId << LogM->ErrorCode(0) << endl;
+				return MSGERROR;
+			}
+			
+			if(!strncmp("SC", (char *)&rBuf[0], 2)) return SC;
+			else {
+				memmove((char *)&reason, (char *)&rBuf[2], 2);
+				printf("[ERROR] R_RELEASE_REQ_ACK : Reason [%d]\n", reason);
+				*LogM << "[ERROR] R_RELEASE_REQ_ACK : Reason :" << reason << LogM->ErrorCode(0) << endl;
+				return FA;
+			}
+			break;
+					
+		case PROCESS_STATE_REQ_ACK:
+			if(sHeader.MessageId!=PROCESS_STATE_REQ_ACK) {
+				printf("[ERROR] PROCESS_STATE_REQ_ACK : ServerMsgId [%d] \n", sHeader.MessageId);
+				*LogM << "[ERROR] PROCESS_STATE_REQ_ACK : ServerMsgId :" << sHeader.MessageId << LogM->ErrorCode(0) << endl;
+				return MSGERROR;
+			}
+			
+			memmove((char *)&reason, sBuf, 2);
+			printf("[SCHANNEL] PROCESS_STATE_REQ_ACK : Reason = [%d]\n", reason);
+			*LogM << "[SCHANNEL] PROCESS_STATE_REQ_ACK : Reason :" << reason << LogM->ErrorCode(0) << endl;
+			if(reason==1) return SC;
+			else return FA;
+			
+		case DOWNLOAD_REQ_ACK:			
+			if(sHeader.MessageId!=DOWNLOAD_REQ_ACK) {
+				printf("[ERROR] DOWNLOAD_REQ_ACK : ServerMsgId [%d] \n", sHeader.MessageId);
+				*LogM << "[ERROR] DOWNLOAD_REQ_ACK : ServerMsgId :" << sHeader.MessageId << LogM->ErrorCode(0) << endl;
+				return MSGERROR;
+			}
+			
+			if(!strncmp("SC", (char *)&sBuf[0], 2)) return SC;
+			else {
+				memmove((char *)&reason, (char *)&sBuf[2], 2);
+				printf("[ERROR] DOWNLOAD_REQ_ACK : Reason [%d] \n", reason);
+				*LogM << "[ERROR] DOWNLOAD_REQ_ACK : Reason :" << reason << LogM->ErrorCode(0) << endl;
+				return FA;
+			}
+			break;
+			
+			
+		case DOWNLOAD_RESULT:
+			if(rHeader.MessageId!=DOWNLOAD_RESULT) {
+				printf("[ERROR] DOWNLOAD_RESULT : ServerMsgId [%d] \n", rHeader.MessageId);
+				*LogM << "[ERROR] DOWNLOAD_RESULT : ServerMsgId :" << rHeader.MessageId << LogM->ErrorCode(0) << endl;
+				return MSGERROR;
+			}
+			
+			if(!strncmp("SC", (char *)&rBuf[0], 2)) 
+			{
+				*LogM << "DOWNLOAD_RESULT [SC] "<< LogM->ErrorCode(0) << endl;
+				return SC;
+			}else 
+			{
+				memmove((char *)&reason, (char *)&rBuf[2], 2);
+				printf("[ERROR] DOWNLOAD_RESULT [FA] : Reason [%d] \n", reason);
+				*LogM << "[ERROR] DOWNLOAD_RESULT [FA] : Reason :" << reason << LogM->ErrorCode(0) << endl;
+				return FA;
+			}
+			break;
+			
+
+		case UPLOAD_REQ:
+			if(rHeader.MessageId!=UPLOAD_REQ) {
+				printf("[ERROR] UPLOAD_REQ : ServerMsgId [%d] \n", rHeader.MessageId);
+				*LogM << "[ERROR] UPLOAD_REQ : ServerMsgId :" << rHeader.MessageId << LogM->ErrorCode(0) << endl;
+				return MSGERROR;
+			}
+			break;
+			
+		case UPLOAD_RESULT_ACK:			
+			if(sHeader.MessageId!=UPLOAD_RESULT_ACK) {
+				printf("[ERROR] UPLOAD_RESULT_ACK : ServerMsgId [%d] \n", sHeader.MessageId);
+				*LogM << "[ERROR] UPLOAD_RESULT_ACK : ServerMsgId :" << sHeader.MessageId << LogM->ErrorCode(0) << endl;
+				return MSGERROR;
+			}
+			
+			if(!strncmp("SC", (char *)&sBuf[0], 2)) return SC;
+			else {
+				memmove((char *)&reason, (char *)&sBuf[2], 2);
+				printf("[ERROR] UPLOAD_RESULT_ACK : Reason [%d]\n", reason);
+				*LogM << "[ERROR] UPLOAD_RESULT_ACK : Reason :" << reason << LogM->ErrorCode(0) << endl;
+				return FA;
+			}
+			break;			
+		case R_CONNECT_REQ:	//TEST SCP-R 서버만 발생
+			if(rHeader.MessageId!=R_CONNECT_REQ) {
+				printf("[ERROR] R_CONNECT_REQ : ServerMsgId [%d] \n", rHeader.MessageId);
+				*LogM << "[ERROR] R_CONNECT_REQ : ServerMsgId :" << rHeader.MessageId << LogM->ErrorCode(0) << endl;
+				return MSGERROR;
+			}
+			break;
+		default:
+			printf("[@@ERROR@@] int ScpMsg::CHK_Msg(int msg) : %d \n", msg);
+			*LogM << "[@@ERROR@@] int ScpMsg::CHK_Msg(int msg) :" << msg << LogM->ErrorCode(0) << endl;
+			break;
+	}	
+	
+	return SC;
+}
+
+
+
+
+//--------------------------------------------------------------------
+// Server에 전송할 메시지를 리턴
+char *ScpMsg::GetMsgBuf(int op)		
+{
+	SetHeaderID();
+	
+	if(op==SCHANNEL){
+		memmove(msgBuf, (char *)&sHeader, MHEADSIZE);
+		if(sHeader.DataSize>0)
+			memmove((char *)&msgBuf[MHEADSIZE], sBuf, sHeader.DataSize);
+	}else{
+		memmove(msgBuf, (char *)&rHeader, MHEADSIZE);
+		if(rHeader.DataSize>0)
+			memmove((char *)&msgBuf[MHEADSIZE], rBuf, rHeader.DataSize);
+	}
+	
+	
+	#ifdef	DEBUG_LOG
+		printf("\n=========Send-Header============\n");
+		*LogM << "=========Send-Header============ " << LogM->ErrorCode(0) << endl;
+		HeaderPrn(op);
+		HexDump(msgBuf, MHEADSIZE); 
+		//LogM->WriteHexLog(msgBuf, MHEADSIZE); 
+		
+		if(op==SCHANNEL && sHeader.DataSize==0) return msgBuf;
+		if(op==RCHANNEL && rHeader.DataSize==0) return msgBuf;
+		
+		int  		len;
+		if(op==SCHANNEL) len = sHeader.DataSize; else len = rHeader.DataSize;
+		HexDump((char *)&msgBuf[MHEADSIZE], len); // @@@@ 
+		//LogM->WriteHexLog((char *)&msgBuf[MHEADSIZE], len); 
+		
+		printf("\n=========Send[%3d]==============\n", len);
+		*LogM << "=========Send[" << len <<"]============ " << LogM->ErrorCode(0) << endl;
+		if(len>15) LogViewOne(op);
+		else LogViewTwo(op);
+		printf("\n================================\n");
+		*LogM << "================================" << LogM->ErrorCode(0) << endl;
+		
+	#endif
+	
+	
+	return msgBuf;
+}
+
+
+
+//--------------------------------------------------------------------
+int  ScpMsg::SendLen(int op)
+{
+	if(op==SCHANNEL) return (MHEADSIZE + sHeader.DataSize);
+	else return (MHEADSIZE + rHeader.DataSize);
+}
+
+
+
+//--------------------------------------------------------------------
+//SCP에서 수신한 내용을 저장
+int ScpMsg::SetMsgBuf(ScpHeader imsiHeader, char *str, int op)
+{
+	int id=1;
+	
+	if(op==SCHANNEL){
+		if(sHeader.TransacId.Num != imsiHeader.TransacId.Num)
+		{
+			printf("<< TransacId >>  [%d|%d] \n", sHeader.TransacId.Num, imsiHeader.TransacId.Num);
+			id=0;
+		}
+		
+		memmove((char *)&sHeader, (char *)&imsiHeader, MHEADSIZE);
+		if(sHeader.DataSize>0) memmove(sBuf, str, sHeader.DataSize);
+	}else {
+		memmove((char *)&rHeader, (char *)&imsiHeader, MHEADSIZE);
+		if(rHeader.DataSize>0) memmove(rBuf, str, rHeader.DataSize);
+	}
+	
+		
+	#ifdef	DEBUG_LOG
+		printf("\n=========Rcv-Header=============\n");
+		*LogM << "=========Rcv-Header============= " << LogM->ErrorCode(0) << endl;
+		HeaderPrn(op);
+		HexDump((char *)&imsiHeader, MHEADSIZE); // @@@@ 
+		//LogM->WriteHexLog((char *)&imsiHeader, MHEADSIZE); 
+		
+		
+		if(op==SCHANNEL && sHeader.DataSize==0) return id;
+		if(op==RCHANNEL && rHeader.DataSize==0) return id;
+				
+		int  		len;
+		if(op==SCHANNEL) len = sHeader.DataSize; else len = rHeader.DataSize;
+		
+		HexDump(str,len); // @@@@ 
+		//LogM->WriteHexLog(str, len); 
+		
+		printf("\n=========RcvData[%3d]============\n", len);
+		*LogM << "=========RcvData[" << len << "]============" << LogM->ErrorCode(0) << endl;
+		if(len>15) LogViewOne(op);
+		else LogViewTwo(op);
+		printf("\n=================================\n");
+		*LogM << "=================================" << LogM->ErrorCode(0) << endl;
+		
+	#endif
+	
+	return id;
+}	
+
+
+
+
+//--------------------------------------------------------------------
+int ScpMsg::Get_MQMsg(int op, UdrFormat* OneRecord)
+{
+	
+	int				i;
+	char			imsi[20];
+	char			min1[6], min2[6];
+	SCPResultFormat	scpReFm;
+	
+	if(op==SCHANNEL){
+		memmove(msgBuf, (char *)&sHeader, MHEADSIZE);
+		if(sHeader.DataSize>0)
+			memmove((char *)&msgBuf[MHEADSIZE], sBuf, sHeader.DataSize);
+			
+	}else
+	{	// DownloadResult (SCP -> scpif_R )
+		
+		if(rHeader.DataSize != (sizeof(SCPResultFormat)+2))
+		{	// 요청처리에 에러값을 받았다.
+			printf("[Get_MQMsg(UdrFormat)] FA Return: %d \n", rHeader.DataSize);
+			return 0;
+		}
+		
+		memmove((char*)&scpReFm, (char*)&rBuf[2], sizeof(SCPResultFormat));	
+		
+		memset(imsi, 0x00, sizeof(imsi));
+		memcpy(imsi, scpReFm.get_ItemA()->get_MsId(), 10);
+		
+		//---------------------
+		printf("[Get_MQMsg(UdrFormat)] Key=[%d] Min=[%s] \n", scpReFm.get_ItemA()->get_Key(), imsi); 
+		//---------------------		
+		OneRecord->get_ItemHead()->put_nUdrType(scpReFm.get_ItemA()->get_Key());	// 한도정보다.
+		OneRecord->get_ItemHead()->put_MinInfo(imsi);
+		OneRecord->get_ItemA()->put_unMsId(atol(imsi));	// Min
+		
+		OneRecord->get_LimitInfo()->put_nOperationID(scpReFm.get_ItemB()->get_OperId());
+		OneRecord->get_LimitInfo()->put_nLimitPrice(scpReFm.get_ItemD()->get_LimitT());
+		OneRecord->get_LimitInfo()->put_nNtopFreeTime(scpReFm.get_ItemD()->get_NTuseT());
+		
+		OneRecord->get_ItemC()->put_strAccountSessionID(scpReFm.get_ItemB()->get_AccSessionId());
+		OneRecord->get_ItemC()->put_strCorrelationID(scpReFm.get_ItemB()->get_CorreId());
+		
+		//OneRecord->get_ItemHead()->put_nUdrType(scpReFm.get_ItemA()->get_Key());
+	}
+	
+	return 1;
+}
+
+
+//--------------------------------------------------------------------
+void ScpMsg::Get_MQMsg(int op, CustFormat* fmSCP)
+{
+	if(op==SCHANNEL){
+		memmove(msgBuf, (char *)&sHeader, MHEADSIZE);
+		if(sHeader.DataSize>0)
+			memmove((char *)&msgBuf[MHEADSIZE], sBuf, sHeader.DataSize);
+	}else{
+		//SCP -> SCP-IF -> 고객관리  전송용 큐로 얻는다.
+		memmove((char*)fmSCP, rBuf, rHeader.DataSize);
+		//fmSCP->set_UTransactionID(rHeader.TransacId.Num);
+		//printf("[Send-CustQ] %d\n",rHeader.TransacId.Num);
+	}
+	
+}
+
+
+
+//--------------------------------------------------------------------
+void ScpMsg::LogViewOne(int op)
+{
+		int  			i, j;
+		int  			len;
+		char			strtemp[20];
+		SCPFormat 		imsiBuf;
+		SCPResultFormat	imsiBuf2;
+		CustFormat		cFormat;
+		
+		
+		if(op==RCHANNEL && rHeader.MessageId==UPLOAD_REQ) 
+		{
+			memmove((char *)&cFormat, rBuf, sizeof(CustFormat));
+			cFormat.prn_All();
+			//---------------------------------------------------
+			*LogM << "[Code      ] : " << (int)cFormat.get_Code() <<  LogM->ErrorCode(0) << endl;
+			memset(strtemp, 0x00, sizeof(strtemp));
+			memcpy(strtemp, cFormat.get_JobCode(), 2);
+			*LogM << "[JobCode   ] : " << strtemp <<  LogM->ErrorCode(0) << endl;
+			memset(strtemp, 0x00, sizeof(strtemp));
+			memcpy(strtemp, cFormat.get_Min(), 10);
+			*LogM << "[Min1      ] : " << strtemp <<  LogM->ErrorCode(0) << endl;
+			memset(strtemp, 0x00, sizeof(strtemp));
+			memcpy(strtemp, cFormat.get_Min2(), 10);
+			*LogM << "[Min2      ] : " << strtemp <<  LogM->ErrorCode(0) << endl;
+			memset(strtemp, 0x00, sizeof(strtemp));
+			memcpy(strtemp, cFormat.get_AccInfo(), 2);
+			*LogM << "[AccInfo   ] : " << strtemp <<  LogM->ErrorCode(0) << endl;
+			//---------------------------------------------------
+			return;
+		}
+		
+		if(op==SCHANNEL) len = sHeader.DataSize;
+		else len = rHeader.DataSize;
+		
+		memset((char *)&imsiBuf, 0x00, sizeof(imsiBuf));
+		if(op==SCHANNEL) 
+		{
+			memcpy((char *)&imsiBuf, sBuf, len);
+			if(imsiBuf.get_ItemA()->get_Key()==0x04 || imsiBuf.get_ItemA()->get_Key()==0x05) 
+			{	
+				imsiBuf.setItem((SCPC_TYPE*)&sBuf[16]);
+				imsiBuf.setItem((SCPD_TYPE*)&sBuf[16+8]);
+			}
+		}else 
+		{
+			if(rHeader.MessageId=DOWNLOAD_RESULT) memmove((char *)&imsiBuf,  (char*)&rBuf[2], len-2);
+			else memmove((char *)&imsiBuf,  rBuf, len);
+			memmove((char *)&imsiBuf2, (char *)&rBuf[2], len-2);
+		}			
+		
+		//printf("\n=========Send[%3d]==============\n", len);
+		//*LogM << "===============Send[ " << len << " ]============== : " << LogM->ErrorCode(0) << endl;
+		i=imsiBuf.get_ItemA()->get_Key();
+		imsiBuf.get_ItemA()->prn_Key();
+		imsiBuf.get_ItemA()->prn_MSID();	
+		*LogM << "[SpecificKey] : " << (int)imsiBuf.get_ItemA()->get_Key() <<  LogM->ErrorCode(0) << endl;
+		memset(strtemp, 0x00, sizeof(strtemp));
+		memcpy(strtemp, imsiBuf.get_ItemA()->get_MsId(), 15);	
+		*LogM << "[[Min       ] : " << strtemp <<  LogM->ErrorCode(0) << endl;
+		
+		if(i!=3)
+		{
+			if(i!=4)
+			{
+				*LogM << "[OperationId] : " << imsiBuf.get_ItemB()->get_OperId() <<  LogM->ErrorCode(0) << endl;
+				memset(strtemp, 0x00, sizeof(strtemp));
+				memcpy(strtemp, imsiBuf.get_ItemB()->get_AccSessionId(), 8);	
+				*LogM << "[AccSession ] : " << strtemp <<  LogM->ErrorCode(0) << endl;
+				memset(strtemp, 0x00, sizeof(strtemp));
+				memcpy(strtemp, imsiBuf.get_ItemB()->get_CorreId(), 8);	
+				*LogM << "[CorreIation] : " << strtemp <<  LogM->ErrorCode(0) << endl;
+				imsiBuf.get_ItemB()->prn_OperId();
+				imsiBuf.get_ItemB()->prn_AccSessionId();
+				imsiBuf.get_ItemB()->prn_CorreId();
+			}
+			if(i!=1)
+			{
+				if(op==RCHANNEL) 
+				{
+					*LogM << "[Limit Money ] : " << imsiBuf2.get_ItemD()->get_LimitT() <<  LogM->ErrorCode(0) << endl;	
+					*LogM << "[N-Top Time  ] : " << imsiBuf2.get_ItemD()->get_NTuseT() <<  LogM->ErrorCode(0) << endl;	
+					imsiBuf2.get_ItemD()->prn_LimitT();
+					imsiBuf2.get_ItemD()->prn_NTuseT();
+				}else
+				{
+					*LogM << "[Start Time  ] : " << imsiBuf.get_ItemC()->get_StartT() <<  LogM->ErrorCode(0) << endl;	
+					*LogM << "[End   Time  ] : " << imsiBuf.get_ItemC()->get_EndT() <<  LogM->ErrorCode(0) << endl;	
+					*LogM << "[Limit Money ] : " << imsiBuf.get_ItemD()->get_LimitT() <<  LogM->ErrorCode(0) << endl;	
+					*LogM << "[N-Top Time  ] : " << imsiBuf.get_ItemD()->get_NTuseT() <<  LogM->ErrorCode(0) << endl;	
+					
+					imsiBuf.get_ItemC()->prn_StartT();
+					imsiBuf.get_ItemC()->prn_EndT();
+					imsiBuf.get_ItemD()->prn_LimitT();
+					imsiBuf.get_ItemD()->prn_NTuseT();
+				}
+			}
+		}
+		//printf("\n================================\n");
+}
+
+
+
+//--------------------------------------------------------------------
+void ScpMsg::LogViewTwo(int op)
+{
+		int  		i, j;
+		int  		len;
+		char	 	imsiBuf[1024];
+		char		result[4];
+		char		reason[4];
+		
+		if(op==SCHANNEL) len = sHeader.DataSize;
+		else len = rHeader.DataSize;
+		
+		memset((char *)&imsiBuf, 0x00, sizeof(imsiBuf));
+		if(op==SCHANNEL) memmove((char *)&imsiBuf, sBuf, len);
+		else memmove((char *)&imsiBuf, rBuf, len);
+		
+		//printf("\n=========Send[%3d]==============\n", len);
+		for(i=1; i<=len; i++) {
+			if(!((i-1)%16)) printf("[%02d]", i-1);
+			
+			if(imsiBuf[i-1]<32) printf(" ");
+			else printf("%c", imsiBuf[i-1]);
+			
+			if(!(i%16)) 
+			{	
+				printf("| ");
+				for(j=0; j<16; j++) printf("%2x ", imsiBuf[ (((i/16)-1)*16) + j]);
+				printf("\n");
+			}
+		}
+		
+		printf("| ");
+		for(j=0; j<(len%16); j++) printf("%2x ", imsiBuf[ ((len/16)*16) + j]);
+		//printf("\n================================\n");
+		
+		memset(result, 0x00, 4);
+		memset(reason, 0x00, 4);
+		
+		if(len==4)
+		{
+			memcpy(result, imsiBuf, 2);
+			memcpy(reason, (char *)&imsiBuf[2], 2);
+			
+			*LogM << "[Result:Reason] = " <<  result << ":" << atoi(reason) << LogM->ErrorCode(0) << endl;
+		}else if(len==2)
+		{
+			memcpy(reason, imsiBuf, 2);
+			
+			*LogM << "[Reason] = " << atoi(reason) << LogM->ErrorCode(0) << endl;
+		}
+}
+
+
+
+#endif
+
+
+
+
+

@@ -1,0 +1,260 @@
+/******************************************************************
+* 파 일 명     
+      : t_meta_action.pc                
+* 기   능                                                          
+     : [t_meta_action] table에서 Udr 형식을 정의한 데이타를 메모리로 load한다.
+* 작 성 자     
+     : 신미연                          
+* first data  
+     : 2001. 03. 21                      
+* last updata 
+     : 2000. 03. 29               
+* 관 련 화 일  
+     : t_meta_action.hpp                     
+* program history                                
+           
+* Version
+  : 1.1 ( 2001. 05. 21 )                                           
+******************************************************************/
+
+
+#define SQLCA_STORAGE_CLASS extern
+EXEC SQL INCLUDE    SQLCA;
+#define ORACA_STORAGE_CLASS extern
+EXEC SQL INCLUDE    ORACA;
+
+// DECLARE SECTION을 hpp에 선언할때
+EXEC SQL INCLUDE "../INCLUDE/t_meta_action.hpp";
+
+EXEC ORACLE OPTION (ORACA=YES);
+//EXEC ORACLE OPTION (RELEASE_CURSOR=YES);
+
+EXEC SQL BEGIN     DECLARE SECTION;
+char strMapName[8+1];
+EXEC SQL END     DECLARE SECTION;
+
+
+
+/////////////////////////////////
+// Class LoadActTable's Method //
+/////////////////////////////////
+
+//------------------------------------------------------------------------------
+// 생성자
+CLoadActTable::CLoadActTable(char *strMappingName,char *strVer)
+{
+    m_nActRecCount    = 0;
+
+	memset(m_strMappingName, 0x00, sizeof(m_strMappingName));
+	memset(m_strMapVersion , 0x00, sizeof(m_strMapVersion));
+    strcpy(m_strMappingName,strMappingName);
+    strcpy(m_strMapVersion ,strVer);
+
+    try
+    {
+        get_RecordCount();	// GET Total Record Count
+	    m_ActionTable = new ActionTable[m_nActRecCount+1]; // Allocate ActionTable Buffer
+
+        init_ActionTable();	// Initialize Buffer
+      
+        declare_Cursor();	// OPEN Cursor
+
+        open_Cursor();
+
+	    fetch_Data();		// FETCH Data
+    }
+    catch(char *strTemp)
+    {
+        char strErrMsg[400];
+        memset(strErrMsg , 0x00, 400);
+        strcpy(strErrMsg,strTemp);
+        SqlError(strTemp);
+    }
+	int nStartIdx = 0;
+	if(nStartIdx  = SearchActIndex() < 0)		exit(-1);
+	m_nActStartRecIndex = nStartIdx;
+}
+
+
+
+
+//------------------------------------------------------------------------------
+CLoadActTable::~CLoadActTable()
+{
+	delete [] m_ActionTable;
+}	
+
+
+
+
+//------------------------------------------------------------------------------
+// [t_meta_action] table의 레코드개수만큼 만들어진 배열을 초기화한다.
+void CLoadActTable::init_ActionTable()
+{
+    int i;
+    for(i = 0; i <= m_nActRecCount; i++)
+    	memset(&m_ActionTable[i], 0x00, sizeof(ActionTable));
+}
+
+
+
+
+//------------------------------------------------------------------------------
+// [t_meta_action] table에서 레코드 개수를 가져온다.
+void CLoadActTable::get_RecordCount()    throw(char *)
+{
+	EXEC SQL SELECT COUNT(*)
+    	     INTO  :m_nActRecCount
+             FROM  T_META_ACTION
+             WHERE MAPPING_NAME = :m_strMappingName AND
+             	   VER          = :m_strMapVersion;
+                  
+    if (sqlca.sqlcode != 0){
+   	 	strcpy(strSqlTemp,"!!!Error : [t_meta_action] table : Fail Get Record Count.");
+  		throw (char *)strSqlTemp;
+   	}	
+
+}
+
+
+
+
+//------------------------------------------------------------------------------
+void CLoadActTable::declare_Cursor()    throw(char *)
+{
+	strcpy(strMapName,m_strMappingName);
+
+    EXEC SQL DECLARE CUR_TABLE CURSOR FOR
+                SELECT      MAPPING_NAME,    
+                            VER,         
+                            nvl(ACTION_CODE,' '),
+                            nvl(SUB_ACTION_CODE,' '),
+                            nvl(DATA_TYPE,' '),
+                            nvl(IN_FIELD_NAME,' '),
+                            nvl(OUT_FIELD_NAME,' '),
+                            SEQ_NO,
+                            nvl(OUT_FIELD_LENGTH,0),
+                            nvl(OUT_FIELD_OFFSET,0),
+                            nvl(IN_FIELD_LENGTH,0),
+                            nvl(IN_FIELD_OFFSET,0)
+                FROM        T_META_ACTION
+                WHERE       MAPPING_NAME = :strMapName
+                AND         VER          = :m_strMapVersion
+                ORDER BY    MAPPING_NAME,
+                            VER,
+                            SEQ_NO;
+
+    if (sqlca.sqlcode != 0){
+	    strcpy(strSqlTemp,"!!!Error : [t_meta_action] table : Fail Declare Cursor.");
+        throw (char *)strSqlTemp;
+    }    
+}
+
+
+
+
+//------------------------------------------------------------------------------
+void CLoadActTable::open_Cursor()    throw(char *)
+{
+    EXEC SQL OPEN CUR_TABLE;
+
+    if (sqlca.sqlcode != 0){
+	    strcpy(strSqlTemp,"!!!Error : [t_meta_action] table : Fail Open Cursor.");
+        throw (char *)strSqlTemp;
+    }
+}
+
+
+
+
+//------------------------------------------------------------------------------
+void CLoadActTable::close_Cursor()
+{
+    EXEC SQL CLOSE CUR_TABLE;
+}
+
+
+
+
+//------------------------------------------------------------------------------
+void CLoadActTable::fetch_Data()    throw(char *)
+{
+    
+    for(int i = 0; i <= m_nActRecCount; i++)
+    {
+        EXEC SQL FETCH CUR_TABLE INTO :m_ActionTable[i];
+
+        // Type이 varchar2인 변수의 스트링 끝에 NULL 처리
+        m_ActionTable[i].In_Field_Name.arr[m_ActionTable[i].In_Field_Name.len] = NULL;
+        m_ActionTable[i].Out_Field_Name.arr[m_ActionTable[i].Out_Field_Name.len] = NULL;
+        
+        if(sqlca.sqlcode == 1403){
+            close_Cursor();
+            break;
+        }
+        else if(sqlca.sqlcode != 0){
+            strcpy(strSqlTemp,"!!!Error : [t_meta_action] table : Fail Data fetch.");
+            close_Cursor();
+            throw (char *)strSqlTemp;
+        }
+    }
+    
+//    show_ActionTable();	// [t_meta_action] table Display
+
+}
+
+
+
+
+//------------------------------------------------------------------------------
+// [t_meta_action]table의 record count만큼 루프를 돌면서 Mapping Name, Mapping Version이 같은지 확인한 후
+// Sequence Number의 값이 0인 레코드의 시작 위치를 찾는다
+int CLoadActTable::SearchActIndex()
+{
+	for(int i = 0; i < m_nActRecCount; i++){
+//	 cout << " i=> " << i << endl;
+		if(!strcmp(m_ActionTable[i].mapping_name,strMapName)){
+//			if(!strcmp(m_ActionTable[i].Version,m_strMapVersion)){
+			if(!strncmp(m_ActionTable[i].Version,m_strMapVersion, 1)){
+				if(m_ActionTable[i].Seq_No==0){
+//				    cout << " i=> " << i << endl;
+				    return i;
+				}
+		    }
+		}//outside for
+	}//for
+//    cout << "!!!Error : [t_meta_action] table : Sequence Number != 0" << endl;
+    return FAIL;
+}
+
+
+
+
+//------------------------------------------------------------------------------
+// [t_meta_action] Table의 내용을 Display하기 위한 함수
+void CLoadActTable::show_ActionTable()
+{
+	cout << "########### T_META_ACTION Table ###########" << endl;
+	cout << "All Record   Cnt           => " << m_nActRecCount << endl;
+
+	cout << "==============================================================================================" << endl;
+	cout << "SeqNo OutName Ver StFlag      FieldName                 SeqNo DataType FieldLen FieldOffset" << endl;
+	cout << "----------------------------------------------------------------------------------------------" << endl;
+	for(int c=0;c<m_nActRecCount;c++)
+	{
+		printf("  %d	%s	%s	%d	%d	%s	%d	%d	%s	%s	%s  \n",
+							                         m_ActionTable[c].Seq_No,
+							                         m_ActionTable[c].mapping_name,
+			 				                         m_ActionTable[c].In_Field_Name.arr,
+			 				                         m_ActionTable[c].In_Field_Length,
+			 				                         m_ActionTable[c].In_Field_Offset,
+			 				                         m_ActionTable[c].Out_Field_Name.arr,
+			 				                         m_ActionTable[c].Out_Field_Length,
+			 				                         m_ActionTable[c].Out_Field_Offset,
+			 				                         m_ActionTable[c].Action_Code,
+			 				                         m_ActionTable[c].Sub_Action_Code,
+			 				                         m_ActionTable[c].Data_Type);
+	}
+	cout << "----------------------------------------------------------------------------------------------" << endl << endl;
+
+}

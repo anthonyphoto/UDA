@@ -1,0 +1,12 @@
+include main.mk
+
+EXEC = DbConnectFail
+OBJS = DbConnectFail.o
+
+all : $(EXEC)
+
+$(EXEC) : $(OBJS)
+	aCC -o $(EXEC) $(OBJS) $(PCLIBES)
+
+clean :
+	rm -f $(EXEC) $(OBJS)

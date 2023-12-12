@@ -1,0 +1,627 @@
+shmInfo:nLRemark:0
+******* proc_remark = 0
+ LogManageSM::LogSMinit(void) : 
+[FETCH] t_log_manage sqlcode : 0
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 1 | 72
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 2 | 144
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 3 | 216
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 4 | 288
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 5 | 360
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 6 | 432
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 7 | 504
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 8 | 576
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 9 | 648
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 10 | 720
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 11 | 792
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 12 | 864
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 13 | 936
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 14 | 1008
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 15 | 1080
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 16 | 1152
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 17 | 1224
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 18 | 1296
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 19 | 1368
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 20 | 1440
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 21 | 1512
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 22 | 1584
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 23 | 1656
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 24 | 1728
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 25 | 1800
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 26 | 1872
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 27 | 1944
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 28 | 2016
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 29 | 2088
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 30 | 2160
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 31 | 2232
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 32 | 2304
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 33 | 2376
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 34 | 2448
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 35 | 2520
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 36 | 2592
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 37 | 2664
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 38 | 2736
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 39 | 2808
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 40 | 2880
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 41 | 2952
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 42 | 3024
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 43 | 3096
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 44 | 3168
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 45 | 3240
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 46 | 3312
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 47 | 3384
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 48 | 3456
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 49 | 3528
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 50 | 3600
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 51 | 3672
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 52 | 3744
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 53 | 3816
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 54 | 3888
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 55 | 3960
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 56 | 4032
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 57 | 4104
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 58 | 4176
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 59 | 4248
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 60 | 4320
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 61 | 4392
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 62 | 4464
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 63 | 4536
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 64 | 4608
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 65 | 4680
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 66 | 4752
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 67 | 4824
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 68 | 4896
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 69 | 4968
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 70 | 5040
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 71 | 5112
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 72 | 5184
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 73 | 5256
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 74 | 5328
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 75 | 5400
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 76 | 5472
+[FETCH] t_log_manage sqlcode : 1403
+shmInfo:nLRemark:10
+******* proc_remark = 10
+shm_key = [1099694118] shm_id  = [15411] shm_size= [80040
+shmInfo:nLRemark:0
+******* proc_remark = 0
+ LogManageSM::LogSMinit(void) : 
+[FETCH] t_log_manage sqlcode : 0
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 1 | 72
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 2 | 144
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 3 | 216
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 4 | 288
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 5 | 360
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 6 | 432
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 7 | 504
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 8 | 576
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 9 | 648
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 10 | 720
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 11 | 792
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 12 | 864
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 13 | 936
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 14 | 1008
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 15 | 1080
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 16 | 1152
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 17 | 1224
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 18 | 1296
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 19 | 1368
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 20 | 1440
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 21 | 1512
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 22 | 1584
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 23 | 1656
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 24 | 1728
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 25 | 1800
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 26 | 1872
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 27 | 1944
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 28 | 2016
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 29 | 2088
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 30 | 2160
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 31 | 2232
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 32 | 2304
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 33 | 2376
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 34 | 2448
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 35 | 2520
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 36 | 2592
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 37 | 2664
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 38 | 2736
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 39 | 2808
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 40 | 2880
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 41 | 2952
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 42 | 3024
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 43 | 3096
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 44 | 3168
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 45 | 3240
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 46 | 3312
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 47 | 3384
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 48 | 3456
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 49 | 3528
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 50 | 3600
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 51 | 3672
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 52 | 3744
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 53 | 3816
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 54 | 3888
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 55 | 3960
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 56 | 4032
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 57 | 4104
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 58 | 4176
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 59 | 4248
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 60 | 4320
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 61 | 4392
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 62 | 4464
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 63 | 4536
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 64 | 4608
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 65 | 4680
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 66 | 4752
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 67 | 4824
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 68 | 4896
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 69 | 4968
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 70 | 5040
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 71 | 5112
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 72 | 5184
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 73 | 5256
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 74 | 5328
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 75 | 5400
+[FETCH] t_log_manage sqlcode : 0
+[LogN*recSize] : 76 | 5472
+[FETCH] t_log_manage sqlcode : 1403
+Q file name = [/SVC1/DATA/MQ/10110010.MQ]
+get_unRecSize();    = [80]
+get_unRecCount();   = [1000]
+Q file name = [/SVC1/DATA/MQ/11120011.MQ]
+get_unRecSize();    = [140]
+get_unRecCount();   = [5000]
+Q file name = [/SVC1/DATA/MQ/11120012.MQ]
+get_unRecSize();    = [92]
+get_unRecCount();   = [5000]
+Q file name = [/SVC1/DATA/MQ/11120013.MQ]
+get_unRecSize();    = [676]
+get_unRecCount();   = [5000]
+Q file name = [/SVC1/DATA/MQ/10110010.MQ]
+get_unRecSize();    = [80]
+get_unRecCount();   = [1000]
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 2
+nProc_sn = 0
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 2
+nProc_sn = 0
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 2
+nProc_sn = 0
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 2
+nProc_sn = 0
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 2
+nProc_sn = 0
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+Q file name = [/SVC1/DATA/MQ/11120011.MQ]
+get_unRecSize();    = [140]
+get_unRecCount();   = [5000]
+Q file name = [/SVC1/DATA/MQ/11120012.MQ]
+get_unRecSize();    = [92]
+get_unRecCount();   = [5000]
+Q file name = [/SVC1/DATA/MQ/11120013.MQ]
+get_unRecSize();    = [676]
+get_unRecCount();   = [5000]
+Q file name = [/SVC1/DATA/MQ/10110010.MQ]
+get_unRecSize();    = [80]
+get_unRecCount();   = [1000]
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 2
+nProc_sn = 0
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+nSys_id   = 1
+nSvc_id    = 1
+nGroup_type = 2
+nProc_type   = 2
+nProc_sn = 0
+nProc_remark = 0
+nExitCode	 = 1
+INSERT.....T_PROC_EVENT_HIST
+ sql error code: 0
+ConnectToDB sqlcode:0
+/dev/vg00/lvol3 143360 36670 100267 27 /
+20001207184318
+1
+/dev/vg00/lvol3
+143360
+36670
+100267
+27
+/
+S
+/dev/vg00/lvol1 83733 53815 21544 71 /stand
+20001207184318
+1
+/dev/vg00/lvol1
+83733
+53815
+21544
+71
+/stand
+S
+/dev/vg00/lvol8 1064960 310236 708257 30 /var
+20001207184318
+1
+/dev/vg00/lvol8
+1064960
+310236
+708257
+30
+/var
+S
+/dev/vg00/lvol7 1191936 524076 626133 46 /usr
+20001207184318
+1
+/dev/vg00/lvol7
+1191936
+524076
+626133
+46
+/usr
+S
+/dev/vg00/lvol4 65536 1273 60294 2 /tmp
+20001207184318
+1
+/dev/vg00/lvol4
+65536
+1273
+60294
+2
+/tmp
+S
+/dev/vg00/lvol6 819200 479160 319522 60 /opt
+20001207184318
+1
+/dev/vg00/lvol6
+819200
+479160
+319522
+60
+/opt
+S
+/dev/vg00/lvol5 20480 1182 18160 6 /home
+20001207184318
+1
+/dev/vg00/lvol5
+20480
+1182
+18160
+6
+/home
+S
+/dev/vg02/radius1 10240000 3352992 6671868 33 /SVC1/RADIUS
+20001207184318
+1
+/dev/vg02/radius1
+10240000
+3352992
+6671868
+33
+/SVC1/RADIUS
+S
+/dev/vg02/data1 1024000 157827 812085 16 /SVC1/DATA
+20001207184318
+1
+/dev/vg02/data1
+1024000
+157827
+812085
+16
+/SVC1/DATA
+S
+/dev/vg02/log1 3072000 272907 2624248 9 /SVC1/LOG
+20001207184318
+1
+/dev/vg02/log1
+3072000
+272907
+2624248
+9
+/SVC1/LOG
+S
+/dev/vg02/bds2 5120000 7151 4793336 0 /SVC2/BDS
+20001207184318
+1
+/dev/vg02/bds2
+5120000
+7151
+4793336
+0
+/SVC2/BDS
+S
+/dev/vg02/mb2 1024000 2424 957731 0 /SVC2/MB
+20001207184318
+1
+/dev/vg02/mb2
+1024000
+2424
+957731
+0
+/SVC2/MB
+S
+/dev/vg03/bds1 5120000 14239 4786707 0 /SVC1/BDS
+20001207184318
+1
+/dev/vg03/bds1
+5120000
+14239
+4786707
+0
+/SVC1/BDS
+S
+/dev/vg03/mb1 1024000 1393 958699 0 /SVC1/MB
+20001207184318
+1
+/dev/vg03/mb1
+1024000
+1393
+958699
+0
+/SVC1/MB
+S
+/dev/vg03/radius2 10240000 3406 9916708 0 /SVC2/RADIUS
+20001207184318
+1
+/dev/vg03/radius2
+10240000
+3406
+9916708
+0
+/SVC2/RADIUS
+S
+/dev/vg03/log2 3072000 207472 2685502 7 /SVC2/LOG
+20001207184318
+1
+/dev/vg03/log2
+3072000
+207472
+2685502
+7
+/SVC2/LOG
+S
+/dev/vg03/data2 1024000 1359 958728 0 /SVC2/DATA
+20001207184318
+1
+/dev/vg03/data2
+1024000
+1359
+958728
+0
+/SVC2/DATA
+S
+/dev/vg01/oracle1 3072000 983782 1957713 33 /oracle1
+20001207184318
+1
+/dev/vg01/oracle1
+3072000
+983782
+1957713
+33
+/oracle1
+S
+/dev/vg01/uda1 4096000 1340296 2584540 34 /home/uda1
+20001207184318
+1
+/dev/vg01/uda1
+4096000
+1340296
+2584540
+34
+/home/uda1
+S
+/dev/vg01/oradata 8192000 4099133 3837070 52 /home/uda1/dbdata
+20001207184318
+1
+/dev/vg01/oradata
+8192000
+4099133
+3837070
+52
+/home/uda1/dbdata
+S
+/dev/vg02/oraindex 4096000 831561 3060418 21 /home/uda1/dbindex
+20001207184318
+1
+/dev/vg02/oraindex
+4096000
+831561
+3060418
+21
+/home/uda1/dbindex
+S
+ sql error code: 0
+ConnectToDB sqlcode:0
+0 0 0 100
+Q file name = [/SVC1/DATA/MQ/11120011.MQ]
+get_unRecSize();    = [140]
+get_unRecCount();   = [5000]
+Q file name = [/SVC1/DATA/MQ/11120012.MQ]
+get_unRecSize();    = [92]
+get_unRecCount();   = [5000]
+Q file name = [/SVC1/DATA/MQ/11120013.MQ]
+get_unRecSize();    = [676]
+get_unRecCount();   = [5000]
+Q file name = [/SVC1/DATA/MQ/10110010.MQ]
+get_unRecSize();    = [80]
+get_unRecCount();   = [1000]

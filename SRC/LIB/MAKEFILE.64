@@ -1,0 +1,22 @@
+include /home/uda/common/env_uda_64.mk
+
+UDALINKLIBES_64 = $(COMMLIBPATH)/libuda64.a
+
+MFLAGS = -D_SVC1
+
+OBJS = UdrBds.o HandleOfAllocIndex_64.o SharedMemLegacy_64.o MqInfo.o ConfigLog.o CSemHandler.o BlockFile.o 
+
+all : $(OBJS)
+	ar r $(UDALINKLIBES_64) $(OBJS)
+	ranlib $(UDALINKLIBES_64)
+	rm -rf $(OBJS) core 
+	@echo ..............Library building finished .............................
+	@ctags -w *cpp
+	
+install : $(OBJS)
+	$(INSTALL2) $(UDALINKLIBES_64) $(LIBUDR) $(COMMLIBPATH)/bak/
+	rm -rf $(OBJS) core 
+
+clean :	
+	rm -rf $(OBJS) core 
+	touch *

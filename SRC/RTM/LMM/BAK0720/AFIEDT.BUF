@@ -1,0 +1,2 @@
+select * from t_threshold_amt where min = 1192001501
+/

@@ -1,0 +1,245 @@
+
+#define SQLCA_STORAGE_CLASS extern
+EXEC SQL INCLUDE    SQLCA;
+
+EXEC SQL INCLUDE "../INCLUDE/refmanager.hpp";
+
+
+//////////////////////////////////////////////////////////////////////
+//
+//   Function Name  : CRefMannager
+//   Usage          : collector, RFC2138, 2139 변환 프로그램의 생성자
+//	 Argument		: char* strMappingName (기본 meta table key)
+//					  char* strActVer      (기본 meta table key)
+//	 Return			: 
+//   DATE           : 2001. 3 .
+//   LAST UPDATE    :
+//   AUTHOR         : Jung Seung jin	(sjjung@neomnt.com)
+//   History        :
+//
+//////////////////////////////////////////////////////////////////////
+CRefMannager::CRefMannager(char *strMappingName,char *strActVer) : CLoadActTable(strMappingName, strActVer)
+{
+	char strTempLog[64];	
+//  sprintf(strTempLog, "%s%s",strMappingName, "log");
+//  LogM		 = new FileLogWrite(".", strTempLog);
+//  LogM->Write("-------------------------\n");
+	nActIndex = m_nActStartRecIndex;		//	action table에서 start 정보를 가져온다 (seq_no가 0이다)
+	
+	//	meta talbe seq_no = 0 정보 저장 
+	nInTotLen 		= m_ActionTable[nActIndex].In_Field_Length;		//	input total length
+	nZeroActionCode = atoi(m_ActionTable[nActIndex].Action_Code);	//	action code에 따른 DB선택
+	nFieldCnt	 	= m_ActionTable[nActIndex].In_Field_Offset;		//	field의 갯수 
+
+	switch(nZeroActionCode)											//	각 형태별로 output의 구성 정보를 얻는다.
+	{
+		case 1	:													//	field to field table 정의를 따른다.
+			nOutTotLen = m_ActionTable[nActIndex].Out_Field_Length;
+			break;
+		case 2	:													// 	017 Pdsn (RFC2138, 2139)
+			pdsn = new C017Pdsn;									//	pdsn 사용하기 위한 선언 (memory load)
+			nOutTotLen = 0;											//	pdsn code는 총길이를 구하기 위해서 초기화 
+			break;
+		default :
+//			LogM->Write("[refmanager]meta action table seq_no 0 error (action code)");
+			exit(0);
+			break;
+	}
+	++nActIndex;
+/***
+	LogM->Write("[refmanager]nActIndex = %d",nActIndex);
+	LogM->Write("[refmanager]nInTotLen = %d",nInTotLen);
+	LogM->Write("[refmanager]nZeroActionCode = %d",nZeroActionCode);
+	LogM->Write("[refmanager]nFieldCnt = %d",nFieldCnt);
+	LogM->Write("[refmanager]nOutTotLen = %d",nOutTotLen);
+***/
+}
+
+//	소멸자 
+CRefMannager::~CRefMannager()
+{
+//	delete LogM;
+
+	if (nZeroActionCode == 2)
+	{
+		delete pdsn;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////
+//
+//   Function Name  : collectorRule
+//   Usage          : UDR을 file 만들어 주는 collector에서 data를 변형
+//					  해 주는 함수 
+//	 Argument		: char* indata 		(input data record)
+//					  char* outdata     (변형을 한 output data record)
+//	 Return			: int (FAILREFMANAGER : -1 , OKREFMANAGER : 1)
+//   DATE           : 2001. 3 .
+//   LAST UPDATE    :
+//   AUTHOR         : Jung Seung jin	(sjjung@neomnt.com)
+//   History        :
+//
+//////////////////////////////////////////////////////////////////////
+int CRefMannager::collectorRule (char* indata, char *outdata)
+{
+	CCollectorRule	cltRule;
+	int 			nTempNullCnt;
+	int 			nDataType;
+	int 			nActionCode;
+	char 			strSubAction;
+
+	strOutOneData 		= new char[MAX_OUT_DATA_LEN];
+
+//	LogM->Write("[refmanager||collectorRule]nActIndex = %d",nActIndex);
+    for(;nActIndex<=nFieldCnt;nActIndex++)
+    {
+		// loop에서 필요한 정보 초기화 
+		nTempNullCnt = 0;
+		memset (strOutOneData, NULL, MAX_OUT_DATA_LEN);
+		
+		//	구성정보 얻는 부분
+		nInOffset   = m_ActionTable[nActIndex].In_Field_Offset;
+		nOutOffset  = m_ActionTable[nActIndex].Out_Field_Offset;
+	    nDataType   = atoi(m_ActionTable[nActIndex].Data_Type);
+	    nActionCode = atoi(m_ActionTable[nActIndex].Action_Code);
+	    memcpy(&strSubAction, m_ActionTable[nActIndex].Sub_Action_Code, 1);
+	    nOutOneLen  = m_ActionTable[nActIndex].Out_Field_Length;
+	    nInOneLen   = m_ActionTable[nActIndex].In_Field_Length;
+/***		
+		LogM->Write("[refmanager||collectorRule]nInOffset    = %d",nInOffset);
+		LogM->Write("[refmanager||collectorRule]nDataType    = %d",nDataType);
+		LogM->Write("[refmanager||collectorRule]nActionCode  = %d",nActionCode);
+		LogM->Write("[refmanager||collectorRule]strSubAction = %d",strSubAction);
+		LogM->Write("[refmanager||collectorRule]nOutOneLen   = %d",nOutOneLen);
+***/		
+        //	one field 처리 
+        memcpy(strOutOneData, cltRule.oneField(indata,nInOffset,nInOneLen,nOutOneLen,nDataType,nActionCode,strSubAction), 
+        						cltRule.get_OneFieldLen());
+        
+//		LogM->Write("[refmanager||collectorRule]strOutOneData   = %s",strOutOneData);
+        //	one field의 data가 없을 경우 처리 (false 처리)
+        for(int i = 0; i < MAX_OUT_DATA_LEN ; i++)
+        {
+        	if (strOutOneData[i] == NULL)
+        	{
+        		nTempNullCnt++;
+        	}
+        }
+        if (nTempNullCnt == MAX_OUT_DATA_LEN)
+        {
+			delete[]	strOutOneData;
+//			LogM->Write("[refmanager||pdsnRule]FAILREFMANAGER   = %d",FAILREFMANAGER);
+        	return FAILREFMANAGER;
+        }
+       	DataMove(strOutOneData, outdata, nOutOffset);			
+    }
+	nActIndex = 1;	
+	delete[]	strOutOneData;
+    return OKREFMANAGER;
+}	
+
+//////////////////////////////////////////////////////////////////////
+//
+//   Function Name  : pdsnRule
+//   Usage          : UDR을 017 data format인 pdsn으로 변형해 주는 함수
+//	 Argument		: char* indata 		(input data record)
+//					  char* outdata     (변형을 한 output data record)
+//	 Return			: int (FAILREFMANAGER : -1 , OKREFMANAGER : 1)
+//   DATE           : 2001. 3 .
+//   LAST UPDATE    :
+//   AUTHOR         : Jung Seung jin	(sjjung@neomnt.com)
+//   History        :
+//
+//////////////////////////////////////////////////////////////////////
+int CRefMannager::pdsnRule		(char* indata, char* outdata)
+{
+	CPdsnRule		ptrPdsnRule;					
+	int 			nTempNullCnt;
+	int				nPdsnCode;
+	int 			nVendorCode;
+	int 			outoffset= 0;
+	nOutTotLen  = 0;
+
+	strOutOneData 		= new char[MAX_OUT_DATA_LEN];
+    for(;nActIndex<=nFieldCnt;nActIndex++)
+    {
+		// loop에서 필요한 정보 초기화 
+		nTempNullCnt = 0;
+		memset (strOutOneData, NULL, MAX_OUT_DATA_LEN);
+		
+		//	구성정보 얻는 부분 (input은 meta table에서 output은 pdsn table에서)
+		nInOffset   = m_ActionTable[nActIndex].In_Field_Offset;
+	    nInOneLen   = m_ActionTable[nActIndex].In_Field_Length;
+	    
+	    nPdsnCode	= pdsn->m_PdsnTable[nActIndex].Pdsn_Code;
+	    nVendorCode	= pdsn->m_PdsnTable[nActIndex].Vendor_Code;
+	    if (nPdsnCode == 0)
+		{
+			delete[] strOutOneData;
+	    	continue;
+		}
+/***				
+		LogM->Write("[refmanager||pdsnRule]nActIndex    = %d",nActIndex);
+		LogM->Write("[refmanager||pdsnRule]nPdsnCode 	= %d",nPdsnCode);
+		LogM->Write("[refmanager||pdsnRule]nVendorCode 	= %d",nVendorCode);
+***/		
+        //	one field 처리 
+        memcpy(strOutOneData, ptrPdsnRule.pdsnOneField(indata,nInOffset,nInOneLen,nPdsnCode,nVendorCode), 
+        						ptrPdsnRule.get_pdsnOneFieldLen());
+
+		//	총 data size
+		nOutOneLen = (int)strOutOneData[1];
+		nOutTotLen  = nOutTotLen + nOutOneLen;
+/***
+		LogM->Write("[refmanager||pdsnRule]ptrPdsnRule.get_OneFieldLen()   = %d",nOutOneLen);
+		LogM->Write("[refmanager||pdsnRule]nOutTotLen   = %d",nOutTotLen);
+        
+		LogM->Write("[refmanager||pdsnRule]strOutOneData   = %s",strOutOneData);
+***/
+        //	one field의 data가 없을 경우 처리 (false 처리)
+        for(int i = 0; i < MAX_OUT_DATA_LEN ; i++)
+        {
+        	if (strOutOneData[i] == NULL)
+        	{
+        		nTempNullCnt++;
+        	}
+        }
+        if (nTempNullCnt == MAX_OUT_DATA_LEN)
+        {
+			delete[] strOutOneData;
+//			LogM->Write("[refmanager||pdsnRule]FAILREFMANAGER   = %d",FAILREFMANAGER);
+        	return FAILREFMANAGER;
+        }
+
+
+       	DataMove(strOutOneData, outdata, outoffset);			
+       	outoffset = outoffset + nOutOneLen;
+    }
+	nActIndex = 1;	
+	delete[] strOutOneData;
+    return OKREFMANAGER;
+}	
+	
+
+
+
+//////////////////////////////////////////////////////////////////////
+//
+//   Function Name  : DataMove
+//   Usage          : 하나의 처리된 결과를 out buffer에 쌓아주는 부분 
+//	 Argument		: char* indata 		(input data record)
+//					  char* outdata     (변형을 한 output data record)
+//	 Return			: 
+//   DATE           : 2001. 3 .
+//   LAST UPDATE    :
+//   AUTHOR         : Jung Seung jin	(sjjung@neomnt.com)
+//   History        :
+//
+//////////////////////////////////////////////////////////////////////
+void CRefMannager::DataMove(char *InBuf, char *OutBuf, int nTempOutOffset)
+{
+//	LogM->Write("[refmanager||DataMove]nOutOffSet   = %d",nTempOutOffset);
+//	LogM->Write("[refmanager||DataMove]nOutLen      = %d\n",nOutOneLen);
+    memcpy(OutBuf+nTempOutOffset,InBuf,nOutOneLen);
+}
+

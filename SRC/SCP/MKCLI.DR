@@ -1,0 +1,4 @@
+make -f Makefile_R clean
+make -f Makefile_R MFLAGS=-D_SVC1  all
+cp scpif_r ~/sy_test
+cp scpif_r ~/bin

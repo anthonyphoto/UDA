@@ -1,0 +1,435 @@
+#include "CLimitTbl.hpp"
+
+//	Log Manager
+extern SendLogManage*				LogM;
+
+#define SQLCA_STORAGE_CLASS extern
+EXEC    SQL     INCLUDE SQLCA;
+
+EXEC SQL BEGIN DECLARE SECTION;
+VARCHAR	strUserName[32];
+VARCHAR	strPasswd[32];
+int		gnMin;
+char	gstrAccSId[LEN_ID+1];	// Account Session ID
+char	gstrCorrId[LEN_ID+1];	// Correlation ID
+int		gnLimitAmt;				// 한도 금액
+int		gnCurrentAmt;			// 현재 쓴 금액
+int		gnRateAmt;				// 중간정산된 금액
+int		gnLastDataOct;			// 예전 Data Size
+int		gnOId;					// operation Id 세션이 끝날때 까지 유지한다
+int		gnIntrimCnt;			// 5번에 한번 중간정산한다
+int		gnCount;
+int		gnTotalAmt;				// 현재 총사용금액
+long	gnEventTime;
+EXEC SQL END DECLARE SECTION;
+
+
+
+//------------------------------------------------------------------------------
+CLimitTbl::CLimitTbl()
+{
+	gnMin			= 0;				// T_THRESHOLD_AMT, T_THRESHOLD_MID_AMT : 전화번호
+	memset( gstrAccSId,0x00,LEN_ID+1);	// T_THRESHOLD_MID_AMT	: Account Session ID
+	memset( gstrCorrId,0x00,LEN_ID+1);	// T_THRESHOLD_MID_AMT	: Correlation ID
+	gnLimitAmt		= 0;				// T_THRESHOLD_AMT		: 한도금액
+	gnCurrentAmt	= 0;				// T_THRESHOLD_MID_AMT	: session별 현사용액
+	gnRateAmt		= 0;				// T_THRESHOLD_MID_AMT	: session별 rating 금액
+	gnLastDataOct	= 0;				// T_THRESHOLD_MID_AMT	: 예전까지의 누적Data량 
+	gnOId			= 0;				// T_THRESHOLD_MID_AMT	: operationID
+	gnIntrimCnt		= 0;				// T_THRESHOLD_MID_AMT	: Intrim Count
+	
+	ConnectToDB();
+}
+
+
+
+//------------------------------------------------------------------------------
+CLimitTbl::~CLimitTbl()
+{
+	DbClose();
+}
+//===============================================================
+// ConnectToDB Method											=
+//  : DB에 연결							           				=
+// argument : None												=
+// return value : Sql code										=
+//																=
+//===============================================================
+int CLimitTbl::ConnectToDB( void )
+{
+	strcpy((char *) strUserName.arr, DB_USERNAME);
+	strUserName.len = (unsigned short) strlen(DB_USERNAME);
+
+	strcpy((char *) strPasswd.arr, DB_PASSWORD);
+	strPasswd.len = (unsigned short) strlen(DB_PASSWORD);
+	
+	EXEC SQL connect :strUserName identified by :strPasswd;
+	return(sqlca.sqlcode);
+}
+
+//===============================================================
+// Db_close Method												=
+//  : DB에 close							           				=
+// argument : None												=
+// return value : Sql code										=
+//																=
+//===============================================================
+int CLimitTbl::DbClose()
+{
+	EXEC	SQL	COMMIT	WORK	RELEASE;
+
+	return(sqlca.sqlcode); 
+}
+
+
+
+//------------------------------------------------------------------------------
+// intrim udr이 들어왔을 때 T_THRESHOLD_AMT, T_THRESHOLD_MID_AMT table에서 
+// 한도잔액,최종패킷사용량, 사용금액, 남은 금액, operation ID, nIntrimCnt를 조회한다
+// 존재하지 않으면 1403, 존재하면 0 리턴 
+int CLimitTbl::GetLimitInfo()
+{
+	gnMin =  GetMin();
+	memset( gstrAccSId,0x00,LEN_ID+1);	// T_THRESHOLD_MID_AMT	: Account Session ID
+	memset( gstrCorrId,0x00,LEN_ID+1);	// T_THRESHOLD_MID_AMT	: Correlation ID
+	memcpy(gstrAccSId,GetAccSId(),LEN_ID);
+	memcpy(gstrCorrId,GetCorrId(),LEN_ID);
+/*	
+	#ifdef	_DEBUG
+	*LogM << LogM->ErrorCode(0)<<"정보조회"<<  endl;
+	*LogM << LogM->ErrorCode(0)<<"MIN   :"<<gnMin<< endl;
+	*LogM << LogM->ErrorCode(0)<<"ACC_ID:"<< gstrAccSId<< endl;
+	*LogM << LogM->ErrorCode(0)<<"COR_ID:"<< gstrCorrId<< endl;
+	#endif
+*/	
+	// 먼저 T_THRESHOLD_AMT Table에서 조회한다, 존재하지 않으면 return
+	EXEC SQL	SELECT	nvl(LIMIT_AMT, 0),nvl(RATE_AMT, 0), nvl(INTRIM_CNT, 0),nvl(OP_ID,0)	
+				INTO	:gnLimitAmt ,:gnRateAmt, :gnIntrimCnt, :gnOId	
+				FROM	T_THRESHOLD_AMT
+				WHERE	MIN = :gnMin;
+	#ifdef	_DEBUG
+	*LogM << LogM->ErrorCode(0)<<"Min정보조회....Result :["<<sqlca.sqlcode<<"]"<<  endl;
+	#endif
+	if(sqlca.sqlcode == 1403) return (1403);
+	
+	// 번호에 대한 한도금액이 존재하면 SET
+	SetLimitAmt(gnLimitAmt);
+	SetRateAmt(gnRateAmt);
+	
+	// session 별 총사용금액을 조회
+	EXEC SQL	SELECT	nvl(SUM(CUR_AMT),0)
+				INTO	:gnTotalAmt
+				FROM	T_THRESHOLD_MID_AMT
+				WHERE	MIN = :gnMin;
+	SetTotalAmt(gnTotalAmt);
+	#ifdef	_DEBUG
+	*LogM << LogM->ErrorCode(0)<<"Session 한도금액 총합: ["<< gnTotalAmt<<"]" <<  endl;
+	#endif
+	
+	// T_THRESHOLD_AMT에 MIN정보가 존재하면 T_THRESHOLD_MID_AMT에서 정보를 조회한다 
+	EXEC SQL	SELECT	CUR_AMT, LAST_PACKET_AMT	
+				INTO	:gnCurrentAmt, :gnLastDataOct
+				FROM	T_THRESHOLD_MID_AMT
+				WHERE	MIN = :gnMin AND ACC_ID = :gstrAccSId AND COR_ID = :gstrCorrId;
+	
+	// 존재하지 않으면 기본값으로 setting한다 
+	if(sqlca.sqlcode == 1403 || sqlca.sqlcode < 0)
+	{
+		SetCurrentAmt(0);
+		SetLastDataOct(0);
+
+		#ifdef	_DEBUG
+		*LogM << LogM->ErrorCode(0)<<"Data Not Exist...Return Default Value!" <<  endl;
+		#endif
+		return 0;
+	}
+	else if(sqlca.sqlcode == 0)
+	{
+		SetCurrentAmt(gnCurrentAmt);
+		SetLastDataOct(gnLastDataOct);
+		return 0;
+	}
+}
+
+
+
+//------------------------------------------------------------------------------
+// Intrim UDR을 받았을 때 호출된다
+int CLimitTbl::UpdateLimitInfo1()
+{
+	gnMin =  GetMin();
+	memset( gstrAccSId,0x00,LEN_ID+1);	// T_THRESHOLD_MID_AMT	: Account Session ID
+	memset( gstrCorrId,0x00,LEN_ID+1);	// T_THRESHOLD_MID_AMT	: Correlation ID
+//	memcpy(gstrAccSId,GetAccSId(),LEN_ID);
+//	memcpy(gstrCorrId,GetCorrId(),LEN_ID);
+	strncpy(gstrAccSId,GetAccSId(),strlen(GetAccSId()));
+	strncpy(gstrCorrId,GetCorrId(),strlen(GetCorrId()));
+/*
+	#ifdef	_DEBUG
+	*LogM << LogM->ErrorCode(0)<<"T_THRESHOLD_MID_AMT UPDATE"<<  endl;
+	*LogM << LogM->ErrorCode(0)<<"MIN   :"<<gnMin<< endl;
+	*LogM << LogM->ErrorCode(0)<<"ACC_ID:["<< gstrAccSId<<"] length :"<< strlen(GetAccSId())<< endl;
+	*LogM << LogM->ErrorCode(0)<<"COR_ID:{"<< gstrCorrId<<"] length :"<< strlen(GetCorrId())<< endl;
+	#endif
+*/	
+	// T_THRESHOLD_AMT
+	gnEventTime		= GetEventTime();		
+	gnIntrimCnt		= GetIntrimCnt();		// Intrim Count
+	gnOId			= GetOId();				// operation ID
+	// T_THRESHOLD_MID_AMT
+	gnCurrentAmt	= GetCurrentAmt();		// 현재 사용금액 
+	gnLastDataOct	= GetLastDataOct();		// 현재 누적  Data Size
+	
+	EXEC SQL	UPDATE	T_THRESHOLD_AMT	
+				SET		E_T = :gnEventTime, INTRIM_CNT = :gnIntrimCnt, OP_ID = :gnOId
+				WHERE	MIN = :gnMin;
+				
+	#ifdef	_DEBUG
+	*LogM << LogM->ErrorCode(0)<<"정산금액 Update....Result :["<<sqlca.sqlcode<<"]"<<  endl;
+	#endif
+	if(sqlca.sqlcode == 0) 
+		EXEC	SQL	COMMIT	WORK;
+	else if(sqlca.sqlcode == 1403)
+	{
+		
+		EXEC SQL	INSERT	INTO	T_THRESHOLD_AMT(MIN, E_T, INTRIM_CNT, OP_ID) 		
+					VALUES(:gnMin, :gnEventTime, :gnIntrimCnt, :gnOId);
+					
+		#ifdef	_DEBUG
+		*LogM << LogM->ErrorCode(0)<<"정산금액 Insert...Result :["<<sqlca.sqlcode<<"]"<<  endl;
+		#endif
+
+		if(sqlca.sqlcode == 0)
+			EXEC	SQL	COMMIT	WORK;
+	}	
+	
+	EXEC SQL	UPDATE	T_THRESHOLD_MID_AMT	
+				SET		CUR_AMT = :gnCurrentAmt, LAST_PACKET_AMT = :gnLastDataOct
+				WHERE	MIN = :gnMin AND ACC_ID = :gstrAccSId AND COR_ID = :gstrCorrId;
+				
+	#ifdef	_DEBUG
+	*LogM << LogM->ErrorCode(0)<<"Session(현사용금액) Update....Result :["<<sqlca.sqlcode<<"]"<< endl;
+	#endif
+	if(sqlca.sqlcode == 0) 
+		EXEC	SQL	COMMIT	WORK;
+	else if(sqlca.sqlcode == 1403 || sqlca.sqlcode < 0) 
+	{
+		EXEC SQL	INSERT	INTO	T_THRESHOLD_MID_AMT ( MIN, ACC_ID, COR_ID, CUR_AMT, LAST_PACKET_AMT)
+					VALUES	( :gnMin, :gstrAccSId, :gstrCorrId, :gnCurrentAmt, :gnLastDataOct );
+		
+		#ifdef	_DEBUG
+		*LogM << LogM->ErrorCode(0)<<"Session(미존재) Insert....Result :["<<sqlca.sqlcode<<"]"<< endl;
+		#endif
+		if(sqlca.sqlcode == 0) 
+			EXEC	SQL	COMMIT	WORK;
+	}
+	
+	return(sqlca.sqlcode);
+}
+
+
+
+//------------------------------------------------------------------------------
+// Stop UDR을 받았을 때 호출된다
+int CLimitTbl::UpdateLimitInfo2()
+{
+	gnMin =  GetMin();
+	gnOId = 0;
+	// T_THRESHOLD_AMT		
+	gnRateAmt		= GetRateAmt();	// 정산금액 = session별 총사용액 + 현재 과금액
+	
+	EXEC SQL	UPDATE	T_THRESHOLD_AMT	
+				SET		RATE_AMT = :gnRateAmt, OP_ID = :gnOId	
+				WHERE	MIN = :gnMin;
+				
+	#ifdef	_DEBUG
+		*LogM << LogM->ErrorCode(0)<<"정산금액 Update....Result :["<<sqlca.sqlcode<<"]"<<  endl;
+	#endif
+	if(sqlca.sqlcode == 0) 
+		EXEC	SQL	COMMIT	WORK;
+	
+	return(sqlca.sqlcode);
+}
+
+
+
+//------------------------------------------------------------------------------
+// 먼저 T_THRESHOLD_MID_AMT Table에서 삭제후 Count조회한다
+// 존재하지 않으면 T_THRESHOLD_AMT에서도 삭제 
+int CLimitTbl::DeleteLimitInfo()
+{
+	gnMin =  GetMin();
+	memset( gstrAccSId,0x00,LEN_ID+1);	// T_THRESHOLD_MID_AMT	: Account Session ID
+	memset( gstrCorrId,0x00,LEN_ID+1);	// T_THRESHOLD_MID_AMT	: Correlation ID
+	memcpy(gstrAccSId,GetAccSId(),LEN_ID);
+	memcpy(gstrCorrId,GetCorrId(),LEN_ID);
+	
+	EXEC SQL	DELETE T_THRESHOLD_MID_AMT	 
+				WHERE	MIN = :gnMin AND ACC_ID = :gstrAccSId AND COR_ID = :gstrCorrId;
+	EXEC	SQL	COMMIT	WORK;
+	
+	
+	EXEC SQL	SELECT	COUNT(*)
+				INTO	:gnCount
+				FROM	T_THRESHOLD_MID_AMT
+				WHERE	MIN = :gnMin;
+	
+	#ifdef	_DEBUG
+	*LogM << LogM->ErrorCode(0)<<"Select Count query....Result :["<<sqlca.sqlcode<<"]"<<  endl;
+	#endif
+	
+	if(gnCount <= 0) 
+	{
+		EXEC SQL	DELETE T_THRESHOLD_AMT	 
+					WHERE	MIN = :gnMin;
+		EXEC	SQL	COMMIT	WORK;
+	}
+	else 
+	{
+		#ifdef	_DEBUG
+		*LogM << LogM->ErrorCode(0)<<"Session 정보 존재...T_THRESHOLD_AMT Table 정보유지 "<<  endl;
+		#endif
+	}
+	
+	return 0;	
+}
+
+
+
+//------------------------------------------------------------------------------
+// 한도가 넘었을 때 그번호에 대해 전체 삭제
+int CLimitTbl::DeleteAllLimitInfo()
+{
+	gnMin =  GetMin();
+	
+	EXEC SQL	DELETE T_THRESHOLD_MID_AMT	 
+				WHERE	MIN = :gnMin;
+	
+	EXEC SQL	DELETE T_THRESHOLD_AMT	 
+					WHERE	MIN = :gnMin;
+	
+	EXEC	SQL	COMMIT	WORK;
+	
+	return 0;	
+}
+
+
+
+//------------------------------------------------------------------------------
+// 한도요청결과, 중간정산 결과 받았을 때 
+int CLimitTbl::UpdateLimitAmt()
+{
+	gnMin =  GetMin();
+	memset( gstrAccSId,0x00,LEN_ID+1);	// T_THRESHOLD_MID_AMT	: Account Session ID
+	memset( gstrCorrId,0x00,LEN_ID+1);	// T_THRESHOLD_MID_AMT	: Correlation ID
+	memcpy(gstrAccSId,GetAccSId(),LEN_ID);
+	memcpy(gstrCorrId,GetCorrId(),LEN_ID);
+		
+	gnLimitAmt		= GetLimitAmt();		// 한도 금액
+	
+	EXEC SQL	UPDATE	T_THRESHOLD_AMT	
+				SET		LIMIT_AMT = :gnLimitAmt
+				WHERE	MIN = :gnMin;
+				
+	#ifdef	_DEBUG
+		*LogM << LogM->ErrorCode(0)<<"Min(한도금액) Update....Result :["<<sqlca.sqlcode<<"]"<<  endl;
+	#endif
+	if(sqlca.sqlcode == 0) 
+		EXEC	SQL	COMMIT	WORK;
+	else if(sqlca.sqlcode == 1403)
+	{
+		
+		EXEC SQL	INSERT	INTO	T_THRESHOLD_AMT ( MIN, LIMIT_AMT)
+					VALUES	( :gnMin, :gnLimitAmt );
+					
+		#ifdef	_DEBUG
+		*LogM << LogM->ErrorCode(0)<<"최초 Min(한도금액) Insert...Result :["<<sqlca.sqlcode<<"]"<<  endl;
+		#endif
+		if(sqlca.sqlcode == 0) 
+			EXEC	SQL	COMMIT	WORK;
+		return 0;
+	}
+	
+}
+
+
+
+//------------------------------------------------------------------------------
+// operation ID update
+int CLimitTbl::UpdateOId()
+{
+	gnMin =  GetMin();
+	gnOId =  GetOId();
+
+	EXEC SQL	UPDATE	T_THRESHOLD_AMT	
+				SET		OP_ID = :gnOId
+				WHERE	MIN = :gnMin;
+	#ifdef	_DEBUG
+		*LogM << LogM->ErrorCode(0)<<"Operaion ID Update....Result :["<<sqlca.sqlcode<<"]"<<  endl;
+	#endif
+	if(sqlca.sqlcode == 0) 
+		EXEC	SQL	COMMIT	WORK;
+		
+	return(sqlca.sqlcode);
+}
+
+
+
+//------------------------------------------------------------------------------
+// operation ID update
+int CLimitTbl::SelectOId()
+{
+	gnMin =  GetMin();
+
+	EXEC SQL	SELECT	OP_ID
+				INTO	:gnOId	
+				FROM	T_THRESHOLD_AMT	
+				WHERE	MIN = :gnMin;
+	
+	if(sqlca.sqlcode == 1403) 
+	{
+		#ifdef	_DEBUG
+		*LogM << LogM->ErrorCode(0)<<"Operaion ID Not Exist.."<<  endl;
+		#endif
+		return 0;
+	}
+	else return (gnOId);
+}
+
+
+
+//------------------------------------------------------------------------------
+// SCP로 중간정산을 보내고, 중간정산액 Update T_THRESHOLD_AMT
+// 중간정산액 = 세션별 총합 - 기존 중간정산액
+// 한도액 = 기존 한도액 - (세션별 총합 - 기존 중간정산액)
+int CLimitTbl::UpdateLimitNRateAmt()
+{
+	gnRateAmt		= GetRateAmt();			
+	gnLimitAmt		= GetLimitAmt();
+	
+	EXEC SQL	UPDATE	T_THRESHOLD_AMT	
+				SET		LIMIT_AMT = : gnLimitAmt, RATE_AMT = :gnRateAmt
+				WHERE	MIN 	 = :gnMin;
+	
+	#ifdef	_DEBUG
+		*LogM << LogM->ErrorCode(0)<<"Limit and Rate Amt Update....Result :["<<sqlca.sqlcode<<"]"<<  endl;
+	#endif
+	if(sqlca.sqlcode == 0) 
+		EXEC	SQL	COMMIT	WORK;
+	else if(sqlca.sqlcode == 1403)
+	{
+		
+		EXEC SQL	INSERT	INTO	T_THRESHOLD_AMT(LIMIT_AMT, RATE_AMT) 		
+					VALUES(:gnLimitAmt, :gnRateAmt);
+					
+		#ifdef	_DEBUG
+		*LogM << LogM->ErrorCode(0)<<"Limit and Rate Amt Insert...Result :["<<sqlca.sqlcode<<"]"<<  endl;
+		#endif
+
+		if(sqlca.sqlcode == 0) 
+			EXEC	SQL	COMMIT	WORK;
+	}
+		
+	return(sqlca.sqlcode);
+}
+

@@ -1,0 +1,23 @@
+include /home/uda/common/env_proc.mk
+include /home/uda/common/env_uda_64.mk
+
+MFLAGS=-D_SVC1
+EXE = filter
+OBJS = filterC.o
+
+all : $(EXE)
+
+$(EXE) : $(OBJS)
+	$(CC) -o $@ $(OBJS) $(CFLAGS) $(PROLDLIBS) $(UDALINKLIBES)
+
+install : $(EXE)
+	$(INSTALL2) $(EXE) $(COMMBINPATH)/
+	rm -rf $(EXE) *.o core 
+
+clean :	
+	rm -rf $(EXE) *.o *.cpp core 
+	touch *.pc
+
+
+
+

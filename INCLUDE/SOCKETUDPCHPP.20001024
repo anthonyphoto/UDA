@@ -1,0 +1,1514 @@
+#ifndef	_SOCKET_CLASS_HEADER_
+#define	_SOCKET_CLASS_HEADER_
+
+#include <iostream.h>
+#include <stdio.h>
+#include <string.h>
+#include <strings.h>
+#include <stdlib.h>
+#include <curses.h>
+
+#include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <signal.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/file.h>
+#include <sys/time.h>
+//#include <sys/types.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+
+/* sockC */
+#define SOCKET_FAILURE	   -1
+#define SOCKET_TIMEOUT		0
+#define SOCKET_SUCCESS	    1    
+#define	LOCALBUF_MAXLEN     1024
+/* sockC */
+	
+class SockC{
+
+	
+	protected:
+/*	
+		int fdSock;
+		int fdListenSock;*/
+		int	maxSockNo;		//select system call
+		int nBackLog;
+		int nPort;
+		char *pszHostIP;
+		fd_set readFDS;		//select system call
+    	struct sockaddr_in addr;
+		struct sockaddr_in *pClientAddr;
+		struct	timeval  _timeout;
+	public:
+		int fdSock;
+		int fdListenSock;
+		//////////////////////////////////////////////////
+		int    nLen;
+		struct sockaddr_in serv_addr;
+		struct sockaddr_in cli_addr;
+		struct sockaddr_in send_addr;
+		struct sockaddr_in recv_addr;
+		//////////////////////////////////////////////////
+
+		// constructor
+		SockC()
+		{
+			//performancecout << " SockC::SockC() Constructor!!!!!!!!!!!\n";
+		};
+		SockC(char *ip, int port);
+		//SockC(char *ip, int port, unsigned short backLog=0);
+		int CreateTCPClient();
+		int CreateTCPServer();
+		int CloseTCPSock();
+		int CloseTCPSock(int acceptSock);
+		int ShutdownTCPSock();
+		int ShutdownTCPSock(int acceptSock);
+		int AcceptSocket(int fdListenSock);
+		int user_readn(char *ptr, int nbytes);
+		int user_writen(char *ptr, int nbytes);
+		
+		
+		virtual	int SelectWait( int sec=0, int msec=0 );//select system call
+		//read/write socket                                                 // read/write
+		int WriteSocket(const void *pvBuf, int nBytes);// PMS NMS CIF CDS TDX SMC
+		int ReadSocket(void *pvBuf, int nBytes);//NMS CIF TDX OBS SMC
+		BOOL WriteSocketEx( const void *pvBuf, int nBytes);//TDX
+		BOOL ReadSocketEx(void *pvBuf, int nBytes);//X
+		int SetSocketTimeout(int bSendOption, BOOL nTime/* millisec*/);//X
+		int WriteSocketTimeout( const void *pvBuf, int nBytes, int nTime);//X              ?
+		int ReadSocketTimeout( void *pvBuf, int nBytes, int nTime);//CIF TDX
+		int WriteSocketTimeoutEx( const void *pvBuf, int nBytes, int nTime);//X            ?
+		int ReadSocketTimeoutEx( void *pvBuf, int nBytes, int nTime);//CIF TDX
+
+		//send/recv to/from socket                                           // send/recv flag값있음.
+		int SendSocket( const void *pvBuf, int nBytes, unsigned int nFlags);//X
+		int RecvSocket( void *pvBuf, int nBytes, unsigned int nFlags);//PMS TDX
+		BOOL SendSocketEx( const void *pvBuf, int nBytes, unsigned int nFlags);//X
+		BOOL RecvSocketEx( void *pvBuf, int nBytes, unsigned int nFlags);//PMS
+		int SendSocketTimeout( const void *pvBuf, int nBytes, unsigned int nFlags, int nTime);//X
+		int RecvSocketTimeout( void *pvBuf, int nBytes, unsigned int nFlags, int nTime);//  X TDX X
+		int SendSocketTimeoutEx( const void *pvBuf, int nBytes, unsigned int nFlags, int nTime);//X
+		int RecvSocketTimeoutEx(void *pvBuf, int nBytes, unsigned int nFlags, int nTime);//  X TDX X
+		int FdisSet(void);
+		// remove all data in socket
+		int ClearSocket();
+		BOOL ClearSocketEx( int nClearBytes);
+		int ClearSocketTimeout( int nTime);
+		BOOL ClearSocketTimeoutEx( int nClearBytes, int nTime);
+
+
+		//int CreateUDPServer(unsigned short usPortNo);
+		int CreateUDPServer(char *ip, unsigned short usPortNo);
+		//int CreateUDPClient(char *ip, unsigned short usPortNo);
+		int CreateUDPClient(char *ip, unsigned short usPortNo, char *local_ip, unsigned short local_usPortNo);
+		int SendtoUDPSocket(const void *pvBuf, int nBytes, const char *pszHostIP, unsigned short nPort);
+		int RecvfromUDPSocket(const void *pvBuf, int nBytes, unsigned int nFlags);
+		int RecvfromUDPSocketEx(const void *pvBuf, int nBytes, unsigned int nFlags);
+
+
+
+
+	public:
+		virtual ~SockC();
+};
+
+
+
+
+
+int SetNonBlocking(int fd);
+SockC::SockC(char *ip, int port)
+{
+	fdSock = -1; // not connected
+	nPort = port;
+	pszHostIP = ip;
+	nBackLog = 5;
+	bzero((char*) &addr, sizeof(addr));
+    addr.sin_family = AF_INET;
+    // server: addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	// client: addr.sin_addr.s_addr = s_addr;
+    addr.sin_port = htons(nPort);
+
+}
+SockC::~SockC()
+{
+	//performancecout << " SockC::~SockC() Destructor!!!!!!!!!!!\n";
+	CloseTCPSock();
+}
+int SockC::CreateTCPClient()
+{
+    unsigned long s_addr;
+
+    if ((fdSock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+	{
+		perror("CreateTCPClient: Couldn't open");
+        return -1;
+	}
+
+    if (!pszHostIP)
+    {
+        int addrlen = sizeof(addr);
+
+        if (getsockname(fdSock, &addr, &addrlen) == -1)
+        {
+            perror("CreateTCPClient: Couldn't getsockname");
+            return -1;
+        }
+
+        s_addr = addr.sin_addr.s_addr;
+    }
+    else
+    {
+        s_addr = inet_addr(pszHostIP);
+    }
+    addr.sin_addr.s_addr = s_addr;
+    //if (connect(fdSock, (struct sockaddr*) &addr, sizeof(addr)) == -1)
+    if (connect(fdSock,  &addr, sizeof(addr)) == -1)
+	{
+        perror("CreateTCPClient: Couldn't connect");
+        close(fdSock);
+        return -1;
+	}
+
+    return 0;
+
+}
+
+int SockC::CreateTCPServer()
+{
+
+    int optval = 1, optlen = sizeof(optval);
+	int fdListenSock;
+
+    if ((fdListenSock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+	{
+		perror("CreateTCPServer: Couldn't open");
+        return -1;
+	}
+
+
+    /* SO_REUSEPORT */
+  if (setsockopt(fdListenSock, SOL_SOCKET, SO_REUSEADDR, (const void *) &optval, optlen) == -1)
+	{
+        perror("CreateTCPServer: Couldn't setsockopt");
+        return -1;
+	}
+
+//  addr.sin_addr.s_addr = htonl(INADDR_ANY);
+   addr.sin_addr.s_addr = inet_addr(pszHostIP);
+    if (bind(fdListenSock,  &addr, sizeof(addr)) == -1)
+	{
+		perror("CreateTCPServer: Couldn't bind");
+        close(fdListenSock);
+        return -1;
+	}
+
+    if (listen(fdListenSock, nBackLog) == -1)
+	{
+		perror("CreateTCPServer: Couldn't listen");
+        close(fdListenSock);
+        return -1;
+	}
+
+    return fdListenSock;
+}
+/*
+*	desc: It's for ClientTCPSocket
+*
+*
+*
+*
+*
+*
+*/
+
+int SockC::CloseTCPSock()
+{
+    if (fdSock > 0 && close(fdSock) == -1)
+	{
+		perror("CloseTCPSocket: Couldn't close");
+        return -1;
+	}
+
+    return 0;
+}
+/*
+*	desc: It's for ServerTCPSocket. Because Server needs two socket types.
+*		One is a member 'fdsock' for listen , the other is not a member for accept.
+*		so It needs the other type CloseTCPSock(int acceptSock)
+*
+*	args: sock descrptor to be closed.
+*
+*
+*/
+
+int SockC::CloseTCPSock(int acceptSock)
+{
+    if (acceptSock > 0 && close(acceptSock) == -1)
+	{
+		perror("CloseTCPSocket: Couldn't close");
+        return -1;
+	}
+
+    return 0;
+}
+
+int SockC::ShutdownTCPSock()
+{
+    if (fdSock > 0 && shutdown(fdSock, 2) == -1)
+	{
+        perror("ShutdownTCPSocket: Couldn't shutdown");
+        return 0;
+	}
+
+    return -1;
+}
+int SockC::ShutdownTCPSock(int acceptSock)
+{
+    if (acceptSock > 0 && shutdown(acceptSock, 2) == -1)
+	{
+        perror("ShutdownTCPSocket: Couldn't shutdown");
+        return 0;
+	}
+
+    return -1;
+}
+int SockC::AcceptSocket(int fdListenSock)
+{
+
+    int nClientAddrLen;
+
+    nClientAddrLen = sizeof(struct sockaddr_in);
+
+    fdSock = accept(fdListenSock,  pClientAddr, &nClientAddrLen);
+    if (fdSock == -1)
+    {
+        perror("AcceptSocket");
+        return -1;
+    }
+
+    return fdSock;
+}
+
+int SockC::WriteSocket(const void *pvBuf, int nBytes)
+{
+	int nWrittenBytes;
+
+#ifdef _EINTR_IGNORE
+    while ((nWrittenBytes = write(fdSock, pvBuf, nBytes)) == -1)
+	{
+        if (errno != EINTR)
+        {
+            perror("WriteSocket");
+            return -1;
+        }
+	}
+#else /* not _EINTR_IGNORE */
+	nWrittenBytes = write(fdSock, pvBuf, nBytes);
+
+	if (nWrittenBytes == -1)
+	{
+		perror("WriteSocket");
+		return -1;
+	}
+#endif /* not _EINTR_IGNORE */
+
+	return nWrittenBytes;
+}
+
+int SockC::ReadSocket(void *pvBuf, int nBytes)
+{
+	int nReadBytes;
+
+    while ((nReadBytes = read(fdSock, pvBuf, nBytes)) == -1)
+	{
+        if (errno != EINTR)
+        {
+            perror("ReadSocket");
+            return -1;
+        }
+	}
+	/*jjj
+	nReadBytes = read(fdSock, pvBuf, nBytes);
+	if (nReadBytes == -1)
+	{
+		perror("ReadSocket");
+		return -1;
+	}
+*/
+	return nReadBytes;
+}
+
+BOOL SockC::WriteSocketEx( const void *pvBuf, int nBytes)
+{
+	int nWrittenBytes;
+
+#ifdef _EINTR_IGNORE
+    while ((nWrittenBytes = write(fdSock, pvBuf, nBytes)) == -1)
+	{
+        if (errno != EINTR)
+        {
+            perror("WriteSocketEx");
+            return FALSE;
+        }
+	}
+#else /* not _EINTR_IGNORE */
+    nWrittenBytes = write(fdSock, pvBuf, nBytes);
+    if (nWrittenBytes == -1)
+	{
+		perror("WriteSocketEx");
+        return FALSE;
+	}
+#endif /* not _EINTR_IGNORE */
+
+	if (nWrittenBytes != nBytes)
+	{
+#ifdef _DEBUGDUMP
+        DebugDump("WriteSocketEx: write error\n");
+#endif /* _DEBUGDUMP */
+        return FALSE;
+	}
+    return TRUE;
+}
+
+BOOL SockC::ReadSocketEx(void *pvBuf, int nBytes)
+{
+	int nReadBytes;
+
+#ifdef _EINTR_IGNORE
+    while ((nReadBytes = read(fdSock, pvBuf, nBytes)) == -1)
+	{
+        if (errno != EINTR)
+        {
+            perror("ReadSocketEx");
+            return FALSE;
+        }
+	}
+#else /* not _EINTR_IGNORE */
+	nReadBytes = read(fdSock, pvBuf, nBytes);
+    if (nReadBytes == -1)
+	{
+		perror("ReadSocketEx");
+        return FALSE;
+	}
+#endif /* not _EINTR_IGNORE */
+
+	if (nReadBytes != nBytes)
+	{
+#ifdef _DEBUGDUMP
+        DebugDump("ReadSocketEx: read error\n");
+#endif /* _DEBUGDUMP */
+        return FALSE;
+	}
+
+    return TRUE;
+}
+int SockC::SetSocketTimeout(int bSendOption, BOOL nTime/* millisec*/)
+{
+	int option_name;
+	struct timeval timeout;
+
+	if (bSendOption)
+		option_name = SO_SNDTIMEO;
+	else
+		option_name = SO_RCVTIMEO;
+
+	timeout.tv_sec = nTime / 100;
+	timeout.tv_usec = nTime % 100;
+
+    if (setsockopt(fdSock, SOL_SOCKET, option_name, (const void *) &timeout, sizeof(struct timeval)) == -1)
+	{
+        perror("SetSocketTimeout: Couldn't setsockopt");
+        return -1;
+	}
+
+	return 0;
+}
+
+
+int SockC::WriteSocketTimeout( const void *pvBuf, int nBytes, int nTime)
+{
+    int flags;
+    int nWrittenBytes;
+    clock_t t = SETTIMEOUT(nTime); //clock()을 위해서 초기화
+
+    if ((flags = SetNonBlocking(fdSock)) == -1)
+        return SOCKET_FAILURE;
+
+    do {
+        nWrittenBytes = write(fdSock, pvBuf, nBytes);
+        if (nWrittenBytes == -1)
+        {
+#ifdef _EINTR_IGNORE
+            if (errno == EINTR)
+                continue;
+#endif /* _EINTR_IGNORE */
+            perror("WriteSocketTimeout");
+            fcntl(fdSock, F_SETFL, flags);
+            return SOCKET_FAILURE;
+        }
+        else if (nWrittenBytes > 0)
+        {
+            if (nWrittenBytes >= nBytes)
+            {
+                fcntl(fdSock, F_SETFL, flags);
+                return SOCKET_SUCCESS;
+            }
+            break;
+        }
+    } while (clock() < t);
+
+    fcntl(fdSock, F_SETFL, flags);
+    return SOCKET_TIMEOUT;
+}
+
+int SockC::ReadSocketTimeout( void *pvBuf, int nBytes, int nTime)
+{
+    int flags;
+    int nReadBytes;
+    clock_t t = SETTIMEOUT(nTime);
+
+    if ((flags = SetNonBlocking(fdSock)) == -1)
+        return SOCKET_FAILURE;
+
+    do {
+        nReadBytes = read(fdSock, pvBuf, nBytes);
+        if (nReadBytes == -1)
+        {
+#ifdef _EINTR_IGNORE
+            if (errno == EINTR)
+                continue;
+#endif /* _EINTR_IGNORE */
+            perror("ReadSocketTimeout");
+            fcntl(fdSock, F_SETFL, flags);
+    //performancecout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+    //performancecout << "[SOCKET_FAILURE   nReadBytes => " << nReadBytes << endl;
+    //performancecout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+            return SOCKET_FAILURE;
+        }
+        else if (nReadBytes > 0)
+        {
+            if (nReadBytes >= nBytes)
+            {
+                fcntl(fdSock, F_SETFL, flags);
+    //performancecout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+    //performancecout << "[SOCKET_SUCCESS   nReadBytes => " << nReadBytes << endl;
+    //performancecout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+                return SOCKET_SUCCESS;
+            }
+            break;
+        }
+    } while (clock() < t);
+
+    fcntl(fdSock, F_SETFL, flags);
+    //performancecout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+    //performancecout << "[SOCKET_TIMEOUT   nReadBytes => " << nReadBytes << endl;
+    //performancecout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+    return SOCKET_TIMEOUT;
+}
+
+int SockC::WriteSocketTimeoutEx( const void *pvBuf, int nBytes, int nTime)
+{
+    int flags;
+    int nWrittenBytes, nTotalBytes = 0;
+    clock_t t = SETTIMEOUT(nTime);
+
+    if ((flags = SetNonBlocking(fdSock)) == -1)
+        return -1;
+
+    do {
+        nWrittenBytes = write(fdSock, (char *) pvBuf + nTotalBytes, nBytes - nTotalBytes);
+        if (nWrittenBytes == -1)
+        {
+#ifdef _EINTR_IGNORE
+            if (errno == EINTR)
+                continue;
+#endif /* _EINTR_IGNORE */
+            perror("WriteSocketTimeoutEx");
+            fcntl(fdSock, F_SETFL, flags);
+            return -1;
+        }
+
+        nTotalBytes += nWrittenBytes;
+    } while (clock() < t && nBytes > nTotalBytes);
+
+    fcntl(fdSock, F_SETFL, flags);
+    return nTotalBytes;
+}
+
+int SockC::ReadSocketTimeoutEx( void *pvBuf, int nBytes, int nTime)
+{
+    int flags;
+    int nReadBytes, nTotalBytes = 0;
+    clock_t t = SETTIMEOUT(nTime);
+
+    if ((flags = SetNonBlocking(fdSock)) == -1)
+        return -1;
+
+    do {
+        nReadBytes = read(fdSock, (char *) pvBuf + nTotalBytes, nBytes - nTotalBytes);
+        if (nReadBytes == -1)
+        {
+#ifdef _EINTR_IGNORE
+            if (errno == EINTR)
+                continue;
+#endif /* _EINTR_IGNORE */
+            perror("ReadSocketTimeoutEx");
+            fcntl(fdSock, F_SETFL, flags);
+            return -1;
+        }
+
+        nTotalBytes += nReadBytes;
+    } while (clock() < t && nBytes > nTotalBytes);
+
+    fcntl(fdSock, F_SETFL, flags);
+    return nTotalBytes;
+}
+int SockC::SendSocket( const void *pvBuf, int nBytes, unsigned int nFlags)
+{
+	int nSendBytes;
+
+//#ifdef _EINTR_IGNORE
+    while ((nSendBytes = send(fdSock, pvBuf, nBytes, nFlags)) == -1)
+	{
+        if (errno != EINTR)
+        {
+            perror("SendSocket");
+            return -1;
+        }
+	}
+//#else /* not _EINTR_IGNORE */
+/*    nSendBytes = send(fdSock, pvBuf, nBytes, nFlags);
+	if (nSendBytes == -1)
+	{
+		perror("SendSocket");
+		return -1;
+	}*/
+//#endif /* not _EINTR_IGNORE */
+
+	return nSendBytes;
+}
+
+int SockC::RecvSocket( void *pvBuf, int nBytes, unsigned int nFlags)
+{
+	int nRecvBytes;
+
+    while ((nRecvBytes = recv(fdSock, pvBuf, nBytes, nFlags)) == -1)
+	{
+        if (errno != EINTR)
+        {
+            perror("RecvSocket");
+            return -1;
+        }
+	}
+/*
+	nRecvBytes = recv(fdSock, pvBuf, nBytes, nFlags);
+	if (nRecvBytes == -1)
+	{
+		perror("RecvSocket");
+		return -1;
+	}
+*/
+	return nRecvBytes;
+}
+BOOL SockC::SendSocketEx( const void *pvBuf, int nBytes, unsigned int nFlags)
+{
+	int nSendBytes;
+
+#ifdef _EINTR_IGNORE
+    while ((nSendBytes = send(fdSock, pvBuf, nBytes, nFlags)) == -1)
+	{
+        if (errno != EINTR)
+        {
+            perror("SendSocketEx");
+            return FALSE;
+        }
+	}
+#else /* not _EINTR_IGNORE */
+    nSendBytes = send(fdSock, pvBuf, nBytes, nFlags);
+    if (nSendBytes == -1)
+	{
+		perror("SendSocketEx");
+        return FALSE;
+	}
+#endif /* not _EINTR_IGNORE */
+
+	if (nSendBytes != nBytes)
+	{
+#ifdef _DEBUGDUMP
+        DebugDump("SendSocketEx: send error\n");
+#endif /* _DEBUGDUMP */
+        return FALSE;
+	}
+
+    return TRUE;
+}
+BOOL SockC::RecvSocketEx( void *pvBuf, int nBytes, unsigned int nFlags)
+{
+	int nRecvBytes;
+
+#ifdef _EINTR_IGNORE
+    while ((nRecvBytes = recv(fdSock, pvBuf, nBytes, nFlags)) == -1)
+	{
+        if (errno != EINTR)
+        {
+            perror("RecvSocketEx");
+            return FALSE;
+        }
+	}
+#else /* not _EINTR_IGNORE */
+	nRecvBytes = recv(fdSock, pvBuf, nBytes, nFlags);
+    if (nRecvBytes == -1)
+	{
+		perror("RecvSocketEx");
+        return FALSE;
+	}
+#endif /* not _EINTR_IGNORE */
+
+	if (nRecvBytes != nBytes)
+	{
+#ifdef _DEBUGDUMP
+        DebugDump("RecvSocketEx: receive error\n");
+#endif /* _DEBUGDUMP */
+        return FALSE;
+	}
+
+    return TRUE;
+}
+int SockC::SendSocketTimeout( const void *pvBuf, int nBytes, unsigned int nFlags, int nTime)
+{
+    int flags;
+    int nSendBytes;
+    clock_t t = SETTIMEOUT(nTime);
+
+    if ((flags = SetNonBlocking(fdSock)) == -1)
+        return SOCKET_FAILURE;
+
+    do {
+        nSendBytes = send(fdSock, pvBuf, nBytes, nFlags);
+        if (nSendBytes == -1)
+        {
+#ifdef _EINTR_IGNORE
+            if (errno == EINTR)
+                continue;
+#endif /* _EINTR_IGNORE */
+            perror("SendSocketTimeout");
+            fcntl(fdSock, F_SETFL, flags);
+            return SOCKET_FAILURE;
+        }
+        else if (nSendBytes > 0)
+        {
+            if (nSendBytes >= nBytes)
+            {
+                fcntl(fdSock, F_SETFL, flags);
+                return SOCKET_SUCCESS;
+            }
+            break;
+        }
+    } while (clock() < t);
+
+    fcntl(fdSock, F_SETFL, flags);
+    return SOCKET_TIMEOUT;
+}
+
+
+int SockC::user_readn(char *ptr, int nbytes)
+{
+	int nleft, nread;
+	nleft = nbytes;
+	while (nleft > 0) {
+		nread = read(fdSock, ptr, nleft);
+		if (nread < 0)
+			return(nread);
+		else if (nread == 0)
+			break;
+		nleft -= nread;
+		ptr += nread;
+	}
+	return (nbytes - nleft);
+}
+	
+int SockC::user_writen(char *ptr, int nbytes)
+{
+	
+	int nleft, nwritten;
+	nleft = nbytes;
+	while (nleft > 0) {
+		nwritten = write(fdSock, ptr, nleft);
+		if (nwritten <= 0)
+			return(nwritten);
+		nleft -= nwritten;
+		ptr += nwritten;
+	}
+	return (nbytes - nleft);
+}
+	
+/*
+int SockC::RecvSocketTimeout( void *pvBuf, int nBytes, unsigned int nFlags, int nTime)
+{
+	int nByte;
+    int flags;
+    int nRecvBytes=0;
+    clock_t t = SETTIMEOUT(nTime);
+
+	nByte = nBytes;
+	
+    if ((flags = SetNonBlocking(fdSock)) == -1)
+        return SOCKET_FAILURE;
+
+    do {
+        nRecvBytes = recv(fdSock, pvBuf, (nByte=(nByte-nRecvBytes)), nFlags);
+        
+        if (nRecvBytes == -1)
+        {
+//#ifdef _EINTR_IGNORE
+//            if (errno == EINTR)
+//                continue;
+//#endif //_EINTR_IGNORE
+            perror("RecvSocketTimeout");
+            fcntl(fdSock, F_SETFL, flags);
+    //performancecout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+    //performancecout << "[SOCKET_FAILURE   nRecvBytes => " << nRecvBytes << endl;
+    //performancecout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+            return SOCKET_FAILURE;
+        }
+        else if (nRecvBytes > 0)
+        {
+            if (nRecvBytes >= nByte)
+            {
+                fcntl(fdSock, F_SETFL, flags);
+    //performancecout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+    //performancecout << "[SOCKET_SUCCESS   nRecvBytes => " << nRecvBytes << endl;
+    //performancecout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+                return SOCKET_SUCCESS;
+            }
+            break;
+        }
+    } while ( (clock() < t) && (nRecvBytes = nByte) );
+
+    fcntl(fdSock, F_SETFL, flags);
+    
+    //performancecout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+    //performancecout << "[SOCKET_TIMEOUT   nRecvBytes => " << nRecvBytes << endl;
+    //performancecout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+    
+    return SOCKET_TIMEOUT;
+}
+*/
+
+
+
+
+int SockC::SendSocketTimeoutEx( const void *pvBuf, int nBytes, unsigned int nFlags, int nTime)
+{
+    int flags;
+    int nSendBytes, nTotalBytes = 0;
+    clock_t t = SETTIMEOUT(nTime);
+
+    if ((flags = SetNonBlocking(fdSock)) == -1)
+        return -1;
+
+    do {
+        nSendBytes = send(fdSock, (char *) pvBuf + nTotalBytes, nBytes - nTotalBytes, nFlags);
+        if (nSendBytes == -1)
+        {
+#ifdef _EINTR_IGNORE
+            if (errno == EINTR)
+                continue;
+#endif /* _EINTR_IGNORE */
+            perror("SendSocketTimeoutEx");
+            fcntl(fdSock, F_SETFL, flags);
+            return -1;
+        }
+
+        nTotalBytes += nSendBytes;
+    } while (clock() < t && nBytes > nTotalBytes);
+
+    fcntl(fdSock, F_SETFL, flags);
+    return nTotalBytes;
+}
+
+int SockC::ClearSocket()
+{
+    int nReadBytes;
+    int nClearBytes = 0;
+    char szBuffer[LOCALBUF_MAXLEN];
+
+#ifdef _EINTR_IGNORE
+    do {
+        while ((nReadBytes = read(fdSock, szBuffer, LOCALBUF_MAXLEN)) > 0)
+            nClearBytes += nReadBytes;
+
+        if (nReadBytes == -1)
+        {
+            if (errno != EINTR)
+            {
+                perror("ClearSocket");
+                break;
+            }
+        }
+    } while (nClearBytes > 0);
+#else /* not _EINTR_IGNORE */
+    while ((nReadBytes = read(fdSock, szBuffer, LOCALBUF_MAXLEN)) > 0)
+        nClearBytes += nReadBytes;
+
+    if (nReadBytes == -1)
+    {
+        perror("ClearSocket");
+    }
+#endif /* not _EINTR_IGNORE */
+
+    return nClearBytes;
+}
+BOOL SockC::ClearSocketEx( int nClearBytes)
+{
+    int nReadBytes;
+    char szBuffer[LOCALBUF_MAXLEN];
+
+    while (nClearBytes > 0)
+    {
+        if (nClearBytes > LOCALBUF_MAXLEN)
+            nReadBytes = LOCALBUF_MAXLEN;
+        else
+            nReadBytes = nClearBytes;
+
+        nReadBytes = read(fdSock, szBuffer, nReadBytes);
+        if (nReadBytes == -1)
+        {
+#ifdef _EINTR_IGNORE
+            if (errno == EINTR)
+                continue;
+#endif /* _EINTR_IGNORE */
+            perror("ClearSocketEx");
+            return FALSE;
+        }
+
+        nClearBytes -= nReadBytes;
+    }
+
+    return TRUE;
+}
+int SockC::ClearSocketTimeout( int nTime)
+{
+    int flags;
+    int nReadBytes;
+    int nClearBytes = 0;
+    char szBuffer[LOCALBUF_MAXLEN];
+    clock_t t = SETTIMEOUT(nTime);
+
+    if ((flags = SetNonBlocking(fdSock)) == -1)
+        return -1;
+
+    do {
+        nReadBytes = read(fdSock, szBuffer, LOCALBUF_MAXLEN);
+        if (nReadBytes == -1)
+        {
+#ifdef _EINTR_IGNORE
+            if (errno == EINTR)
+                continue;
+#endif /* _EINTR_IGNORE */
+            perror("ClearSocketTimeout");
+            break;
+        }
+
+        nClearBytes += nReadBytes;
+    } while (clock() < t);
+
+    fcntl(fdSock, F_SETFL, flags);
+    return nClearBytes;
+}
+BOOL SockC::ClearSocketTimeoutEx( int nClearBytes, int nTime)
+{
+    int flags;
+    int nReadBytes;
+    char szBuffer[LOCALBUF_MAXLEN];
+    clock_t t = SETTIMEOUT(nTime);
+
+    if ((flags = SetNonBlocking(fdSock)) == -1)
+        return FALSE;
+
+    do {
+        if (nClearBytes > LOCALBUF_MAXLEN)
+            nReadBytes = LOCALBUF_MAXLEN;
+        else
+            nReadBytes = nClearBytes;
+
+        nReadBytes = read(fdSock, szBuffer, nReadBytes);
+        if (nReadBytes == -1)
+        {
+#ifdef _EINTR_IGNORE
+            if (errno == EINTR)
+                continue;
+#endif /* _EINTR_IGNORE */
+            perror("ClearSocketTimeoutEx");
+            fcntl(fdSock, F_SETFL, flags);
+            return FALSE;
+        }
+
+        nClearBytes -= nReadBytes;
+    } while (clock() < t && nClearBytes > 0);
+
+    fcntl(fdSock, F_SETFL, flags);
+    return TRUE;
+}
+
+int SetNonBlocking(int fd)
+{
+    int flags;
+
+    if ((flags = fcntl(fd, F_GETFL, DUMMY)) == -1)
+        return -1;
+
+    if (fcntl(fd, F_SETFL, flags | O_NDELAY) == -1)
+        return -1;
+
+    return flags;
+}
+
+int SockC::SelectWait(int sec, int msec)
+{
+	struct timeval timeout;
+
+	timeout.tv_sec = sec;
+	timeout.tv_usec = msec;
+
+	
+	FD_ZERO( &readFDS );
+	FD_SET(fdSock, &readFDS );
+
+	int ret = select( maxSockNo, (int*)&readFDS, (int*)0, (int*)0, &timeout);
+////	int ret = select( maxSockNo, &readFDS, (fd_set *)0, (fd_set *)0, &timeout);
+
+// < 0 : error
+// = 0 : no data, timeout
+// > 0 : exist data
+	if( ret < 0 )
+		//performancecout<<"select - synchronous I/O multiplexing Fail.";
+	
+	return ret;
+}
+
+int SockC::FdisSet(void)
+{
+	if ((fdSock> 0) && (FD_ISSET(fdSock, &readFDS)))
+		return(1);
+	else return(0);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+///////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+// OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD
+///////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+int SockC::RecvSocketTimeout( void *pvBuf, int nBytes, unsigned int nFlags, int nTime)
+{
+    int flags;
+    int nRecvBytes;
+    clock_t t = SETTIMEOUT(nTime);
+
+
+	cout << "RecvSocketTimeout recv nBytes=>" << nBytes << endl;
+
+
+    if ((flags = SetNonBlocking(fdSock)) == -1)
+        return SOCKET_FAILURE;
+
+    do {
+        nRecvBytes = recv(fdSock, pvBuf, nBytes, nFlags);
+        
+        if (nRecvBytes == -1)
+        {
+//#ifdef _EINTR_IGNORE
+//            if (errno == EINTR)
+//                continue;
+//#endif //_EINTR_IGNORE
+            perror("RecvSocketTimeout");
+            fcntl(fdSock, F_SETFL, flags);
+    //cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+    //cout << "[SOCKET_FAILURE   nRecvBytes => " << nRecvBytes << endl;
+    //cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+            return SOCKET_FAILURE;
+        }
+        else if (nRecvBytes > 0)
+        {
+            if (nRecvBytes >= nBytes)
+            {
+                fcntl(fdSock, F_SETFL, flags);
+    //cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+    //cout << "[SOCKET_SUCCESS   nRecvBytes => " << nRecvBytes << endl;
+    //cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+                return SOCKET_SUCCESS;
+            }
+            break;
+        }
+    } while (clock() < t);
+
+    fcntl(fdSock, F_SETFL, flags);
+    
+    //cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+    //cout << "[SOCKET_TIMEOUT   nRecvBytes => " << nRecvBytes << endl;
+    //cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+    
+    return SOCKET_TIMEOUT;
+}
+
+
+int SockC::RecvSocketTimeoutEx(void *pvBuf, int nBytes, unsigned int nFlags, int nTime)
+{
+    int flags;
+    int nRecvBytes, nTotalBytes = 0;
+    clock_t t = SETTIMEOUT(nTime);
+
+    if ((flags = SetNonBlocking(fdSock)) == -1)
+        return -1;
+
+    do {
+        nRecvBytes = recv(fdSock, (char *) pvBuf + nTotalBytes, nBytes - nTotalBytes, nFlags);
+        if (nRecvBytes == -1)
+        {
+#ifdef _EINTR_IGNORE
+            if (errno == EINTR)
+                continue;
+#endif // _EINTR_IGNORE
+            perror("RecvSocketTimeoutEx");
+            fcntl(fdSock, F_SETFL, flags);
+            return -1;
+        }
+
+        nTotalBytes += nRecvBytes;
+    } while (clock() < t && nBytes > nTotalBytes);
+
+    fcntl(fdSock, F_SETFL, flags);
+    return nTotalBytes;
+}
+///////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+// OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD
+///////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+*/
+
+
+
+
+
+
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+// NEW
+///////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+int SockC::RecvSocketTimeout( void *pvBuf, int nBytes, unsigned int nFlags, int nTime)
+{
+	//ihy@@@
+    int flags;	
+	clock_t t = SETTIMEOUT(nTime);//ihy
+    int nRet, errno =0 ;
+    struct timeval timeout;
+    int nRecvBytes, nTotalBytes = 0;
+	timeout.tv_sec = 3;//time setting
+	timeout.tv_usec = 0;
+	maxSockNo = fdSock+1;
+	
+	FD_ZERO( &readFDS );
+	FD_SET(fdSock, &readFDS );
+// < 0 : error
+// = 0 : no data, timeout
+// > 0 : exist data
+	nRet = select( maxSockNo, (int*)&readFDS, (int*)0, (int*)0, &timeout);
+////	nRet = select( maxSockNo, &readFDS, (fd_set *)0, (fd_set *)0, &timeout);
+	if ( nRet< 0)
+	{
+		if(errno == EINTR) return(0);
+		else return(-1);
+	}
+	else if ( nRet > 0)
+	{
+		if((fdSock > 0)&&(FD_ISSET(fdSock, &readFDS)))
+		{
+			//ihy@@@
+		    if ((flags = SetNonBlocking(fdSock)) == -1)
+        		return -1;
+			do {
+				//performancecout << "RecvSocketTimeout recv nBytes=>" << nBytes << endl;
+        		nRecvBytes = recv(fdSock, (char *) pvBuf + nTotalBytes, nBytes - nTotalBytes, nFlags);
+        		if (nRecvBytes == -1)
+           			 return -1;
+        		nTotalBytes += nRecvBytes;
+        		//performancecout << "RecvSocketTimeout nTotalBytes=>" << nTotalBytes << endl;
+        	//} while (nBytes > nTotalBytes);
+    		} while ( (nBytes > nTotalBytes) && (clock() < t) );//ihy
+    	}
+    	//ihy@@@
+   	    fcntl(fdSock, F_SETFL, flags);
+    	return nTotalBytes;
+	}
+	else if ( nRet == 0) return 0;
+}
+
+int SockC::RecvSocketTimeoutEx(void *pvBuf, int nBytes, unsigned int nFlags, int nTime)
+{
+	//ihy@@@
+    int flags;	
+	clock_t t = SETTIMEOUT(nTime);//ihy
+    int nRet, errno =0 ;
+    struct timeval timeout;
+	int nRecvBytes, nTotalBytes = 0;
+	
+	timeout.tv_sec = 3;//time setting
+	timeout.tv_usec = 0;
+	maxSockNo = fdSock+1;
+	
+	FD_ZERO( &readFDS );
+	FD_SET(fdSock, &readFDS );
+// < 0 : error
+// = 0 : no data, timeout
+// > 0 : exist data
+  nRet = select( maxSockNo, (int*)&readFDS, (int*)0, (int*)0, &timeout);
+////	nRet = select( maxSockNo, &readFDS, (fd_set *)0, (fd_set *)0, &timeout);
+	if ( nRet< 0)
+	{
+		if(errno == EINTR) return(0);
+		else return(-1);
+	}
+	else if ( nRet > 0)
+	{
+		if((fdSock > 0)&&(FD_ISSET(fdSock, &readFDS)))
+		{
+			//ihy@@@
+		    if ((flags = SetNonBlocking(fdSock)) == -1)
+        		return -1;
+			do {
+        		nRecvBytes = recv(fdSock, (char *) pvBuf + nTotalBytes, nBytes - nTotalBytes, nFlags);
+        		if (nRecvBytes == -1)
+           			 return -1;
+        		nTotalBytes += nRecvBytes;
+    		//} while (nBytes > nTotalBytes);
+    		} while ( (nBytes > nTotalBytes) && (clock() < t) );//ihy    		
+    	}
+    	//ihy@@@
+   	    fcntl(fdSock, F_SETFL, flags);
+    	return nTotalBytes;
+	}
+	else if ( nRet == 0) return 0;
+
+}
+///////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+// NEW
+///////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+
+/////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////
+// UDP
+/////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////
+int SockC::CreateUDPServer(char *ip, unsigned short usPortNo)
+{
+
+    if ((fdSock = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+	{
+		perror("socket: Couldn't open");
+        return -1;
+	}
+	
+    bzero((char*) &serv_addr, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    ///////////////////////////////////////////////
+    //serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    serv_addr.sin_addr.s_addr = inet_addr(ip);
+    serv_addr.sin_port = htons(usPortNo);
+
+	cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+	cout << "serv_addr.sin_addr.s_addr => " << inet_ntoa((in_addr &)serv_addr.sin_addr.s_addr) << endl;
+	cout << "serv_addr.sin_port => " << serv_addr.sin_port << endl;
+	cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+	
+	//if (bind(fdSock, (struct sockaddr*) &serv_addr, sizeof(serv_addr)) < 0)
+    if (bind(fdSock, &serv_addr, sizeof(serv_addr)) < 0)
+    {
+		perror("socket: Couldn't bind");
+        close(fdSock);
+        return -1;
+	}
+
+    return fdSock;
+}
+
+int SockC::CreateUDPClient(char *ip, unsigned short usPortNo, char *local_ip, unsigned short local_usPortNo)
+{
+
+    if ((fdSock = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+	{
+		perror("socket: Couldn't open");
+        return -1;
+	}
+
+	//Omission possible
+    bzero((char*) &serv_addr, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = inet_addr(ip);
+    serv_addr.sin_port = htons(usPortNo);
+
+	cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+	cout << "serv_addr.sin_addr.s_addr => " << inet_ntoa((in_addr &)serv_addr.sin_addr.s_addr) << endl;
+	cout << "serv_addr.sin_port => " << serv_addr.sin_port << endl;
+	cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+	
+    bzero((char*) &cli_addr, sizeof(cli_addr));
+    cli_addr.sin_family = AF_INET;
+    ///////////////////////////////////////////////
+    //cli_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    //cli_addr.sin_port = htons(0);
+    cli_addr.sin_addr.s_addr = inet_addr(local_ip);
+    cli_addr.sin_port = htons(local_usPortNo);
+
+	cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+	cout << "cli_addr.sin_addr.s_addr => " << inet_ntoa((in_addr &)cli_addr.sin_addr.s_addr) << endl;
+	cout << "cli_addr.sin_port => " << cli_addr.sin_port << endl;
+	cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+	
+	//Omission possible
+    //if (bind(fdSock, (struct sockaddr*) &cli_addr, sizeof(cli_addr)) < 0)
+    if (bind(fdSock, &cli_addr, sizeof(cli_addr)) < 0)
+	{
+		perror("socket: Couldn't bind");
+        close(fdSock);
+        return -1;
+	}
+
+    return fdSock;
+}
+
+//sendto사용시 입력받은 IP/PORT에 send한다
+int SockC::SendtoUDPSocket(const void *pvBuf, int nBytes, const char *pszHostIP, unsigned short nPort)
+{
+	int    nWrittenBytes;
+
+	bzero((char*) &send_addr, sizeof(send_addr));
+	send_addr.sin_family = AF_INET;
+	send_addr.sin_addr.s_addr = inet_addr(pszHostIP);
+	send_addr.sin_port = htons(nPort);
+
+	nWrittenBytes = sendto(fdSock, pvBuf, nBytes, 0, &send_addr, sizeof(send_addr));
+
+	cout << "send_addr.sin_addr.s_addr => " << inet_ntoa((in_addr &)send_addr.sin_addr.s_addr) << endl;
+	cout << "send_addr.sin_port => " << send_addr.sin_port << endl;
+
+	if (nWrittenBytes <= 0)
+	{
+		perror("SendtoUDPSocket");
+		return -1;
+	}
+		
+	return nWrittenBytes;
+}
+
+//recvfrom시 send측 주소를 기억가능
+int SockC::RecvfromUDPSocket(const void *pvBuf, int nBytes, unsigned int nFlags)
+{
+	int    nRecvBytes;
+
+	//nRecvBytes = recvfrom(fdSock, (char *) pvBuf, nBytes, nFlags, (struct sockaddr*) &addr, &nLen);	
+	nRecvBytes = recvfrom(fdSock, (char *) pvBuf, nBytes, nFlags, &recv_addr, &nLen);
+
+	cout << "recv_addr.sin_addr.s_addr => " << inet_ntoa((in_addr &)recv_addr.sin_addr.s_addr) << endl;
+	cout << "recv_addr.sin_port => " << recv_addr.sin_port << endl;
+
+	cout << "getpeername =>" << getpeername(fdSock, &recv_addr, &nLen) << endl;
+
+	cout << "recv_addr.sin_addr.s_addr => " << recv_addr.sin_addr.s_addr << endl;
+	cout << "recv_addr.sin_addr.s_addr => " << inet_ntoa((in_addr &)recv_addr.sin_addr.s_addr) << endl;
+	cout << "recv_addr.sin_port => " << recv_addr.sin_port << endl;
+
+	if (nRecvBytes <= 0)
+	{
+		perror("RecvfromUDPSocket");
+		return -1;
+	}
+		
+	return nRecvBytes;
+}
+
+//nFlags MSG_PEEK이면 Header Length만큼 읽고 소켓에 데이타는 보존
+//nFlags        0이면 전체데이타를 읽고 소켓을 비움
+int SockC::RecvfromUDPSocketEx(const void *pvBuf, int nBytes, unsigned int nFlags)
+{
+	//ihy@@@
+    int flags;	
+    int nRet, errno =0 ;
+    struct timeval timeout;
+	int nRecvBytes, nTotalBytes = 0;
+
+	timeout.tv_sec = 3;//time setting
+	timeout.tv_usec = 0;
+	maxSockNo = fdSock+1;
+	
+	FD_ZERO( &readFDS );
+	FD_SET(fdSock, &readFDS );
+// < 0 : error
+// = 0 : no data, timeout
+// > 0 : exist data
+  nRet = select( maxSockNo, (int*)&readFDS, (int*)0, (int*)0, &timeout);
+////	nRet = select( maxSockNo, &readFDS, (fd_set *)0, (fd_set *)0, &timeout);
+	if ( nRet< 0)
+	{
+		if(errno == EINTR) return(0);
+		else return(-1);
+	}
+	else if ( nRet > 0)
+	{
+		if((fdSock > 0)&&(FD_ISSET(fdSock, &readFDS)))
+		{
+			//ihy@@@
+		    if ((flags = SetNonBlocking(fdSock)) == -1)
+        		return -1;
+///////////////////////////////////////////////////////////
+			//nRecvBytes = recvfrom(fdSock, (char *) pvBuf, nBytes, nFlags, (struct sockaddr*) &addr, &nLen);
+			nRecvBytes = recvfrom(fdSock, (char *) pvBuf, nBytes, nFlags, &recv_addr, &nLen);
+
+			cout << "recv_addr.sin_addr.s_addr => " << recv_addr.sin_addr.s_addr << endl;
+			cout << "recv_addr.sin_addr.s_addr => " << inet_ntoa((in_addr &)recv_addr.sin_addr.s_addr) << endl;
+			cout << "recv_addr.sin_port => " << recv_addr.sin_port << endl;
+
+			cout << "getpeername =>" << getpeername(fdSock, &recv_addr, &nLen) << endl;
+
+			cout << "recv_addr.sin_addr.s_addr => " << recv_addr.sin_addr.s_addr << endl;
+			cout << "recv_addr.sin_addr.s_addr => " << inet_ntoa((in_addr &)recv_addr.sin_addr.s_addr) << endl;
+			cout << "recv_addr.sin_port => " << recv_addr.sin_port << endl;
+
+
+
+			
+			if (nRecvBytes <= 0)
+			{
+				perror("RecvfromUDPSocket");
+				return -1;
+			}
+///////////////////////////////////////////////////////////
+    	}
+    	//ihy@@@
+   	    fcntl(fdSock, F_SETFL, flags);
+    	return nRecvBytes;
+	}
+	else if ( nRet == 0) return 0;
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+

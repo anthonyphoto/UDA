@@ -1,0 +1,170 @@
+#ifndef	TEMPMSGQ_HPP
+#define TEMPMSGQ_HPP
+
+#include <iostream.h>
+#include <fstream.h>
+#include <unistd.h>		// for sleep
+
+#ifndef	MQINFO_HPP
+#include <MqInfo_file.hpp>
+#endif
+
+#ifdef	_SVC1
+const char				QUEUE_FILE_PATH[] 	= "/SVC1/DATA/MQ/";
+#elif	_SVC2
+const char				QUEUE_FILE_PATH[]	= "/SVC2/DATA/MQ/";
+#endif
+
+const	unsigned int	LEN_MQ_INFO			= sizeof(MsgQfileInfo);
+
+template <class T>
+class MessageQueue  : public MsgQfileInfo
+{
+
+	private:
+		int					fpQfile;
+		char				QfileName[64];
+
+	public:
+		MessageQueue(  	int		nSystemId,		\
+						int		nServiceId,		\
+						int		nGroupId,		\
+						int		nProcessType,	\
+						int		nSerialNo,		\
+						int		nRemark,			\
+						int 	n
+					);
+		~MessageQueue();
+
+		MessageQueue&	operator	=	(const MessageQueue&);
+
+        int 	getBitValue( int nValue, int nBaseOffset, int nLen );
+		char*	get_QfileName();
+        int		recvMsg (T* OneRecord);
+        int		sendMsg (const T* OneRecord);
+        int		get_AmountOfData()			{	return	get_AmountOfData();	}
+};
+
+template <class T>
+MessageQueue<T>::MessageQueue	(  	int		nSystemId,		\
+									int		nServiceId,		\
+									int		nGroupId,		\
+									int		nProcessType,	\
+									int		nSerialNo,		\
+									int		nRemark,
+									int 	n
+								)							\
+						: MsgQfileInfo	(	nSystemId,		\
+											nServiceId,		\
+											nGroupId,		\
+											nProcessType,	\
+											nSerialNo,		\
+											nRemark,
+											n
+										)
+{
+	cout << "Q file name = [" << get_strMsgQueueName() << "]" << endl;
+	cout << "get_unRecSize();    = [" << get_unRecSize()    << "]" << endl;
+	cout << "get_unRecCount();   = [" << get_unRecCount()   << "]" << endl;
+//	cout << "get_unHeadOffset(); = [" << get_unHeadOffset() << "]" << endl;
+//	cout << "get_unTailOffset(); = [" << get_unTailOffset() << "]" << endl;
+
+	fpQfile = open_MqFile(get_strMsgQueueName());
+	if (fpQfile < 0)
+	{
+		if(create_MqFile(nSystemId, nServiceId, nGroupId, nProcessType, nSerialNo, nRemark, sizeof(T), n) < 0)
+		{
+				cout << "MQ Create Error : Exit " << endl;
+				exit(1);
+		}else
+		{
+			
+			fpQfile = open_MqFile(get_strMsgQueueName());
+			if (fpQfile < 0)
+			{
+				cout << "Couldn't open Q file, So exit" << endl;
+				exit(-1);
+			}
+		}
+	}
+}
+
+template <class T>
+char* MessageQueue<T>::get_QfileName()
+{
+	return get_strMsgQueueName();
+}
+
+template <class T>
+MessageQueue<T>::~MessageQueue()
+{
+	close(fpQfile);
+}
+
+template <class T>
+int MessageQueue<T>::getBitValue( int nValue, int nBaseOffset, int nLen )
+{
+    int     nFilterMask = 0,
+            nTempFilterMask = 0,
+            nTempMask   = 0x80000000;
+
+    for( int i = nBaseOffset; i < (nBaseOffset+nLen); i++)  //  Make a Filtering Mask
+        nFilterMask |= nTempMask >> i;
+
+    nFilterMask &= nValue;     // Filtering the Input data
+
+    nFilterMask >>= ((sizeof(int)*8)-(nBaseOffset+nLen));
+
+    return ( nFilterMask );
+}
+
+template <class T>
+int MessageQueue<T>::recvMsg(T* OneRecord)
+{
+	int	nRet = 0;
+
+	if (fpQfile < 0)
+	{
+		fpQfile = open_MqFile(get_strMsgQueueName());
+		if (fpQfile < 0)
+		{
+			cout << "Couldn't open Q file, So exit" << endl;
+			return -4;
+		}
+	}
+
+	if ((nRet = get_Message((void*)OneRecord, fpQfile)) < 0){
+//		cout << "Error get_Message:"<<nRet<<endl;
+		return nRet;
+	}
+	return 0;
+}
+
+template <class T>
+int MessageQueue<T>::sendMsg(const T* OneRecord)
+{
+	int	nRet = 0;
+
+	if (fpQfile < 0)
+	{
+		fpQfile = open_MqFile(get_strMsgQueueName());
+		if (fpQfile < 0)
+		{
+			cout << "Couldn't open Q file, So exit" << endl;
+			return -4;
+		}
+	}
+
+	if ((nRet = put_Message((void*)OneRecord, fpQfile)) < 0)
+	{
+//		cout << "Error put_Message:"<<nRet<<endl;
+		return nRet;
+	}
+
+	return 0;
+}
+
+
+
+
+#endif

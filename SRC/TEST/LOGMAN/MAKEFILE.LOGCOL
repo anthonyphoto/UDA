@@ -1,0 +1,23 @@
+include /home/uda/common/env_uda.mk
+
+MFLAGS = -D_SVC1
+
+EXE = logcol
+OBJS = logcollector.o $(UDALINKLIBES)
+
+all : $(EXE)
+
+$(EXE) : $(OBJS)
+	$(CC) -o $@ $(OBJS) $(PROLDLIBS) $(UDALINKLIBES)
+
+install : $(EXE)
+	$(INSTALL2) $(UDALINKLIBES) $(COMMLIBPATH)
+	rm -rf $(EXE) *.o core 
+
+clean :	
+	rm -rf $(EXE) *.o core 
+	touch *.cpp
+
+
+
+

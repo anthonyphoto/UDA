@@ -1,0 +1,2826 @@
+/*******************************************************************************
+* file : Cpms.cpp
+*
+* PMS Main 클래스.
+* Thread생성 및 프로세스 start, stop, 상태 업데이트, 업무처리 등
+* PMS의 모든 처리를 한다.
+* Version 1.1 ( 2001. 05. 21 )
+*******************************************************************************/
+#include "Cpms.hpp"
+#include "fileSearchC.hpp"
+#include <TempMsgQ_file.hpp>
+#include <time.h>
+
+#ifndef MSGFORMAT_HPP
+#include <MsgFormat.hpp>                // PMS MQ format header
+#endif
+
+char FILE_NAME_COL_BDS_UDR[50];
+MessageQueue<MsgPmsStatus>  *PMSMQ;     // PMS MQ 포인터 객체 선언
+MessageQueue<CdsCustFormat> *mqSubsS;   // 고객 한도 정보 관리
+
+/*******************************************************************************
+* Global variable & function
+*******************************************************************************/
+pthread_mutex_t mutex;
+
+pthread_t       idWaitThread;                   // wait thread 관련
+void  CreateWaitChildStatusThread();
+void* WaitChildStatusThread(void *a);
+
+pthread_t       idProcCheckThread;              // process check thread 관련
+void  CreateProcessCheckThread();
+void* ProcessCheckThread(void *a);
+int ProcCheck(int _procPid, char* _procName);
+
+pthread_t       idMQThread;                     // MQ thread 관련
+void  CreateCheckMQThread();
+void* CheckMQThread(void *a);
+
+pthread_t       idOperationThread;              // operation thread 관련
+void  CreateOperationThread();
+void* OperationThread(void *a);
+
+pthread_t       idBackupOperationThread;        // backup operation thread 관련
+void  CreateBackupOperationThread();
+void* BackupOperationThread(void *a);
+
+void HandleSignal(int sig);                     // signal handler
+char** GetStringList(char*  src);
+bool SendSignalProcess(char type, char* processId,int signo, int serv = -9);
+bool IsAllProcessStopped();
+
+CPMS *ptrThis;                                  // CPMS객체 포인터. 다른 thread에서
+                                                // 객체 참조하기 위해 사용.
+CPtrList procInfoList;                          // process info
+
+void ShowList();                                // process list 출력 (모두)
+long DiffTime(char* trTime);                    // 시간차를 구함.
+
+// uda1 or uda2에 따라 값이 바뀌며 값은 CPMS::ArgCheck 메소드에서 처리한다.
+// PMS alias 및 DB 접속 id, password
+char PMSNAME    [10];       // pms alias
+char LOGMGR     [10];       // Log Manager
+char USER       [10];       // DB ID
+char PASSWD     [10];       // DB PASSWORD
+
+// PMS process 형상구분
+int g_sysId      ;          // system id
+int g_svcId      ;          // service id
+int g_groupType  ;          // group type
+int g_proc_type  ;          // process type
+int g_proc_sn    ;          // process sirial number
+int g_proc_remark;          // process remark
+
+// 파일 로그 path
+char LOGFILE[40];
+
+// Log Manager
+// SendLogManage*    clsLogM;
+
+/*******************************************************************************
+* Desc : process 종료 signal을 받았을때 signal handler로 분기해서
+*        바로 종료해버린다면 signal catch시에 interrupt되어진 system call
+*        때문에 core dump가 발생하는 경우가 가끔 발생한다.
+*        안전하게 종료하기 위해서 flag기능을 하는 변수를 생성.
+*******************************************************************************/
+int CPMS::nStop  = 1;       // Stop Flag 1로 셋팅
+
+/*******************************************************************************
+* Desc : 생성자. PMS 객체 포인터 대입 및 Log Manager선언, 초기화
+*        객체 포인터를 global pointer로 대입하는 이유는 thread에서 PMS객체
+*        메소드를 호출해야 할때 접근하기 위한 방법으로 사용된다.
+*        ex) ExitPMS같은 경우
+* Argu : void
+* Retn : void
+*******************************************************************************/
+CPMS::CPMS()
+{
+    ptrThis = this;                             // PMS 객체 포인터 대입
+    
+    char        strTempPath[128];
+    memset (strTempPath, NULL, sizeof(strTempPath) );
+    sprintf(strTempPath, "./CFG/CPms.cfg");
+
+    logSM = new LogManageSM(1, 1, 1, 2, 0, 0, strTempPath );  // Log Manager 선언, 초기화
+    logSM->LogSMinit();
+}
+
+/*******************************************************************************
+* Desc : 소멸자. 종료 메세지를 남기고 할당된 메모리 반환.
+* Argu : void
+* Retn : void
+*******************************************************************************/
+CPMS::~CPMS()
+{
+    DebugLog(LOGFILE, "");
+    DebugLog(LOGFILE, "@@@@@@@@@@@@@@");
+    DebugLog(LOGFILE, "-- Quit PMS --");
+    DebugLog(LOGFILE, "@@@@@@@@@@@@@@");
+    DebugLog(LOGFILE, "");
+
+//  clsLogM->put_EventHistData(FLAG_END, 0);
+
+    delete logSM;
+//  delete clsLogM;
+}
+
+/*******************************************************************************
+* Desc : PMS 초기화 작업을 한다.
+*        - RegisterSignalHandler() : signal 발생시 처리해야 할 부분들을 명시
+*        - GetProcessInfoFromDB()  : process 정보를 db로부터 가져옴
+*        - ForkProcess()           : process 정보를 가지고 process 생성
+*        - CreateCheckMQThread()   : child process가 보내는 정보를 message
+*                                    queue를 통해서 전송받음.
+*        시그널 핸들러 초기화
+*        argument check
+*        wait child thread 생성, process check thread 생성, MQ thread 생성 ...
+* Argu : int    ac - main으로부터 받은 argc
+*        char** av - main으로부터 받은 argv
+* Retn : void
+*******************************************************************************/
+void CPMS::Initialize(int ac, char** av)
+{
+//  생성자에서 선언할 수 있는 방법??
+//  clsLogM = new SendLogManage(atoi(av[1]), 1, 0, 1, 0, 0);
+//  *clsLogM << clsLogM->ErrorCode(0) << "PMS is ready !!" << endl;
+//  clsLogM->put_EventHistData(FLAG_START, FLAG_PROC_START);
+    
+    m_av = av;
+    ArgCheck(ac, av);               // parameta check
+    StartTimeSet();						// PMS 시작시간 /SVC?/DATA/StartTime.cfg로 남김.
+
+    // DB 접속
+    if (db.ConnectDBMultiThread(0, USER, PASSWD) == true)
+        DebugLog(LOGFILE, "Connect OK in main thread");
+    else
+    {
+        DebugLog(LOGFILE, "Fail to connect main thread");
+        DebugLog(LOGFILE, "");
+        DebugLog(LOGFILE, "@@@@@@@@@@@@@@");
+        DebugLog(LOGFILE, "-- Quit PMS --");
+        DebugLog(LOGFILE, "@@@@@@@@@@@@@@");
+        DebugLog(LOGFILE, "");
+//      clsLogM->put_EventHistData(FLAG_END, 1);
+        exit(1);
+    }
+    
+    db.UpdateHostName(0);     // 현제 host 정보를 t_process_status의 net_status에 업데이트함.
+                              // (2001. 5. 7. 월 추가. ky.)
+
+    // thread lock initialize
+    if (pthread_mutex_init(&mutex, NULL))
+    {
+        //error log (Can't Initialize mutex)
+        ErrorLog(7000, "Can't Initialize mutex");
+        DebugLog(LOGFILE, "Can't initialize mutex");
+        DebugLog(LOGFILE, "");
+        DebugLog(LOGFILE, "@@@@@@@@@@@@@@");
+        DebugLog(LOGFILE, "-- Quit PMS --");
+        DebugLog(LOGFILE, "@@@@@@@@@@@@@@");
+        DebugLog(LOGFILE, "");
+//      clsLogM->put_EventHistData(FLAG_END, 1);
+        exit(1);
+    }
+
+    // process infomation load
+    if (GetProcessInfoFromDB() == false)
+    {
+        //error log (no data in PROCESS INFO)
+        ErrorLog(7001, "no data in process infomation table");
+        DebugLog(LOGFILE,
+        "No DATA in T_PROCESS_INFO, T_PROCESS_STATUS, T_NE_INFO TABLE");
+        DebugLog(LOGFILE, "");
+        DebugLog(LOGFILE, "@@@@@@@@@@@@@@");
+        DebugLog(LOGFILE, "-- Quit PMS --");
+        DebugLog(LOGFILE, "@@@@@@@@@@@@@@");
+        DebugLog(LOGFILE, "");
+//      clsLogM->put_EventHistData(FLAG_END, 1);
+        exit(1);
+    }
+
+//  StartResourceMGR();
+    RegisterSignalHandler();        // Signal Handler
+
+    // 5개의 Thread생성---------------------------------------------------------
+    CreateWaitChildStatusThread();  // child들의 종료 상태를 체크하는 thread
+                                    // child가 종료 상태를 보낸다.
+    CreateProcessCheckThread();     // child들의 종료 상태를 체크하는 thread
+                                    // system명령 ps를 사용하여 종료 상태를 체크
+    CreateCheckMQThread();          // child들의 종료 상태를 체크하는 thread
+                                    // Message Queue에 child들이 상태를 보낸다.
+    CreateOperationThread();        // 업무 처리 thread
+                                    // HA의 네트워크 상태 플래그 파일을 체크 및
+                                    // 디스크 상태, cput상태를 DB insert한다.
+                                    // PMS 및 child 종료 여부를 결정한다.
+    CreateBackupOperationThread();  // 업무 처리 thread
+                                    // 파일 백업 처리를 한다.
+    //--------------------------------------------------------------------------
+      
+    UpdatePmsProcStatus(RUNNING);   // update pms process info (2000.09.18)
+    db.InsertTrapData(0, D_UDA_TRAP_SERVICE_START, D_TRAP_ON,
+        "PMS START. pid:%d", getpid());
+    sleep(3);                       // Process Check Thread를 위한 시간.
+                                    // 비동작 프로세스를 체크하여 업데이트할
+                                    // 시간
+
+    // Log Manager 기동.
+    StartLogManager();
+//    ExecuteCommand('S', 'O', LOGMGR);   // Log Manager start
+//  sleep(1);                             // Log Manager의 동작 준비 시간
+
+    if (av[2][0] == '1')                // HA에 의해 절차되었을 경우
+        ExecuteCommand('S', 'A', " ");  // 모든 프로세스 기동
+}
+
+/*******************************************************************************
+* Desc : Log Manager를 기동시킨다.
+*        Process list를 찾아 log manager가 있을 경우 무조건 띄운다.
+*      00-12-08 10:00오후 ky.
+* Argu : void
+* Retn : void
+*******************************************************************************/
+void CPMS::StartLogManager()
+{
+    CNode *pNode;
+    PPROCINFO pNodeData;
+
+    pNode = procInfoList.GetHeadPosition();
+
+    DebugLog(LOGFILE, "@@@@@@@[Start Log Manager]@@@@@@@");
+
+    do
+    {
+        pNodeData = (PPROCINFO)procInfoList.GetAt(pNode);
+
+      if (strstr(pNodeData->proc_name, "LOG") != NULL)
+      {
+         // Log Manager start
+         DebugLog(LOGFILE, " Log Manager Run. %s.", pNodeData->proc_name);
+         ExecuteCommand('S', 'O', pNodeData->proc_name);
+        }
+    } while(pNode = procInfoList.GetNextPosition(pNode));
+}
+
+/*******************************************************************************
+* Desc : Resource Manager를 기동시킨다.
+*        Resource Manager가 기동되지 않으면 시스템 전체 프로세스들을 기동해도
+*        제대로 처리하지 못하게 되기 때문에 기동이 안될시 3번을 시도한다.
+*        3번 시도후 기동이 되지 않으면 PMS가 관리하는 모든 프로세스들을
+*        종료시키도록 한다.
+* Argu : void
+* Retn : void
+*******************************************************************************/
+void CPMS::StartResourceMGR()   // ResourceMGR은 HA Start. PMS삭제 요망.
+{                               // 2000. 11. 30. 목. ky.
+    char RESOURCEMGR[30];
+    char RESOURCEMGRNAME[20];
+
+    sprintf(RESOURCEMGR    , "/home/uda%d/bin/ResourceMGR", g_sysId);
+    sprintf(RESOURCEMGRNAME, "ResourceMGR %d", g_sysId);
+
+    bool procFlag = false;
+
+    if (IsAllProcessStopped() == false) // child가 동작 중이다.
+        procFlag = true;
+
+    if(procFlag == true)    // 자식프로세스가 기동중일시 Resource Manager를
+    {                       // 기동하지 않음.
+        DebugLog(LOGFILE, "");
+        DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+        DebugLog(LOGFILE, "     Resource Manager running     ");
+        DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+        DebugLog(LOGFILE, "");
+        return ;
+    }
+
+    int cnt, reCnt;         // 재시도 카운트
+    bool runFlag = false;   // 기동 상태 체크 false는 기동 실패, true는 기동 성공
+    pid_t resourceMGRPid;   // Resource Manager의 pid
+    int retStatus;          // 종료 상태
+
+    bool resourceFlag = false;
+
+    // Resource Manger가 제대로 실행되지 않을시 3번 재시도 한다.
+    for(cnt = 1; cnt <= 3; cnt++)
+    {
+        resourceMGRPid = fork();
+
+        switch(resourceMGRPid)
+        {
+            case -1:                // fork, exec 실패시
+                runFlag = false;
+                break;
+
+            case 0:
+                if (execvp(RESOURCEMGR, GetStringList(RESOURCEMGRNAME)) < 0)
+                {
+                    //error log (fail to fork process)
+                    ErrorLog(7002,
+                    "process path = %s, process name = %s, process pid = %d",
+                    RESOURCEMGR, RESOURCEMGRNAME, getpid());
+
+                    DebugLog(LOGFILE, "");
+                    DebugLog(LOGFILE, "@@@@@@@@@@@@@@");
+                    DebugLog(LOGFILE, "-- Quit PMS --");
+                    DebugLog(LOGFILE, "@@@@@@@@@@@@@@");
+                    DebugLog(LOGFILE, "");
+
+//                  clsLogM->put_EventHistData(FLAG_END, 5);
+                    exit(5);
+                }//end if
+                resourceFlag = true;
+                break;
+
+            default:
+                reCnt = 0;
+
+                // 처리 완료될때까지 blocking 하며 기다림
+                while(waitpid(resourceMGRPid, &retStatus, WNOHANG) != resourceMGRPid)
+                {
+                    if (reCnt == 10)
+                    {
+                        // 에러메세지 출력!!
+                        break;
+                    }
+                    sleep(1);
+                    reCnt++;
+                }
+
+                if(WEXITSTATUS(retStatus) == 0)
+                    runFlag = true;
+                else
+                    runFlag = false;
+//              cout << retStatus << endl;
+//              cout << WEXITSTATUS(retStatus) << endl;
+//              cout << "sizeof retStatus  = " << sizeof(retStatus) << endl;
+        }//end switch
+
+        if(runFlag == true && resourceFlag == true && WEXITSTATUS(retStatus) == 255)  // 255 = -1
+            break;
+    }
+
+    if(runFlag == true)
+        DebugLog(LOGFILE, "Resource Manager running........ pid = %d, status = %d",
+        resourceMGRPid, WEXITSTATUS(retStatus));
+    else                                        // 기동실패시 PMS 종료 모드 실행
+    {
+        DebugLog(LOGFILE, "Resource Manager no running........ PMS QUIT, pid = %d, status = %d",
+        resourceMGRPid, WEXITSTATUS(retStatus));
+
+        //error log (PMS quit)
+        ErrorLog(7003, "Resource Manager no running........ PMS QUIT, pid = %d, status = %d",
+        resourceMGRPid, WEXITSTATUS(retStatus));
+
+        DebugLog(LOGFILE, "");
+        DebugLog(LOGFILE, "@@@@@@@@@@@@@@");
+        DebugLog(LOGFILE, "-- Quit PMS --");
+        DebugLog(LOGFILE, "@@@@@@@@@@@@@@");
+        DebugLog(LOGFILE, "");
+
+//      clsLogM->put_EventHistData(FLAG_END, 1);
+        exit(1);    // PMS 종료
+    }
+}
+
+/*******************************************************************************
+*Desc: signal 발생시 처리해야 할 부분들을 명시
+*******************************************************************************/
+void CPMS::RegisterSignalHandler()
+{
+    static struct sigaction act;
+    act.sa_handler = &HandleSignal;
+
+    sigaction(SIGINT,  &act, (struct sigaction *) 0);
+    sigaction(SIGTSTP, &act, (struct sigaction *) 0);
+    sigaction(SIGCONT, &act, (struct sigaction *) 0);
+    sigaction(SIGUSR1, &act, (struct sigaction *) 0);
+    sigaction(SIGUSR2, &act, (struct sigaction *) 0);
+}
+
+/*******************************************************************************
+* Desc : signal을 처리하는 함수
+* 주의 : thread는 wait하고 있는 이유는 pipethread 경우 db connection을
+*        하고 있어 main thread가 종료되면 disconnect 를 하지 않고 종료된다.
+*        connection 수가 늘어나게 되는 것을 막기 위해서.
+*******************************************************************************/
+void HandleSignal(int sig)
+{
+    DebugLog(LOGFILE, "Main catch signal. Signal Number => %d", sig);
+
+    void *status;
+    switch(sig)
+    {
+        case SIGINT:
+            CPMS::SetStopFlag(0);                   // PMS STOP
+
+            if (pthread_mutex_unlock(&mutex))
+                DebugLog(LOGFILE, "Can't unlock mutex");
+
+            pthread_join(idWaitThread           , &status);
+            pthread_join(idMQThread             , &status);
+            pthread_join(idOperationThread      , &status);
+            pthread_join(idBackupOperationThread, &status);
+//          pthread_join(idProcCheckThread      , &status);
+
+            DebugLog(LOGFILE, "");
+            DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+            DebugLog(LOGFILE, " join all thread. before sleep. ");
+            DebugLog(LOGFILE, " wait for a minute.....         ");
+            DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+            DebugLog(LOGFILE, "");
+            break;
+
+        case SIGUSR2:
+        case SIGUSR1:
+        case SIGTSTP:
+        case SIGCONT:
+            break;
+        default:
+            break;
+    }
+}
+
+/*******************************************************************************
+* Desc : pms parameta check & common variable initialize
+*        ex) CPmsMain [1-2] [0-1]
+*        첫번째 인자는 시스템 인자. 1=UDA1, 2=UDA2
+*        두번째 인자는 시스템 절차 구분 인자. 0이면 PMS디폴트작업(PMS, LOGMGR run)
+*        1이면 시스템 절차작업 PMS, LOGMGR 및 전체 프로세스 run. All Start
+* Argu : char** av - main parameta
+*******************************************************************************/
+void CPMS::ArgCheck(int ac, char** av)
+{
+    // argument check
+    if (ac != 3 || (av[1][0] != '1' && av[1][0] != '2')
+                || (av[2][0] != '0' && av[2][0] != '1'))
+    {
+        cout << "Usage: PMS [SYSTEM ID(1-2)] [HA FLAG(0-1)]" << endl << endl;
+//      clsLogM->put_EventHistData(FLAG_END, 1);
+        exit(1);
+    }
+
+    // 로그경로는 시스템 1은 SVC1로 로그를 남기고
+    //            시스템 2는 SVC3에 로그를 남긴다.
+    switch(av[1][0])
+    {
+        case '1':
+            strcpy(PMSNAME, "11PMS00X");
+            strcpy(LOGMGR , "11LOG00X");
+            strcpy(USER   , "uda"     );
+            strcpy(PASSWD , "uda"     );
+            g_sysId       = 1;
+            g_svcId       = 1;
+            g_groupType   = 0;
+            g_proc_type   = 1;
+            g_proc_sn     = 0;
+            g_proc_remark = 0;
+    	      sprintf(LOGFILE, "/SVC%d/LOG/pms", 1);   // 파일 로그 경로 설정..
+            break;
+
+        case '2':
+            strcpy(PMSNAME, "22PMS00X");
+            strcpy(LOGMGR , "22LOG00X");
+            strcpy(USER   , "uda"     );
+            strcpy(PASSWD , "uda"     );
+            g_sysId       = 2;
+            g_svcId       = 2;
+            g_groupType   = 0;
+            g_proc_type   = 1;
+            g_proc_sn     = 0;
+            g_proc_remark = 0;
+            sprintf(LOGFILE, "/SVC%d/LOG/pms", 3);   // 파일 로그 경로 설정..
+            break;
+
+        default:    // 이 부분은 필요 없는 부분 임. 위에서 체크하기 때문, 삭제 고려... 2000. 11. 30. 목 ky.
+            sprintf(LOGFILE, "./pms");               // 파일 로그 경로 설정..
+            DebugLog(LOGFILE, "Usage: PMS [SYSTEM ID(1-2)] [HA FLAG(0-1)]");
+            DebugLog(LOGFILE, "");
+            DebugLog(LOGFILE, "@@@@@@@@@@@@@@");
+            DebugLog(LOGFILE, "-- Quit PMS --");
+            DebugLog(LOGFILE, "@@@@@@@@@@@@@@");
+            DebugLog(LOGFILE, "");
+//          clsLogM->put_EventHistData(FLAG_END, 1);
+            exit(1);
+    }//end switch
+}
+
+/*******************************************************************************
+* Desc : oracle pipe로부터 msg(command)를 수신하여 명령 구분후 해당 명령처리를
+*        한다.
+* Argu : void
+* Retn : void
+*******************************************************************************/
+void CPMS::ProcessCommand()
+{
+    command_t command;
+
+    // PMS가 동작후 무한루프를 돈다. 정상종료시 Stop Flag가 0으로 setting되며
+    // 그때 루프는 빠져나가고 PMS Main은 종료하게 된다.
+    while(CPMS::GetStopFlag())
+    {
+        // 1분 간격으로 check
+        if (!db.RecvMsgFromPipe(0, command))   continue;
+
+        // 받은 명령이 올바른지 check
+        if (IsRightCommand(&command) == false)
+        {
+            DebugLog(LOGFILE, "");
+            DebugLog(LOGFILE, "@@@@@[Oracle PIPE Received]@@@@@");
+            DebugLog(LOGFILE, "          Wrong Command         ");
+            DebugLog(LOGFILE, "  command    : [%c]"       , command.command   );
+            DebugLog(LOGFILE, "  type       : [%c]"       , command.type      );
+            DebugLog(LOGFILE, "  subContent : [%s]"       , command.subContent);
+            DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+            DebugLog(LOGFILE, "");
+            continue;
+        }
+
+        DebugLog(LOGFILE, "");
+        DebugLog(LOGFILE, "@@@@@[Oracle PIPE Received]@@@@@");
+        DebugLog(LOGFILE, "  command    : [%c]"           , command.command   );
+        DebugLog(LOGFILE, "  type       : [%c]"           , command.type      );
+        DebugLog(LOGFILE, "  subContent : [%s]"           , command.subContent);
+        DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+        DebugLog(LOGFILE, "");
+
+        GetProcessInfoFromDB();                 // process list 조회 및 업데이트
+
+        // Client로 부터 받은 명령 처리
+        switch(command.command)
+        {
+            case 'S':   // Start
+            case 'T':   // Terminate
+                ExecuteCommand(command.command, command.type, command.subContent, command.item1);
+                break;
+
+            case 'O':   // Operation
+                switch(command.type)
+                {
+                    case 'S':   // Select
+                        SelectCfgFile(command);
+                        break;
+                    case 'U':   // Update
+                        UpdateCfgFile(command);
+                        break;
+                    case 'D':   // Disk info
+                        InsertSysInfo(command.date, 1);     // 1 : Filesystem
+                        break;
+                    case 'C':   // Cpu  info
+                        InsertSysInfo(command.date, 2);     // 2 : CPU
+                        break;
+                    case 'L':   // Log Manager
+                        ChangeStatusLogManager(command);
+                        break;
+                    case 'M':
+                  UserManagement(command);
+                     break;
+                    default:
+                        DebugLog(LOGFILE, "Wrong Command TYPE [%c]", command.type);
+                }//end switch
+                break;
+
+            default:
+                //error log (wrong client_pms command)
+                ErrorLog(7004   , "Wrong Command [%c]", command.command);
+                DebugLog(LOGFILE, "Wrong Command [%c]", command.command);
+        }//end switch
+    }//end while
+
+    // PMS Stop 상태로 DB업데이트.
+    UpdatePmsProcStatus(STOPPED);
+
+    db.InsertTrapData(0, D_UDA_TRAP_SERVICE_STOP, D_TRAP_OFF,
+        "PMS STOP. pid:%d", getpid());
+
+    if (db.DisconnectDBMultiThread(0))
+        DebugLog(LOGFILE, "Success to disconnect DB in main");
+    else
+        DebugLog(LOGFILE, "Fail to disconnect DB in main"   );
+}
+
+/*******************************************************************************
+* Desc : client가 요청한 명령의 종류에 따라 처리하는 함수 호출.
+* Argu : char  command    - 요청 명령
+*        char  type       - 명령의 적용 범위
+*        char* subContent - 범위에 따른 적용범위 조건들.
+*        char* service    - 디폴트 인수로 none이면 무시한다.
+*                           none이 아니면 숫자로 변환하여 fork process로 넘긴다.
+* Retn : void
+*******************************************************************************/
+void CPMS::ExecuteCommand(char command, char type, char* subContent, char* service)
+{
+   int serv;            // service number
+    int signo;              // signal  number
+
+    if (command == START)
+    {
+      if (strstr(service, "none") == NULL)
+        {
+         serv = atoi(service);
+         ForkProcess(type, subContent, serv);
+        }
+        else
+         ForkProcess(type, subContent);
+
+        DebugLog(LOGFILE, "");
+        DebugLog(LOGFILE, "EXECUTE COMMAND %c, %c, %s", command, type, subContent);
+        DebugLog(LOGFILE, "");
+    }
+    else
+    {
+        switch(command)
+        {
+            case STOP:
+                signo = SIGUSR1;    // uda의 모든 프로세스는
+                break;              // SIGUSR1을 받으면 정상종료한다.
+            case PAUSE:
+                signo = SIGSTOP;
+                break;
+            case WAKE:
+                signo = SIGCONT;
+                break;
+            case STATUS:
+                signo = SIGUSR1;
+        }//end switch
+
+      if (strstr(service, "none") == NULL)
+        {
+         serv = atoi(service);
+            SendSignalProcess(type, subContent, signo, serv);
+        }
+        else
+            SendSignalProcess(type, subContent, signo);
+
+    }//end if
+}
+
+/*******************************************************************************
+* Desc : Client로 부터의 업무처리 메소드.
+*        system의 disk, cpu사용 정보를 DB에 Insert 한다.
+*        sysinfo프로세스를 호출. (실제 작업처리는 sysinfo가 한다)
+*        sysinfo프로세스의 argument
+*        infotype : 1(filesystem), 2(cpu)
+*        date     : date (YYYYMMDDhhmmss[14])
+*        systemid : uda1, uda2 (1, 2)
+* Argu : char cliDate - Client로 부터 받은 Date. Client에서 key로 사용한다.
+*        int InfoType - infoType (Disk, Cpu)
+*******************************************************************************/
+void CPMS::InsertSysInfo(char* cliDate, int infoType)
+{
+//    char sysInfoPath[50];
+//    char sysInfoName[50];
+//    sprintf(sysInfoPath, "/home/uda%d/bin/SysinfoMGR", g_sysId);
+//    sprintf(sysInfoName, "SysinfoMGR %d %s %d", infoType, cliDate, g_sysId);
+
+    char sysInfoProgram[100];
+    sprintf(sysInfoProgram, "/home/uda%d/bin/SysinfoMGR %d %s %d", g_sysId, infoType, cliDate, g_sysId);
+
+//    pid_t   sysInfo;
+//    sysInfo = fork();
+//    if (sysInfo == 0)
+//    {
+//        if (execvp(sysInfoPath, GetStringList(sysInfoName)) < 0)
+//        {
+//            DebugLog(LOGFILE, "Start SYSINFO Fail");
+//            DebugLog(LOGFILE, "SYSINFOPATH = %s, SYSINFONAME = %s",
+//            sysInfoPath, sysInfoName);
+//            exit(5);
+//        }
+//    }
+
+    int ret;
+    ret = system(sysInfoProgram);
+    if (ret == -1) DebugLog(LOGFILE, "[ERROR] InsertSysInfo execute fail.");
+
+//    int reCnt = 0;
+//    if (sysInfo)
+//        while(waitpid(sysInfo, NULL, WNOHANG) != sysInfo)
+//        {
+//            if (reCnt == 10)
+//            {
+//                DebugLog(LOGFILE, "InsertSysInfo. %d Wait Fail", sysInfo);
+//                break;
+//            }
+//            sleep(1);
+//            reCnt++;
+//        }
+}
+
+void CallRadiusCfg(char* file_path_name, command_t &cfgFileInfo);
+void CallFilterCfg(char* file_path_name, command_t &cfgFileInfo);
+void CallBdsCfg   (char* file_path_name, command_t &cfgFileInfo);
+void CallBlockCfg (char* file_path_name, command_t &cfgFileInfo);
+void CallFileCfg  (char* file_path_name, command_t &cfgFileInfo);
+void CallScpSCfg  (                      command_t &cfgFileInfo);
+void CallScpRCfg  (                      command_t &cfgFileInfo);
+void CallAggCfg   (char* file_path_name, command_t &cfgFileInfo);
+void CallObsCfg   (char* file_path_name, command_t &cfgFileInfo);
+void CallCdsCfg   (                      command_t &cfgFileInfo);
+
+/*******************************************************************************
+* Desc : Client로 부터의 업무처리 메소드.
+*        config file 조회를 한다. File정보를 읽어들여 DB로 Insert 한다.
+* Argu : command_t cfgFileInfo - config file을 처리하기 위한 정보가 있다.
+* Retn :
+*******************************************************************************/
+void CPMS::SelectCfgFile(command_t cfgFileInfo)
+{
+    char file_path      [50+1];
+    char file_name      [30+1];
+    int  item_count;
+    char file_id        [ 4+1];
+    char file_path_name [70+2];
+
+    item_count = 0;
+    memset(file_path     , 0x00, sizeof(file_path     ));
+    memset(file_name     , 0x00, sizeof(file_name     ));
+    memset(file_id       , 0x00, sizeof(file_id       ));
+    memset(file_path_name, 0x00, sizeof(file_path_name));
+
+    // config파일 정보를 DB로 부터 읽어 온다.
+    db._SelectCfgFile(cfgFileInfo, file_path, file_name, item_count, file_id);
+
+    sprintf(file_path_name, "%s%s", file_path, file_name);
+
+    switch (atoi(file_id))
+    {
+        case 3001:                   // Radius Interface 1 file (IF)
+            CallRadiusCfg(file_path_name, cfgFileInfo);
+            break;
+        case 3002:                   // Radius Interface 2 file (Filter)
+            CallFilterCfg(file_path_name, cfgFileInfo);
+            break;
+        case 3003:                   // BDS    Interface 1 file (IF)
+            CallBdsCfg   (file_path_name, cfgFileInfo);
+            break;
+        case 3004:
+            CallBlockCfg (file_path_name, cfgFileInfo);
+            break;
+        case 3005:
+            CallFileCfg  (file_path_name, cfgFileInfo);
+            break;
+        case 3006:
+            CallScpSCfg  (cfgFileInfo);
+            break;
+        case 3007:
+            CallScpRCfg  (cfgFileInfo);
+            break;
+        case 3008:
+            CallAggCfg   (file_path_name, cfgFileInfo);
+            break;
+        case 3009:
+            CallObsCfg   (file_path_name, cfgFileInfo);
+            break;
+        case 3010:
+         CallCdsCfg   (cfgFileInfo);
+         break;
+        default:
+            DebugLog(LOGFILE, "SelectCfgFile() call Fail");
+            //error log (wrong file id)
+            ErrorLog(7005, "wrong file id. File Id -> [%s]", file_id);
+            return ;
+            break;
+    }
+
+    db._InsertCfgFile(cfgFileInfo, item_count, 'S');
+}
+
+void CallRadiusCfg(char* file_path_name, command_t &cfgFileInfo)
+{
+    RadiusFileBlock  aaa(file_path_name);
+
+    // 파일 읽어오기
+    aaa.read_RadiusFileBlock();
+    sprintf(cfgFileInfo.item1, "%u", aaa.getStartBlockNo());
+    sprintf(cfgFileInfo.item2, "%u", aaa.getTimeInVal());
+}
+
+void CallFilterCfg(char* file_path_name, command_t &cfgFileInfo)
+{
+    FilterFileNo     bbb(file_path_name);
+
+    // 파일 읽어오기
+    bbb.read_FilterFileNo();
+    sprintf(cfgFileInfo.item1, "%u", bbb.getStartBlockNo());
+}
+
+void CallBdsCfg   (char* file_path_name, command_t &cfgFileInfo)
+{
+    BdsFileBlock     ccc(file_path_name);
+
+    // 파일 읽어오기
+    ccc.read_BdsFileBlock();
+    sprintf(cfgFileInfo.item1, "%u", ccc.getFileNo());
+    sprintf(cfgFileInfo.item2, "%u", ccc.getStartBlockNo());
+    sprintf(cfgFileInfo.item3, "%u", ccc.getEndBlockNo());
+    sprintf(cfgFileInfo.item4, "%u", ccc.getFlag());
+    sprintf(cfgFileInfo.item5, "%u", ccc.getTimeInVal());
+    sprintf(cfgFileInfo.item6, "%u", ccc.getMaxBillSize());
+}
+
+void CallBlockCfg (char* file_path_name, command_t &cfgFileInfo)
+{
+    CBlockConfigData ddd(file_path_name);
+
+    // 파일 읽어오기
+    sprintf(cfgFileInfo.item1, "%d", ddd.get_nBlockSize());
+    sprintf(cfgFileInfo.item2, "%d", ddd.get_nBlockHeaderSize() );
+    sprintf(cfgFileInfo.item3, "%d", ddd.get_nRecSize());
+    sprintf(cfgFileInfo.item4, "%d", ddd.get_nMaxRecCount());
+    sprintf(cfgFileInfo.item5, "%u", ddd.get_unBlockSeq());
+}
+
+void CallFileCfg  (char* file_path_name, command_t &cfgFileInfo)
+{
+    CFileConfigData  eee(file_path_name);
+
+    // 파일 읽어오기
+    sprintf(cfgFileInfo.item1, "%d", eee.get_nFileHeaderSize());
+    sprintf(cfgFileInfo.item2, "%d", eee.get_nOneFileSize());
+    sprintf(cfgFileInfo.item3, "%d", eee.get_nOneBlockSize());
+    sprintf(cfgFileInfo.item4, "%d", eee.get_nMaxBlockCount());
+    sprintf(cfgFileInfo.item5, "%u", eee.get_unFileSeq());
+}
+
+void CallScpSCfg  (command_t &cfgFileInfo)
+{
+    ScpIF_TID fff(g_svcId);
+
+    // 파일 읽어오기
+    sprintf(cfgFileInfo.item1, "%d", fff.get_S_TID());
+    sprintf(cfgFileInfo.item2, "%d", fff.get_S_Day());
+}
+
+void CallScpRCfg  (command_t &cfgFileInfo)
+{
+    ScpIF_TID ggg(g_svcId);
+
+    // 파일 읽어오기
+    sprintf(cfgFileInfo.item1, "%d", ggg.get_R_TID());
+   sprintf(cfgFileInfo.item2, "%d", ggg.get_R_Day());
+}
+
+void CallAggCfg  (char* file_path_name, command_t &cfgFileInfo)
+{
+    AccountCnt hhh(file_path_name);
+
+    // 파일 읽어오기
+    hhh.read_AccountCnt();
+    sprintf(cfgFileInfo.item1, "%d", hhh.getAccountCnt());
+}
+
+void CallObsCfg   (char* file_path_name, command_t &cfgFileInfo)
+{
+    ObsFlagDate iii(file_path_name);
+
+    // 파일 읽어오기
+    iii.read_ObsFlagDate();
+    sprintf(cfgFileInfo.item1, "%d", iii.getFlag());
+    sprintf(cfgFileInfo.item2, "%d", iii.getInterval());
+    sprintf(cfgFileInfo.item3, "%d", iii.getBeforeTime());
+}
+
+void CallCdsCfg   (command_t &cfgFileInfo)
+{
+    CdsIF_TID jjj(g_svcId);
+
+    // 파일 읽어오기
+    sprintf(cfgFileInfo.item1, "%d", jjj.get_S_TID());
+    sprintf(cfgFileInfo.item2, "%d", jjj.get_S_Day());
+}
+
+void CallRadiusCfgWrite(char* file_path_name, command_t cfgFileInfo);
+void CallFilterCfgWrite(char* file_path_name, command_t cfgFileInfo);
+void CallBdsCfgWrite   (char* file_path_name, command_t cfgFileInfo);
+void CallBlockCfgWrite (char* file_path_name, command_t cfgFileInfo);
+void CallFileCfgWrite  (char* file_path_name, command_t cfgFileInfo);
+void CallScpSCfgWrite  (                      command_t cfgFileInfo);
+void CallScpRCfgWrite  (                      command_t cfgFileInfo);
+void CallAggCfgWrite   (char* file_path_name, command_t cfgFileInfo);
+void CallObsCfgWrite   (char* file_path_name, command_t cfgFileInfo);
+void CallCdsCfgWrite   (                      command_t cfgFileInfo);
+
+
+/*******************************************************************************
+* Desc : Client로 부터의 업무처리 메소드.
+*        config file 수정을 한다. Client로 부터 수정 정보를 받아 File을 수정
+*        한다.
+* Argu : command_t cfgFileInfo - config file을 처리하기 위한 정보가 있다.
+* Retn :
+*******************************************************************************/
+void CPMS::UpdateCfgFile(command_t cfgFileInfo)
+{
+    char file_path      [50+1];
+    char file_name      [30+1];
+    int  item_count;
+    char file_id        [ 4+1];
+    char file_path_name [70+1];
+
+    item_count = 0;
+    memset(file_path     , 0x00, sizeof(file_path     ));
+    memset(file_name     , 0x00, sizeof(file_name     ));
+    memset(file_id       , 0x00, sizeof(file_id       ));
+    memset(file_path_name, 0x00, sizeof(file_path_name));
+
+    // config파일 정보를 DB로 부터 읽어 온다.
+    db._SelectCfgFile(cfgFileInfo, file_path, file_name, item_count, file_id);
+
+    sprintf(file_path_name, "%s%s", file_path, file_name);
+
+    // config 파일을 열어 파일의 내용을 수정한다.
+
+    switch(atoi(file_id))
+    {
+        case 3001:                   // Radius Interface 1 file (IF)
+            CallRadiusCfgWrite(file_path_name, cfgFileInfo);
+            break;
+        case 3002:                   // Radius Interface 2 file (Filter)
+            CallFilterCfgWrite(file_path_name, cfgFileInfo);
+            break;
+        case 3003:                   // BDS    Interface 1 file (IF)
+            CallBdsCfgWrite(file_path_name, cfgFileInfo);
+            break;
+        case 3004:
+            CallBlockCfgWrite(file_path_name, cfgFileInfo);
+            break;
+        case 3005:
+            CallFileCfgWrite(file_path_name, cfgFileInfo);
+            break;
+        case 3006:
+            CallScpSCfgWrite(cfgFileInfo);
+            break;
+        case 3007:
+            CallScpRCfgWrite(cfgFileInfo);
+            break;
+        case 3008:
+            CallAggCfgWrite(file_path_name, cfgFileInfo);
+            break;
+        case 3009:
+            CallObsCfgWrite(file_path_name, cfgFileInfo);
+            break;
+      case 3010:
+         CallCdsCfgWrite(cfgFileInfo);
+         break;
+        default:
+            DebugLog(LOGFILE, "UpdateCfgFile() Call Fail");
+            //error log (wrong file id)
+            ErrorLog(7005, "wrong file id. File Id -> [%s]", file_id);
+            return ;
+            break;
+    }
+
+    // 수정한 내용을 DB로 Insert한다. SelectCfgFile메소드를 호출하여 DB Insert를 한다.
+    SelectCfgFile(cfgFileInfo);
+}
+
+void CallRadiusCfgWrite(char* file_path_name, command_t cfgFileInfo)
+{
+    RadiusFileBlock  aaa(file_path_name);
+
+    // 파일 수정
+    aaa.setStartBlockNo(atoi(cfgFileInfo.item1));
+    aaa.setTimeInVal   (atoi(cfgFileInfo.item2));
+    aaa.write_RadiusFileBlock();
+}
+
+void CallFilterCfgWrite(char* file_path_name, command_t cfgFileInfo)
+{
+    FilterFileNo     bbb(file_path_name);
+
+    // 파일 읽어오기
+    bbb.setStartBlockNo(atoi(cfgFileInfo.item1));
+    bbb.write_FilterFileNo();
+}
+
+void CallBdsCfgWrite(char* file_path_name, command_t cfgFileInfo)
+{
+    BdsFileBlock     ccc(file_path_name);
+
+    // 파일 수정
+    ccc.setFileNo        (atoi(cfgFileInfo.item1));
+    ccc.setStartBlockNo  (atoi(cfgFileInfo.item2));
+    ccc.setEndBlockNo    (atoi(cfgFileInfo.item3));
+    ccc.setFlag          (atoi(cfgFileInfo.item4));
+    ccc.setTimeInVal     (atoi(cfgFileInfo.item5));
+    ccc.setMaxBillSize   (atoi(cfgFileInfo.item6));
+    ccc.write_BdsFileBlock();
+}
+
+void CallBlockCfgWrite(char* file_path_name, command_t cfgFileInfo)
+{
+    CBlockConfigData ddd(file_path_name);
+
+    // 파일 수정
+    ddd.put_nBlockSize      (atoi(cfgFileInfo.item1));
+    ddd.put_nBlockHeaderSize(atoi(cfgFileInfo.item2));
+    ddd.put_nMaxRecCount    (atoi(cfgFileInfo.item4));
+    ddd.put_unBlockSeq      (atoi(cfgFileInfo.item5));
+    ddd.write_BlockConfigFile();
+}
+
+void CallFileCfgWrite(char* file_path_name, command_t cfgFileInfo)
+{
+    CFileConfigData  eee(file_path_name);
+
+    // 파일 수정
+    eee.put_nFileHeaderSize(atoi(cfgFileInfo.item1));
+    eee.put_nOneBlockSize  (atoi(cfgFileInfo.item3));
+    eee.put_nMaxBlockCount (atoi(cfgFileInfo.item4));
+    eee.put_unFileSeq      (atoi(cfgFileInfo.item5));
+    eee.write_FileConfigFile();
+}
+
+void CallScpSCfgWrite(command_t cfgFileInfo)
+{
+    ScpIF_TID fff(g_svcId);
+
+    // 파일 수정
+    fff.set_S_TID(atoi(cfgFileInfo.item1), atoi(cfgFileInfo.item2));
+}
+
+void CallScpRCfgWrite(command_t cfgFileInfo)
+{
+    ScpIF_TID ggg(g_svcId);
+
+    // 파일 수정
+    ggg.set_R_TID(atoi(cfgFileInfo.item1), atoi(cfgFileInfo.item2));
+}
+
+void CallAggCfgWrite (char* file_path_name, command_t cfgFileInfo)
+{
+    AccountCnt hhh(file_path_name);
+
+    // 파일 수정
+    hhh.setAccountCnt(atoi(cfgFileInfo.item1));
+    hhh.write_AccountCnt();
+}
+
+void CallObsCfgWrite (char* file_path_name, command_t cfgFileInfo)
+{
+    ObsFlagDate iii(file_path_name);
+
+    // 파일 수정
+    iii.setFlag  (atoi(cfgFileInfo.item1));
+    iii.setInterval(atoi(cfgFileInfo.item2));
+    iii.setBeforeTime(atoi(cfgFileInfo.item3));
+    iii.write_ObsFlagDate();
+}
+
+void CallCdsCfgWrite   (command_t cfgFileInfo)
+{
+    CdsIF_TID jjj(g_svcId);
+
+    // 파일 수정
+   jjj.set_S_TID(atoi(cfgFileInfo.item1), atoi(cfgFileInfo.item2));
+}
+
+/*******************************************************************************
+* Desc : PMS 업무.
+*        LogManager의 테이블 상태값을 변경한다.
+*        Client로 부터 명령을 받고 LogManager 클래스를 사용하여 값 변경.
+* Argu : command_t logInfo - Client로 부터 받은 명령코드
+*******************************************************************************/
+void CPMS::ChangeStatusLogManager(command_t logInfo)
+{
+    char strBuff[5];
+
+    int nSystemId;
+    int nServiceId;
+    int nGroupId;
+    int nProcessType;
+    int nSerialNo;
+    int nRemark;
+    int nLogType;
+    int flag;
+
+    memset(strBuff, 0x00, sizeof(strBuff)); sprintf(strBuff, "%c"  ,  logInfo.subContent[0]); nSystemId   = atoi(strBuff);
+    memset(strBuff, 0x00, sizeof(strBuff)); sprintf(strBuff, "%c"  ,  logInfo.subContent[1]); nServiceId   = atoi(strBuff);
+    memset(strBuff, 0x00, sizeof(strBuff)); sprintf(strBuff, "%c"  ,  logInfo.subContent[2]); nGroupId     = atoi(strBuff);
+    memset(strBuff, 0x00, sizeof(strBuff)); sprintf(strBuff, "%c"  ,  logInfo.subContent[3]); nProcessType = atoi(strBuff);
+    memset(strBuff, 0x00, sizeof(strBuff)); sprintf(strBuff, "%.2s", &logInfo.subContent[4]); nSerialNo    = atoi(strBuff);
+    memset(strBuff, 0x00, sizeof(strBuff)); sprintf(strBuff, "%.2s", &logInfo.subContent[6]); nRemark      = atoi(strBuff);
+    memset(strBuff, 0x00, sizeof(strBuff)); sprintf(strBuff, "%.2s", &logInfo.subContent[8]); nLogType     = atoi(strBuff);
+    memset(strBuff, 0x00, sizeof(strBuff)); sprintf(strBuff, "%c"  ,  logInfo.filePart     ); flag         = atoi(strBuff);
+
+    DebugLog(LOGFILE, "");
+    DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+    DebugLog(LOGFILE, "     Change Status Log Manager     ");
+    DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+    DebugLog(LOGFILE, "  nSystemId    = %d"                , nSystemId   );
+    DebugLog(LOGFILE, "  nServiceId   = %d"                , nServiceId  );
+    DebugLog(LOGFILE, "  nGroupId     = %d"                , nGroupId    );
+    DebugLog(LOGFILE, "  nProcessType = %d"                , nProcessType);
+    DebugLog(LOGFILE, "  nSerialNo    = %d"                , nSerialNo   );
+    DebugLog(LOGFILE, "  nRemark      = %d"                , nRemark     );
+    DebugLog(LOGFILE, "  nLogType     = %d"                , nLogType    );
+    DebugLog(LOGFILE, "  flag         = %d"                , flag        );
+    DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+    DebugLog(LOGFILE, "");
+
+    logSM->Set_Switch(nSystemId, nServiceId, nGroupId, nProcessType,
+                      nSerialNo, nRemark   , nLogType, flag);
+}
+
+/*******************************************************************************
+* Desc : 고객 한도 정보 관리
+*******************************************************************************/
+void CPMS::UserManagement(command_t loginfo)
+{
+   int nRet;
+   int servId;
+   char jobCode[ 2+1];
+   char min    [10+1];
+   bool processFlag = true;      // 입력값이 올바른지 체크하는 플래그
+
+   switch (loginfo.filePart)
+   {
+      case 'N' : sprintf(jobCode, "A1"); break;
+      case 'D' : sprintf(jobCode, "Z1"); break;
+      default  : processFlag = false;
+   }
+
+   if (strlen(loginfo.subContent) == 8)
+      sprintf(min, "11%s", loginfo.subContent);
+   else
+   if (strlen(loginfo.subContent) == 7)
+      sprintf(min, "011%s", loginfo.subContent);
+   else
+      processFlag = false;
+
+   // 입력 데이터가 올바르지 않을때 에러메세지를 출력한 후 루틴을 빠진다.
+   //----------------------------------------------------------
+   if (processFlag == false)
+   {
+      DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+      DebugLog(LOGFILE, " fail send subsinformation to CIM! error ");
+      DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+      return ;
+   }
+
+   CustFormat  msg;// CIM으로 보낼 메시지
+   CdsCustFormat msgToCIM;
+   memset((CustFormat *)&msg, 0x00, sizeof(CustFormat));
+   memset((CdsCustFormat *)&msgToCIM, 0x00, sizeof(CustFormat));
+
+   msg.set_Code(0x11);           // default
+   msg.set_JobCode(jobCode);
+   msg.set_Min(min);
+   msg.set_AccInfo("01");        // default
+   msgToCIM.setItem(&msg);
+
+   switch (g_sysId)
+   {
+      case 1: servId = 1; break;
+      case 2: servId = 3; break;
+   }
+
+   mqSubsS = new MessageQueue<CdsCustFormat>(g_sysId, servId, 3, 2, 0, 10,1000);
+
+   if((nRet = mqSubsS->sendMsg(&msgToCIM)) == FLAG_MQ_IS_FULL)
+      DebugLog(LOGFILE, "fail send subsinformation to CIM! error:%d", nRet);
+   else
+      DebugLog(LOGFILE, "send subsinformation to CIM");
+
+   delete mqSubsS;
+}
+
+
+/*******************************************************************************
+* desc : read process info from DB(or file), make list
+*******************************************************************************/
+bool CPMS::GetProcessInfoFromDB()
+{
+    return db.FetchProcessInfoFromDb(0, ALL, NULL);
+}
+
+/*******************************************************************************
+* Desc : PMS의 상태를 업데이트 하여 프로세스의 동작여부를 알 수 있다.
+*******************************************************************************/
+void CPMS::UpdatePmsProcStatus(char status)
+{
+    CNode *pNode;
+    PPROCINFO pNodeData;
+
+    pNode = procInfoList.GetHeadPosition();
+
+    do
+    {
+        pNodeData = (PPROCINFO)procInfoList.GetAt(pNode);
+
+        if(strcmp((*pNodeData).proc_name, PMSNAME) == 0)
+        {
+            if (pthread_mutex_lock(&mutex))
+                DebugLog(LOGFILE,"Can't lock mutex");
+
+            pNodeData->proc_status = status;            // PMS 상태 정보 변경
+
+            // PMS 종료시 pid 0으로.. 그 외일경우 pid setting
+            if (status == 'T')
+                pNodeData->sys_pid     = 0;
+            else
+                pNodeData->sys_pid     = getpid();
+
+            db.UpdateProcStatusTable(0, *pNodeData);    // Update DB
+
+            if (pthread_mutex_unlock(&mutex))
+                DebugLog(LOGFILE,"Can't unlock mutex");
+
+            // PMS 상태 정보 출력
+            DebugLog(LOGFILE, "");
+            DebugLog(LOGFILE, "@@@@@@[Update PMS]@@@@@@");
+            DebugLog(LOGFILE, "  id     : [%s]"         , pNodeData->proc_name);
+            DebugLog(LOGFILE, "  status : [%c]"         , pNodeData->proc_status);
+            DebugLog(LOGFILE, "  pid    : [%d]"         , pNodeData->sys_pid);
+            DebugLog(LOGFILE, "  runCnt : [%d]"         , pNodeData->runCnt);
+            DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@");
+            DebugLog(LOGFILE, "");
+            break;
+        }
+    } while(pNode = procInfoList.GetNextPosition(pNode));
+}
+
+/*******************************************************************************
+* Desc : fork-exec에 의해 실행된 process의 정보들을 리스트로 관리하는데
+*        kill signal을 받았을때 모든 process를 종료시키는 함수
+*        Type : G(roup), O(ne), A(ll)
+*******************************************************************************/
+bool SendSignalProcess(char type, char* processId, int signo, int serv)
+{
+    CNode *node;
+    PPROCINFO pNodeData;
+
+    node = procInfoList.GetHeadPosition();
+
+    ShowList();             // 모든 프로세스 상태 표시
+
+    do
+    {
+        pNodeData = (PPROCINFO)procInfoList.GetAt(node);
+
+        // !strcmp(pNodeData->proc_name, LOGMGR) ||
+        // 2000. 11. 08. changed by ky.
+        if ( pNodeData->proc_status == STOPPED ||
+             pNodeData->sys_pid == getpid()    ||
+			 pNodeData->sys_pid == 0           ||
+             strstr(pNodeData->proc_name, "LOG") != NULL)
+            continue;
+
+      if (serv != -9 && serv != 0)
+         if (serv != pNodeData->svc_id) continue;
+
+        switch(type)
+        {
+            case GROUP :
+                if( pNodeData->group_type != atoi(processId) )
+                    continue;
+                break;
+
+            case ONE:
+                if( strncmp(pNodeData->proc_name, processId, strlen(pNodeData->proc_name)) != 0)
+                    continue;
+                break;
+
+            case ALL:
+                break;
+
+            default:
+                DebugLog(LOGFILE, "Wrong Command TYPE : [%c]", type);
+                //error log (wrong client_pms command)
+                ErrorLog(7004, "Wrong Command TYPE : [%c]", type);
+                return false;
+        }
+
+        if (kill(pNodeData->sys_pid, signo) == -1)  //false
+        {
+            DebugLog(LOGFILE, "");
+            DebugLog(LOGFILE, "@@@@[Fail to SendSignal]@@@@");
+            DebugLog(LOGFILE, "  TYPE[%c], PROCESSID[%s]"   , type, processId);
+            DebugLog(LOGFILE, "  id     : [%s]"             , pNodeData->proc_name);
+            DebugLog(LOGFILE, "  status : [%c]"             , pNodeData->proc_status);
+            DebugLog(LOGFILE, "  pid    : [%d]"             , pNodeData->sys_pid);
+            DebugLog(LOGFILE, "  runCnt : [%d]"             , pNodeData->runCnt);
+            DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+            DebugLog(LOGFILE, "");
+            continue;
+        }
+        else
+        {
+            DebugLog(LOGFILE, "");
+            DebugLog(LOGFILE, "@@@@@@@[Send Signal]@@@@@@@");
+            DebugLog(LOGFILE, "  TYPE[%c], PROCESSID[%s]"  , type, processId);
+            DebugLog(LOGFILE, "  id     : [%s]"            , pNodeData->proc_name);
+            DebugLog(LOGFILE, "  status : [%c]"            , pNodeData->proc_status);
+            DebugLog(LOGFILE, "  pid    : [%d]"            , pNodeData->sys_pid);
+            DebugLog(LOGFILE, "  runCnt : [%d]"            , pNodeData->runCnt);
+            DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+            DebugLog(LOGFILE, "");
+        }
+
+        pNodeData->exitFlag = 1;    // PMS가 프로세스 종료시 exitFlag 1로 셋팅
+
+        // 이 부분은 ntop에서 사용되던 부분 이지만 process pause와 continue를
+        // 사용할 일이 거의 없고 검증이 되지 않았기에 사용하지 않음.
+        // 검수 삭제.  2000. 11. 29. 수 ky.
+        if(signo == SIGSTOP || signo == SIGCONT )
+        {
+            if (pthread_mutex_lock(&mutex))
+                DebugLog(LOGFILE, "Can't lock mutex");
+
+            switch(signo)
+            {
+                case SIGSTOP:
+                    pNodeData->proc_status = PAUSED;
+                    break;
+                case SIGCONT:
+                    pNodeData->proc_status = RUNNING;
+                    break;
+            }
+
+            ptrThis->GetDb().UpdateProcStatusTable(0, *pNodeData);
+
+            if (pthread_mutex_unlock(&mutex))
+                    DebugLog(LOGFILE,"Can't unlock mutex");
+        }
+
+        DebugLog(LOGFILE, "SEND SIGNAL : [%d] to [%s (%d)]",
+                 signo, pNodeData->proc_name, pNodeData->sys_pid);
+    } while(node = procInfoList.GetNextPosition(node));
+
+    return true;
+}
+
+/*******************************************************************************
+* Desc : pms 시작시에 db로부터 읽은 process정보를 리스트로 관리하는데
+*        리스트로부터 정보를 읽어서
+*        모든 프로세스를 fork-exec을 통해 실행하는 함수.
+*        선택한 type에 따라 실행하는 프로세스의 범위가 달라지고
+*        subContent는 type에 따라 group code/process id가 된다.
+*
+* Aagu : char type       -  A(ll), G(roup), O(ne)
+*        char subContent - 세부 항목들.
+*        serv            - 서비스 별로 명령을 처리 한다.
+*        uda에서는 서비스가 여러벌 있을 수 있는데 명령의 범위가 특정 서비스에게
+*        만 영향을 미치도록 한다. serv에 서비스 번호가 들어가면 해당 서비스
+*        의 프로세스들만 명령의 영향을 받게 된다.
+*        -9는 디폴트 인자로 서비스구분을 무시하고 그외 번호는 서비스 번호이다.
+*        또한 0은 서비스번호가 0이기에 모든 프로세스에 명령의 영향이 미친다.
+*
+*        client로부터 명령을 받을때 item1이 서비스 구분 필드로 사용된다.
+*******************************************************************************/
+void CPMS::ForkProcess(char type, char* subContent, int serv)
+{
+    CNode *pNode;
+    PPROCINFO pNodeData;
+
+    if (pthread_mutex_lock(&mutex))
+        DebugLog(LOGFILE,"Can't lock mutex");
+
+    pNode = procInfoList.GetHeadPosition();
+
+    do
+    {
+        pNodeData = (PPROCINFO)procInfoList.GetAt(pNode);
+
+        if (pNodeData->sys_pid == getpid())     // pms 자신일 경우..
+            continue;
+
+      if (serv != -9 && serv != 0)
+         if (serv != pNodeData->svc_id) continue;
+
+        if (type == GROUP && pNodeData->group_type != atoi(subContent))
+            continue;
+
+        if (type == ONE && strncmp(pNodeData->proc_name, subContent, sizeof(pNodeData->proc_name)) != 0)
+            continue;
+
+        DebugLog(LOGFILE, "");
+        DebugLog(LOGFILE, "@@@@@[Fork Process]@@@@@");
+        DebugLog(LOGFILE, "  id     : [%s]"         , pNodeData->proc_name);
+        DebugLog(LOGFILE, "  status : [%c]"         , pNodeData->proc_status);
+        DebugLog(LOGFILE, "  pid    : [%d]"         , pNodeData->sys_pid);
+        DebugLog(LOGFILE, "  runCnt : [%d]"         , pNodeData->runCnt);
+        DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@");
+        DebugLog(LOGFILE, "");
+
+        if (!ForkOneProcess(pNodeData))
+        {
+            //error log (fail to fork process)
+            ErrorLog(7002, "process name = %s, process status = %c, process pid = %d",
+            pNodeData->proc_name, pNodeData->proc_status, pNodeData->sys_pid);
+
+            DebugLog(LOGFILE, "Fail to fork process. (%s), (%s)",
+                     pNodeData->prog_name, pNodeData->proc_name);
+        }//end if
+    } while(pNode = procInfoList.GetNextPosition(pNode));
+
+    if (pthread_mutex_unlock(&mutex))
+        DebugLog(LOGFILE,"Can't unlock mutex");
+}
+
+/*******************************************************************************
+* Desc: 하나의 프로세스를 fork-exec으로 실행시키는 함수.
+*
+* Argu: process list의 하나의 node
+*
+* 주의사항 : 08.25
+*        fork후에 exec를 실패했을경우 process lis에는 process statu가
+*        RUNNING로 되어 있지만 실제 child는 실행되지 않은 상태이다.
+*        이점을 확인하는 모듈이 필요.
+*******************************************************************************/
+int CPMS::ForkOneProcess(PPROCINFO pNodeData, int dFlag)
+{
+    int pid;
+    int i;
+    char name[100];
+    char strArgs[100];
+    char strSharp[20];
+
+    // 정상 종료외에 비정상 종료도 추가 될 수 있음...
+    // 밑에 조건문 수정 사항이 생길 수 있음...
+    if (pNodeData->proc_status != STOPPED  &&
+        pNodeData->proc_status != KILLED   &&
+        pNodeData->proc_status != ABNORMAL &&
+        pNodeData->proc_status != INIT)
+    {
+        DebugLog(LOGFILE, "(%s) is Running ", pNodeData->proc_name);
+        return TRUE;
+    }
+
+    pid = fork();
+
+    if ( pid < 0 ) /* error */
+    {
+        //error log (fail to fork process)
+        ErrorLog(7002, "process name = %s, process status = %c, process pid = %d",
+        pNodeData->proc_name, pNodeData->proc_status, pNodeData->sys_pid);
+        DebugLog(LOGFILE, "Fail to fork process");
+        return FALSE;
+    }
+    else
+    if ( pid == 0) /* child */
+    {
+        sprintf(name, "%s%s", pNodeData->prog_path, pNodeData->prog_name);
+
+        sprintf(strSharp, "%1d %1d %1d %1d %02d %02d", pNodeData->sys_id,
+        pNodeData->svc_id, pNodeData->group_type, pNodeData->proc_type,
+        pNodeData->proc_sn, pNodeData->proc_remark);
+
+        switch (pNodeData->ip_cnt)
+        {
+            case 1:
+                switch (pNodeData->channel_cnt)
+                {
+                    case 1:
+                        sprintf(strArgs, "%s %s %s %d",
+                        pNodeData->proc_name,
+                        strSharp,
+                        pNodeData->p_ipaddr1,
+                        pNodeData->p_send1);
+                        break;
+                    case 2:
+                        sprintf(strArgs, "%s %s %s %d %d",
+                        pNodeData->proc_name,
+                        strSharp,
+                        pNodeData->p_ipaddr1,
+                        pNodeData->p_send1,
+                        pNodeData->p_recv1);
+                        break;
+                    default:
+                        sprintf(strArgs, "%s %s %s",
+                        pNodeData->proc_name,
+                        strSharp,
+                        pNodeData->p_ipaddr1);
+                        break;
+                }//end switch
+                break;
+            case 2:
+                switch (pNodeData->channel_cnt)
+                {
+                    case 1:
+                        sprintf(strArgs, "%s %s %s %d %s %d",
+                        pNodeData->proc_name,
+                        strSharp,
+                        pNodeData->p_ipaddr1,
+                        pNodeData->p_send1,
+                        pNodeData->p_ipaddr2,
+                        pNodeData->p_send1);
+                        break;
+                    case 2:
+                        sprintf(strArgs, "%s %s %s %d %d %s %d %d",
+                        pNodeData->proc_name,
+                        strSharp,
+                        pNodeData->p_ipaddr1,
+                        pNodeData->p_send1,
+                        pNodeData->p_recv1,
+                        pNodeData->p_ipaddr2,
+                        pNodeData->p_send2,
+                        pNodeData->p_recv2);
+                        break;
+                    default:
+                        sprintf(strArgs, "%s %s %s %s",
+                        pNodeData->proc_name,
+                        strSharp,
+                        pNodeData->p_ipaddr1,
+                        pNodeData->p_ipaddr2);
+                }//end switch
+                break;
+            default:
+                sprintf(strArgs, "%s %s",
+                pNodeData->proc_name, strSharp);
+        }//end switch
+
+//      if (pthread_mutex_unlock(&mutex))
+//          DebugLog(LOGFILE, "Can't unlock mutex");
+
+        if (execvp(name, GetStringList(strArgs)) < 0)
+        {
+            //error log (fail to fork process)
+            ErrorLog(7002, "process name = %s, process id = %s, process pid = %d",
+            name, pNodeData->proc_name, pNodeData->sys_pid);
+
+//          cout << "create [" << name, << "][" << pNodeData->id
+//               << " Error:[" strerror(errno) << "]" << endl;
+
+            DebugLog(LOGFILE, "");
+            DebugLog(LOGFILE, "@@@@@@@@@@@@@@");
+            DebugLog(LOGFILE, "-- Quit PMS --");
+            DebugLog(LOGFILE, "@@@@@@@@@@@@@@");
+            DebugLog(LOGFILE, "");
+
+//          clsLogM->put_EventHistData(FLAG_END, 1);
+            exit(1);
+        }//end if
+    }//end if
+
+    if (pid > 0) /* parent */
+    {
+        // 프로세스 기동시 trap log로 trap을 발생시킨다!!
+        db.InsertTrapData(5, D_UDA_TRAP_PROCESS_UP, D_TRAP_ON,
+            "%s(%d) process start.", pNodeData->proc_name, pid);
+                    
+        pNodeData->sys_pid = pid;
+        pNodeData->proc_status = RUNNING;
+        pNodeData->exitFlag = 0;    // default 0
+        db.UpdateProcStatusTable(dFlag, *pNodeData);
+
+        ShowList();
+
+        DebugLog(LOGFILE, "Success to run (%s) ", pNodeData->proc_name);
+    }//end if
+
+    return TRUE;
+}
+
+/*******************************************************************************
+* Desc : 요청한 명령의 유효 여부 검사. 요청한 명령의 적용범위의 유효 여부 검사.
+* Argu : pcommand_t command : Client로부터 받은 명령 구조체
+* Retn : true  - Right command, Right Type
+*        false - Wrong command, Wrong Type
+*******************************************************************************/
+bool CPMS::IsRightCommand(pcommand_t const command)
+{
+    bool retFlag;
+
+    // 요청한 명령의 유효 여부 검사.
+    switch(command->command)
+    {
+        case START:
+        case STOP:
+        case OPERATION:
+            retFlag = true;
+            break;
+        default:
+            //error log (wrong client_pms command)
+            ErrorLog(7004,    "Wrong COMMAND [%c]", command->command);
+            DebugLog(LOGFILE, "Wrong COMMAND [%c]", command->command);
+            retFlag = false;
+    }// end switch
+
+    if (retFlag == false)
+        return retFlag;
+
+    // 요청한 명령의 적용범위의 유효 여부 검사.
+    switch(command->type)
+    {
+        case ALL:
+        case GROUP:
+        case ONE:
+        case SELECT:
+        case UPDATE:
+        case DISK:
+        case CPU:
+        case LOGMANAGER:
+        case USERMANAGEMENT:
+            retFlag = true;
+            break;
+        default:
+            //error log (wrong client_pms command)
+            ErrorLog(7004,    "Wrong Command TYPE [%c]", command->type);
+            DebugLog(LOGFILE, "Wrong Command TYPE [%c]", command->type);
+            retFlag = false;
+    }// end switch
+
+    return retFlag;
+}
+
+/*******************************************************************************
+* Desc : PMS 종료.
+*        1. 모든 child 프로세스를 종료 시킨다.
+*        2. /bin/uda1stop.HaFlag파일을 생성한다.
+*        3. PMS를 종료 한다.
+*******************************************************************************/
+// 시스템에 따라서 변경
+void CPMS::ExitPMS()
+{
+    DebugLog(LOGFILE, "");
+    DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+    DebugLog(LOGFILE, "         Call PMS EXIT         ");
+    DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+    DebugLog(LOGFILE, "");
+
+    void *status;
+
+    // PMS 종료 플래그
+    char    EXITFLAGFILE[50];
+    sprintf(EXITFLAGFILE, "touch /home/uda%d/bin/uda%dstop.HaFlag", g_sysId, g_sysId);
+
+    CNode *node;
+    PPROCINFO pNodeData;
+    node = procInfoList.GetHeadPosition();
+
+    //pms가 죽을때 child를 종료시킴.
+    SendSignalProcess(ALL, NULL, SIGUSR1);  // SIGUSR1을 받으면 child들은 종료.
+
+    do
+    {
+        pNodeData = (PPROCINFO)procInfoList.GetAt(node);
+
+//      if ( strcmp(pNodeData->proc_name, LOGMGR))
+//          continue;
+
+        pNodeData->proc_status = STOPPED;
+        db.UpdateProcStatusTable(1, *pNodeData);
+
+    } while(node = procInfoList.GetNextPosition(node));
+
+
+
+    // 루프 카운트 추가 - 에러로그 추가
+//  int reCnt = 0;
+//  while(IsAllProcessStopped() == false) // child들이 모두 종료할때까지 기다림.
+//  {
+//      if (reCnt == 100)
+//      {
+//          // 에러 메세지 출력!!
+//          break;
+//      }
+//      sleep(2);
+//      reCnt++;
+//  }
+
+    CPMS::SetStopFlag(0);   // PMS STOP
+
+//  sleep(5);
+
+    system(EXITFLAGFILE);   // 종료 플래그 파일 생성
+    DebugLog(LOGFILE, "%s Created file", EXITFLAGFILE);
+
+    if (pthread_mutex_unlock(&mutex))
+        DebugLog(LOGFILE, "Can't unlock mutex");
+
+//  pthread_join(idProcCheckThread      , &status);
+    pthread_join(idMQThread             , &status);
+    pthread_join(idBackupOperationThread, &status);
+    pthread_join(idWaitThread           , &status);
+    pthread_join(idOperationThread      , &status);
+
+    DebugLog(LOGFILE, "");
+    DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+    DebugLog(LOGFILE, " join all thread. before sleep. ");
+    DebugLog(LOGFILE, " wait for a minute.....         ");
+    DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+    DebugLog(LOGFILE, "");
+}
+
+
+
+
+/*****************************************************************************************
+* Desc : PMS의 시작시간을 파일에 저장한다. PMS의 시작시간과 시작후 경과시간을 알아보기 위한
+*        플래그 파일 생성.
+*																						01-05-29 12:13오전 ky.
+* Argu : void
+* Retn : void
+* etc. : none
+*****************************************************************************************/
+void CPMS::StartTimeSet()
+{
+	time_t curTime;
+	time(&curTime);
+	char strCurTime[100];
+	sprintf(strCurTime, "%d", curTime);
+	
+	char strFileName[100];
+	sprintf(strFileName, D_PMS_START_FILENAME);
+	
+
+
+//   // 시스템 1은 SVC1, 시스템 2는 SVC3
+//   switch(m_av[1][0])
+//   {
+//   	case '1': sprintf(strFileName, D_PMS_START_FILENAME, 1); break;
+//   	case '2': sprintf(strFileName, D_PMS_START_FILENAME, 3); break;
+//   	default : return;
+//	}
+
+	char strBuff[30];
+	memset(strBuff, 0x20, sizeof(strBuff));
+	
+	int fd;
+	if (access(strFileName, F_OK) < 0) {
+		fd = open(strFileName, O_CREAT | O_RDWR, 0666);
+		write(fd, strBuff, sizeof(strBuff));
+		lseek(fd, 0, SEEK_SET);
+		write(fd, strCurTime, strlen(strCurTime));
+		lseek(fd, 11, SEEK_SET);
+		write(fd, strCurTime, strlen(strCurTime));		
+	}
+	else {
+		fd = open(strFileName, O_RDWR, 0666);
+	   lseek(fd, 0, SEEK_SET);
+		write(fd, strCurTime, strlen(strCurTime));
+		lseek(fd, 11, SEEK_SET);
+		write(fd, strCurTime, strlen(strCurTime));
+	}
+	
+   system(D_INIT_FILE_COMMAND);
+	
+	close(fd);	
+}//end StartTimeSet
+
+
+/*******************************************************************************
+* Desc : 스트링으로부터 token으로 구분되어진 첫 단어를 return하는 함수
+* Argu : 하나이상의 token으로 구성되어진 문자열
+* Retn : src - token으로 구분되어지는 첫 단어.
+*******************************************************************************/
+char** GetStringList(char*  src)
+{
+    char* str;
+    char* tmp = (char *) 0;
+    char** ar = (char **) malloc(10*10);
+
+    int i = 0;
+
+    str = strtok(src, " ");
+//  cout << str << endl;
+    ar[i++] = str;
+
+    while(1)
+    {
+        str = strtok(tmp, " ");
+//      cout << str << endl;
+        ar[i] = str;
+        i++;
+        if(!str) break;
+    }
+
+    ar[i] = (char *)0;
+
+    return ar;
+}//end GetStringList
+
+/*******************************************************************************
+* Desc : stop요청이 있을때 모든 child process의 종료를 wait해야한다.
+*        모든 프로세스가 종료 되지 않았다면 종료될때까지
+*        wait thread는 종료되지 않는다.
+* Retn : true  - 모든 child 프로세스가 동작 하지 않는다.
+*        false - child 프로세스가 동작 중이다.
+*******************************************************************************/
+bool IsAllProcessStopped()
+{
+    CNode *pNode;
+    PPROCINFO pNodeData;
+
+    pNode = procInfoList.GetHeadPosition();
+
+    do
+    {
+        pNodeData = (PPROCINFO)procInfoList.GetAt(pNode);
+
+        //자기자신의 종료 정보는 체크하지 않는다.
+        if(pNodeData->sys_pid == getpid() )
+            continue;
+
+        if (pNodeData->proc_status == RUNNING)
+            return false;
+    }while(pNode = procInfoList.GetNextPosition(pNode));
+
+    return true;
+}
+
+/*******************************************************************************
+* Desc : child가 종료를 wait하는 thread를 생성.
+*******************************************************************************/
+void CreateWaitChildStatusThread()
+{
+    if (pthread_create(&idWaitThread, NULL, &WaitChildStatusThread, (void *)NULL) == 0)
+        DebugLog(LOGFILE, "Create CheckWaitChildStatus Thread");
+    else
+    {
+        //error log (fail to create thread)
+        ErrorLog(7006, "WaitThread id = %d", idWaitThread);
+        DebugLog(LOGFILE, "Fail to Create CheckWaitChildStatus Thread");
+    }
+}
+
+/*******************************************************************************
+* Desc : fork-exec을 통해 실행된 process list들의 종료를 wait하는 함수
+*        종료상태를 check하여 결과를 db에 저장한다.
+*******************************************************************************/
+void *WaitChildStatusThread(void *a)
+{
+    int status;             // child로부터 받은 종료상태 정보
+    int exit_status;        // 종료 상태
+    int sig_status;         // 시그널 번호
+    int nStop  = 1;         // 모든 프로세스가 종료되기를 기다림
+    bool abnormalFlag;      // 비정상 종료 체크 플래그
+    long gapTime;           // 시간 차이
+
+    CNode *pNode;
+    PPROCINFO pNodeData;
+
+    CPmsDbHandler db(1, "recvpipe", "sendpipe");
+
+    if (db.ConnectDBMultiThread(1, USER, PASSWD))   //true
+        DebugLog(LOGFILE, "Connect OK in WaitChildStatus Thread ");
+    else
+        pthread_exit(NULL);
+
+    while(nStop)
+    {
+        if(CPMS::GetStopFlag() == 0)
+            nStop = 0;
+
+        sleep(1);
+
+        pNode = procInfoList.GetHeadPosition();
+
+        if (pthread_mutex_lock(&mutex))
+            DebugLog(LOGFILE,"Can't lock mutex");
+
+        do
+        {
+            pNodeData = (PPROCINFO) procInfoList.GetAt(pNode);
+
+            //pNodeData->proc_status == STOPPED || 2000.11.24 changed by ky.
+            if (pNodeData->proc_status == PAUSED  ||
+                pNodeData->sys_pid     == 0       ||
+                pNodeData->sys_pid     == getpid())
+                continue;
+
+            abnormalFlag = false;
+
+            if (waitpid(pNodeData->sys_pid, &status, WNOHANG) == pNodeData->sys_pid)
+            {
+                if(WIFEXITED(status)) // 0:abnormal exit, 1:normal exit
+                {
+                    exit_status = WEXITSTATUS(status);  // 종료 상태 번호
+                    if (exit_status == 0)
+                    {
+                        DebugLog(LOGFILE, "");
+                        DebugLog(LOGFILE, "%s (%d) is terminated normally Exit Status = %d",
+                                 pNodeData->proc_name,
+                                 pNodeData->sys_pid,
+                                 exit_status);
+                        DebugLog(LOGFILE, "");
+
+                        // 프로세스 종료시 trap log로 trap을 발생시킨다!!
+                        db.InsertTrapData(1, D_UDA_TRAP_PROCESS_DOWN, D_TRAP_OFF,
+                            "%s(%d) process normally stop. exit status : %d", pNodeData->proc_name, pNodeData->sys_pid, exit_status);
+
+                        pNodeData->proc_status = STOPPED;
+                        pNodeData->sys_pid = 0;
+                    }
+                    else        // exit -1, -2 .. etc...
+                    {
+                        // abnormal exit
+                        DebugLog(LOGFILE, "");
+                        DebugLog(LOGFILE, "%s (%d) is terminated abnormally Exit Status = %d",
+                                 pNodeData->proc_name,
+                                 pNodeData->sys_pid,
+                                 exit_status);
+                        DebugLog(LOGFILE, "");
+
+                        db.InsertTrapData(1, D_UDA_TRAP_PROCESS_DOWN, D_TRAP_OFF,
+                            "%s(%d) process abnormally stop. exit status : %d", pNodeData->proc_name, pNodeData->sys_pid, exit_status);
+
+                        pNodeData->proc_status = ABNORMAL;
+                        pNodeData->sys_pid = 0;
+                        abnormalFlag = true;
+                    }
+                    db.UpdateProcStatusTable(1, *pNodeData);
+                }
+                else        // SIGKILL, SIGSTOP과 미정의된 시그널
+                {
+                    sig_status = WTERMSIG(status);  // 시그널 번호
+
+                    if (sig_status == 16)  // 16 = SIGUSR1 = normally exit
+                    {
+                        DebugLog(LOGFILE, "");
+                        DebugLog(LOGFILE, "%s (%d) is terminated normally signal = %d(SIGUSR1)",
+                                 pNodeData->proc_name,
+                                 pNodeData->sys_pid,
+                                 sig_status);
+                        DebugLog(LOGFILE, "");
+
+                        db.InsertTrapData(1, D_UDA_TRAP_PROCESS_DOWN, D_TRAP_OFF,
+                            "%s(%d) process normally stop. signal : %d", pNodeData->proc_name, pNodeData->sys_pid, sig_status);
+
+                        pNodeData->proc_status = STOPPED;
+                        pNodeData->sys_pid = 0;
+                    }
+                    else
+                    {
+                        DebugLog(LOGFILE, "");
+                        DebugLog(LOGFILE, "%s (%d) is terminated abnormally signal = %d",
+                                 pNodeData->proc_name,
+                                 pNodeData->sys_pid,
+                                 sig_status);
+                        DebugLog(LOGFILE, "");
+
+                        db.InsertTrapData(1, D_UDA_TRAP_PROCESS_DOWN, D_TRAP_OFF,
+                            "%s(%d) process abnormally stop. signal : %d", pNodeData->proc_name, pNodeData->sys_pid, sig_status);
+
+                        pNodeData->proc_status = KILLED;
+                        pNodeData->sys_pid = 0;
+                        abnormalFlag = true;
+                    }
+
+                    db.UpdateProcStatusTable(1, *pNodeData);
+                }//end if
+
+                // 네트워크 상태 업데이트. 종료상태이므로
+                // 네트워크 상태도 에러상태로 업데이트 함.
+                if (pNodeData->net_status == REGNETWORK)
+                {
+                    pNodeData->net_status = ERRNETWORK;
+                    db.UpdateProcStatusTable(1, *pNodeData, 'N');
+                }
+
+                // 비정상 종료시 PMS에서 재기동 및 PMS종료 판단 루틴.
+                if (abnormalFlag == true)
+                {
+                    pNodeData->runCnt = pNodeData->runCnt + 1;  // start시 runCnt 1씩 증가
+
+                    // 0이외에 5번이상 비정상 종료시 모든 child process 종료 후
+                    // PMS종료.  HA로 제어권을 넘김
+                    // exitFlag가 0일경우 외부종료, 1일경우 PMS종료.
+                    // 그리고 Ha가 동작중일때 적용.
+                    if (pNodeData->runCnt > 5    &&
+                        pNodeData->exitFlag == 0 &&
+                        access(HASTARTFLAGFILE, F_OK) == 0) {
+                        db.InsertTrapData(1, D_UDA_TRAP_SERVICE_TAKE_OVER, D_TRAP_OFF,
+                            "[Abnormal process exit] %s => %d restart. and %s file check.",  pNodeData->proc_name, pNodeData->runCnt, HASTARTFLAGFILE);
+                        ptrThis->ExitPMS();
+                    }
+                    else
+                    if (CPMS::GetStopFlag() != 0 && pNodeData->exitFlag == 0)
+                        ptrThis->ForkOneProcess(pNodeData, 1);
+                    else
+                    if (pNodeData->runCnt > 0)  // start시 runCnt 1씩 증가
+                        pNodeData->runCnt = pNodeData->runCnt - 1;
+                }//end if
+            }//end if
+
+            // 2000. 11. 23.
+            gapTime     = DiffTime(pNodeData->proc_run_time);
+
+            if (strcmp(pNodeData->proc_run_time, "0") != 0 &&
+                       pNodeData->runCnt != 0              &&
+                gapTime > 60                                 )  // 1분이상 정상 이면
+            {
+                pNodeData->runCnt = 0;                          // run count를 0으로 초기화
+
+                DebugLog(LOGFILE, "");
+                DebugLog(LOGFILE, "@@@@@@@[Reset run count]@@@@@@@");
+                DebugLog(LOGFILE, "  id     : [%s]"                , pNodeData->proc_name);
+                DebugLog(LOGFILE, "  status : [%c]"                , pNodeData->proc_status);
+                DebugLog(LOGFILE, "  pid    : [%d]"                , pNodeData->sys_pid);
+                DebugLog(LOGFILE, "  runCnt : [%d]"                , pNodeData->runCnt);
+                DebugLog(LOGFILE, "  gapTime: [%ld]"               , gapTime);
+                DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+                DebugLog(LOGFILE, "");
+            }
+
+        }while(pNode = procInfoList.GetNextPosition(pNode));
+
+        if (pthread_mutex_unlock(&mutex))
+            DebugLog(LOGFILE,"Can't unlock mutex");
+
+        sleep(2);
+
+    }//end while
+
+    if (db.DisconnectDBMultiThread(1))
+        DebugLog(LOGFILE,"Success to Disconnect DB in WaitChildStatus Thread");
+    else
+        DebugLog(LOGFILE,"Fail to Disconnect DB in WaitChildStatus Thread");
+
+    pthread_exit(NULL);
+    return NULL;   // use just to prevent warning
+}
+
+/*******************************************************************************
+* Desc : 프로세스가 여러번 죽었다 살았다 할경우 비정상 종료 처리를 하게된다.
+*        비정상 처리를 특정 프로세스에 한하여 무시 하도록 하기위한 함수이다.
+*        특정 프로세스는 이 함수에 fix되며 alias로 구분한다.
+* Argu : char* quitProcessAlias - 프로세스의 alias
+* Retn : bool true  - 비정상 처리 수행
+*             false - 비정상 처리 무시
+*******************************************************************************/
+bool IsAbnormalProcess(char* quitProcessAlias)
+{
+    #define CHECKPROCESSCOUNT 3                          // check할 프로세스 수
+    char procList[CHECKPROCESSCOUNT][10] = { "11LOG00X", // check할 프로세스 fix
+                                             "11LOG00X",
+                                             "11LOG00X" };
+    int i;
+    for(i = 0; i < CHECKPROCESSCOUNT; i++)
+    {
+        if (strcmp(quitProcessAlias, procList[i]) == 0) // 해당 프로세스이다.
+        {
+            DebugLog(LOGFILE, "");
+            DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+            DebugLog(LOGFILE, "   %s Abnormally IGNORE"     , quitProcessAlias);
+            DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+            DebugLog(LOGFILE, "");
+            return false;
+        }
+    }
+
+    DebugLog(LOGFILE, "");
+    DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+    DebugLog(LOGFILE, "   %s Abnormally RUN"           , quitProcessAlias);
+    DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+    DebugLog(LOGFILE, "");
+    return true;
+}
+
+/*******************************************************************************
+* Desc : 프로세스 상태 체크 스레드 생성
+*******************************************************************************/
+void CreateProcessCheckThread()
+{
+    if (pthread_create(&idProcCheckThread, NULL, &ProcessCheckThread, (void *)NULL) == 0)
+        DebugLog(LOGFILE, "Create ProcessCheck Thread");
+    else
+    {
+        //error log (fail to create thread)
+        ErrorLog(7006, "Process Check Thread id = %d", idProcCheckThread);
+        DebugLog(LOGFILE, "Fail to Create ProcessCheck Thread");
+    }
+}
+
+/*******************************************************************************
+* Desc : 프로세스 상태 체크 스레드
+*        현재 status가 RUNNING중인 프로세스에 한해 시스템 명령 ps로
+*        프로세스의 상태를 체크 동작중이면 넘어가고 동작중이 아닐시에는
+*        status를 STOPPED로 업데이트 한다.
+*******************************************************************************/
+void* ProcessCheckThread(void* a)
+{
+    CNode *pNode;
+    PPROCINFO pNodeData;
+
+    CPmsDbHandler db(2, "recvpipe", "sendpipe");
+
+    if (db.ConnectDBMultiThread(2, USER, PASSWD) )  //true
+        DebugLog(LOGFILE, "Connect OK in ProcessCheck Thread");
+    else
+    {
+        DebugLog(LOGFILE, "Fail to Connect in ProcessCheck Thread");
+        pthread_exit(NULL);
+    }
+
+//  while(CPMS::GetStopFlag())
+//  {
+        pNode = procInfoList.GetHeadPosition();
+
+//      sleep(30);
+        do
+        {
+            if (CPMS::GetStopFlag() == 0)
+                break;
+
+            pNodeData = (PPROCINFO)procInfoList.GetAt(pNode);
+
+            // pid가 PMS이거나 상태가 STOP이거나 pid 0이거나 process name이
+            // 없을 경우 process check를 하지 않음.
+            if ( pNodeData->sys_pid     == getpid() ||
+                 pNodeData->proc_status == STOPPED  ||
+                 pNodeData->sys_pid     == 0        ||
+                 strcmp(pNodeData->proc_name, "") == 0 )
+                continue;
+
+            if( ProcCheck( pNodeData->sys_pid, pNodeData->proc_name ) == 0 )
+            {
+                pthread_mutex_lock(&mutex);
+
+                pNodeData->proc_status = STOPPED;
+                db.UpdateProcStatusTable(2, *pNodeData);
+
+                pthread_mutex_unlock(&mutex);
+            }//end if
+        } while( (pNode = procInfoList.GetNextPosition(pNode)) );
+
+//      sleep(30);
+
+//  }//end while
+
+    if ( db.DisconnectDBMultiThread(2) )
+        DebugLog(LOGFILE, "Success to Disconnect DB in ProcessCheck Thread");
+    else
+        DebugLog(LOGFILE, "Fail to Disconnect DB in ProcessCheck Thread");
+
+    pthread_exit(NULL);
+    return NULL;
+}
+
+/*******************************************************************************
+* 프로세스 동작 상태 체크
+* return : -1 - pipe open error
+*           1 - 프로세스 정상 작동
+*           0 - 프로세스 정지.(없음)
+*******************************************************************************/
+int ProcCheck(int _procPid, char* _procName)
+{
+    FILE* pp;           // pipe open descriptor
+    char osCmd[60];     // os command
+    char strBuff[100];  // string temporary buffer
+
+    int procPid;        // process pid buffer
+    char procName[20];  // process name buffer
+
+    sprintf(osCmd, "ps -ef | grep %s | grep -v grep", _procName);
+
+    // pipe open error check
+    if( (pp = popen(osCmd, "r")) == NULL )
+    {
+        //error log (pipe open error)
+        ErrorLog(7007, "command = %s", osCmd);
+        DebugLog(LOGFILE, "Pipe open error !!");
+        return -1;
+    } // end if
+
+//  sleep(3);
+//  usleep(100000); // 0.1초
+
+    // process compare
+    while( fgets(strBuff, 100, pp) )
+    {
+        memset(procName, 0x00, strlen(procName));
+        memcpy(procName, &strBuff[9], 5);
+
+        procPid = atoi(procName);
+
+        memset(procName, 0x00, strlen(procName));
+        memcpy(procName, strstr(strBuff, _procName), strlen(_procName));
+
+//      DebugLog(LOGFILE, "%s", strBuff);
+//      DebugLog(LOGFILE, "%d, %s", procPid, procName);
+
+//      cout << "Check pid = " << _procPid << "  Check Pname = " << _procName << endl;
+        if( procPid == _procPid && !strcmp(procName, _procName) )
+        {
+//          cout << "procPid = " << procPid << "  procName = " << procName << endl;
+                pclose(pp);
+            return 1;
+        }
+
+        DebugLog(LOGFILE, "open pipe. Content = %s", strBuff);
+
+    } // end while
+
+    pclose(pp);
+
+    DebugLog(LOGFILE, "");
+    DebugLog(LOGFILE, "@@@@[Process Stopped Check]@@@@");
+    DebugLog(LOGFILE, "  Name1 = %s, Name2 = %s"      , procName, _procName);
+    DebugLog(LOGFILE, "  Pid1  = %d, Pid2  = %d"      , procPid , _procPid);
+    DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+    DebugLog(LOGFILE, "");
+
+    return 0;
+} // end ProcCheck
+
+/*******************************************************************************
+* 파일 로그 남김 (선언은 CPmsCommon.hpp에..)
+*******************************************************************************/
+bool ErrorLog(int errCode, char* format, ...)
+{
+#if 0
+    char strMessage[4000];
+    char strFormat [2000];
+
+    va_list var;
+    va_start( var, format );
+
+     sprintf( strFormat, "%s", format );        // make output format
+    vsprintf( strMessage, strFormat, var );     // SetFileName메소드로 지정.
+
+//  *clsLogM << clsLogM->ErrorCode(0)
+//           << "[ERROR] ERROR CODE = " << errCode << ", "
+//           << strMessage << endl;
+#endif
+
+    return true;
+}
+
+bool DebugLog(char* file, char* format, ...)
+{
+#if 0
+    char strMessage[4000];
+    char strFormat [2000];
+
+    va_list var2;
+    va_start( var2, format );
+
+     sprintf( strFormat, "%s", format );        // make output format
+    vsprintf( strMessage, strFormat, var2 );    // SetFileName메소드로 지정.
+
+//  *clsLogM << clsLogM->ErrorCode(0) << strMessage << endl;
+#endif
+
+#ifdef _OUTPUT_
+    CTime t;
+
+    // make debuglog file name
+    char time[30];
+    char fname[50];
+    t.Time_Display(time, 4);                        // System Date
+    sprintf(fname, "%s.%s",file,time);              // make file name
+
+    char* out = new char[strlen(format) + 400];
+
+    t.Time_Display(time, 2);                        // System Time
+
+    sprintf(out, "[%s] -> %s\n", time,  format);    // make format
+
+    va_list var;
+    FILE *fp;
+
+    va_start( var, format );
+    if ( fp = fopen(fname, "a+") )  // m_fname은 멤버변수.
+    {                               // m_fname은 생성자에서나
+        vfprintf( fp, out, var );   // SetFileName메소드로 지정.
+        fclose(fp);
+        delete out;
+        return true;
+    }
+
+//  cout << "can't make log file " << strerror(errno) << endl;
+    fclose(fp);
+    delete out;
+    return false;
+#else
+    return true;
+#endif
+}
+
+/*******************************************************************************
+* Desc : Process infomation print
+*******************************************************************************/
+void ShowList()
+{
+#if 0
+    CNode *pNode;
+    PPROCINFO pNodeData;
+
+    pNode = procInfoList.GetHeadPosition();
+
+    DebugLog(LOGFILE, "@@@@@@@[Proc List]@@@@@@@");
+
+    do
+    {
+        pNodeData = (PPROCINFO)procInfoList.GetAt(pNode);
+
+        DebugLog(LOGFILE, "  id     : [%s]"  , pNodeData->proc_name  );
+        DebugLog(LOGFILE, "  status : [%c]"  , pNodeData->proc_status);
+        DebugLog(LOGFILE, "  pid    : [%d]"  , pNodeData->sys_pid    );
+        DebugLog(LOGFILE, "  runCnt : [%d]\n", pNodeData->runCnt     );
+
+    } while(pNode = procInfoList.GetNextPosition(pNode));
+
+    DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@");
+#endif
+}
+
+/*******************************************************************************
+* Desc : fork-exec을 통해 실행된 process로부터 상태정보를 전송받기 위해
+*        message queue로부터 message를 wait하는 함수를 thread로 생성시키는 함수.
+* Argu : void
+* Retn : void
+*******************************************************************************/
+void CreateCheckMQThread()
+{
+    if (pthread_create(&idMQThread, NULL, &CheckMQThread, (void *) NULL) == 0)
+        DebugLog(LOGFILE, "Create CheckMQ Thread");
+    else
+    {
+        //error log (fail to create thread)
+        ErrorLog(7006, "Process Create Check MQ Thread id = %d", idMQThread);
+        DebugLog(LOGFILE, "Fail to Create CheckMQ Thread");
+    }
+}
+
+/*******************************************************************************
+* Desc : fork-exec을 통해 실행된 process로부터 상태정보를
+*        전송받기 위해 message queue로부터 message를 wait하는 함수,
+* Argu : void
+* Retn : void
+*******************************************************************************/
+void *CheckMQThread(void *a)
+{
+    char PMSMQ_NO[2];
+    PMSMQ = new MessageQueue<MsgPmsStatus>(g_sysId, 0, 1, 1, 0, 10, 1000);
+    MsgPmsStatus        OneRec(MSG_STATUS, g_sysId, 0, 1, 1, 0, 0);
+
+    sprintf(PMSMQ_NO, "%d", g_sysId);
+
+    char status;
+    CNode *pNode;
+    PPROCINFO pNodeData;
+    CPmsDbHandler db(3, "recvpipe", "sendpipe");
+
+    if (db.ConnectDBMultiThread(3, USER, PASSWD) )      //true
+        DebugLog(LOGFILE, "Connect OK in CheckMQ Thread ");
+    else
+    {
+        DebugLog(LOGFILE, "Fail to Connect in CheckMQ Thread");
+        pthread_exit(NULL);
+    }
+
+    while(CPMS::GetStopFlag())
+    {
+        memset ((char*)&OneRec, NULL, sizeof(MsgPmsStatus));
+
+        if (PMSMQ->recvMsg(&OneRec) == FLAG_MQ_IS_EMPTY)
+        {
+//          cout << "PMS LOG => [ERROR] PMSMQ " << PMSMQ_NO << " IS EMPTY sleep(1)...!"    << endl;
+            sleep(2);
+            continue;
+        }
+
+        DebugLog(LOGFILE, "");
+        DebugLog(LOGFILE, "@@@@@@@@@@[Receive Message]@@@@@@@@@@");
+        DebugLog(LOGFILE, "  OneRec.get_nPID    = %d"            , OneRec.get_nPID());
+        DebugLog(LOGFILE, "  OneRec.get_nStatus = %d"            , OneRec.get_nStatus());
+        DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+        DebugLog(LOGFILE, "");
+
+        switch(OneRec.get_nStatus())
+        {
+            case  0:
+                status = STOPPED;
+                break;
+            case  1:
+                status = RUNNING;
+                break;
+            case -1:
+                status = KILLED;
+                break;
+            case -2:
+                status = ABNORMAL;
+                break;
+            case -3:
+                status = ERRNETWORK;
+                break;
+            case -4:
+                status = REGNETWORK;
+                break;
+            default:
+                continue;
+        }
+
+        pNode = procInfoList.GetHeadPosition();
+
+        do
+        {
+            if (CPMS::GetStopFlag() == 0)   break;
+
+            pNodeData = (PPROCINFO)procInfoList.GetAt(pNode);
+
+            if ( pNodeData->sys_pid == getpid() )   continue;
+
+            if( pNodeData->sys_pid == OneRec.get_nPID() )
+            {
+                if (pthread_mutex_lock(&mutex))
+                    DebugLog(LOGFILE,"Can't unlock mutex");
+
+                switch (status)
+                {
+                    case ERRNETWORK:
+                    case REGNETWORK:
+                        pNodeData->net_status = status;
+                        db.UpdateProcStatusTable(3, *pNodeData, 'N');
+                        
+                        // XX71F00X 프로세스가 네트웍오류 발생시 Trap을 발생한다.
+                        // PDSN의 UDR Proxy기능을 수행함에 있어 지연 임계치를 초과했을 경우 보냄.
+                        if (strstr(pNodeData->proc_name, "7IF") != NULL && status == ERRNETWORK) {
+                            db.InsertTrapData(3, D_UDA_TRAP_PROXY_FAIL, D_TRAP_ON,
+                                "[Network Status error] %s(%d).", pNodeData->proc_name, pNodeData->sys_pid);
+                        }
+                        break;
+
+                    case STOPPED:
+                    case KILLED:
+                    case ABNORMAL:
+                        pNodeData->proc_status = status;
+                        db.UpdateProcStatusTable(3, *pNodeData, 'P');
+
+                        // 프로세스가 죽을때 네트워크 상태도 같이 업데이트 시킴.
+                        if (pNodeData->net_status == REGNETWORK)
+                        {
+                            pNodeData->net_status = ERRNETWORK;
+                            db.UpdateProcStatusTable(3, *pNodeData, 'N');
+                        }
+                        break;
+
+                    case RUNNING:
+                        pNodeData->proc_status = status;
+                        db.UpdateProcStatusTable(3, *pNodeData, 'P');
+                }//end switch
+
+                if (pthread_mutex_unlock(&mutex))
+                    DebugLog(LOGFILE,"Can't unlock mutex");
+            }//end if
+        } while( (pNode = procInfoList.GetNextPosition(pNode)) );
+    }//end while
+
+    if (db.DisconnectDBMultiThread(3))
+        DebugLog(LOGFILE,"Success to Disconnect DB in CheckMQ Thread");
+    else
+        DebugLog(LOGFILE,"Fail to Disconnect DB in CheckMQ Thread");
+
+    delete PMSMQ;
+
+    pthread_exit(NULL);
+    return NULL;
+}
+
+/*******************************************************************************
+* Desc : PMS업무처리 thread
+*        1. 20초마다 네트워크 에러 플래그 파일을 체크한다.
+*           네트워크 이상시 child프로세스를 모두 종료한후 PMS도 종료한다.
+*           pms1stop.HaFlag파일을 만들어 HA에게 PMS가 종료함을 알린다.
+*
+*        2. 1시간마다 Disk와 CPU의 상태 정보를 DB Insert한다.
+*******************************************************************************/
+void  CreateOperationThread()
+{
+    if (pthread_create(&idOperationThread, NULL, &OperationThread, (void *) NULL) == 0)
+        DebugLog(LOGFILE, "Create Operation Thread");
+    else
+    {
+        //error log (fail to create thread)
+        ErrorLog(7006   , "Process Create Operation Thread id = %d", idOperationThread);
+        DebugLog(LOGFILE, "Fail to Create Operation Thread");
+    }
+}
+
+/*******************************************************************************
+* Desc : PMS의 업무처리를 위한 Thread
+*******************************************************************************/
+#define NETWAITTIME             20      //   20 second. network error check time
+#define SYSINFOWAITTIME       3600      // 3600 second. disk,cpu update time
+
+void* OperationThread(void *a)
+{
+    CPmsDbHandler db(5, "recvpipe", "sendpipe");
+
+    if (db.ConnectDBMultiThread(5, USER, PASSWD) )      //true
+        DebugLog(LOGFILE, "Connect OK in OperationThread Thread ");
+    else
+    {
+        DebugLog(LOGFILE, "Fail to Connect in OperationThread Thread");
+        pthread_exit(NULL);
+    }
+        
+    time_t netErrChkST, netErrChkET;// Network 오류 플래그 파일 체크 time
+    time_t sysInfoST  , sysInfoET;  // system disk, cpu 상태 정보 업데이트 체크 time
+
+    bool netErrChkFlag = true;
+    bool sysInfoFlag   = true;
+
+    char    stopFileNAME[50];
+    sprintf(stopFileNAME, "/home/uda%d/bin/pms%dstop.HaFlag", g_sysId, g_sysId);
+
+    CTime t;
+    char sTime[10];         // system time
+    char sDate[10];         // system date
+    char systemDate[20];    // system time & date ex)20001115114454
+
+    while(CPMS::GetStopFlag())
+    {
+        sleep(2);
+
+        // Network 오류 체크 ***************************************************
+        if (netErrChkFlag)
+        {
+            time(&netErrChkST);
+            netErrChkFlag = false;
+        }
+
+        time(&netErrChkET);
+
+        if ( (netErrChkET - netErrChkST) >= NETWAITTIME )   // 20초마다 체크
+        {
+            // HA의 네트워크 오류 플래그 파일 체크.
+            if (access(stopFileNAME, F_OK) == 0)
+            {
+                db.InsertTrapData(5, D_UDA_TRAP_SERVICE_TAKE_OVER, D_TRAP_OFF,
+                    "[Network Status error] %s file check.", stopFileNAME);                
+                DebugLog(LOGFILE, "");
+                DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+                DebugLog(LOGFILE, "     pms%dstop.HaFlag Check     ", g_sysId);
+                DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+                DebugLog(LOGFILE, "");
+
+                sprintf(stopFileNAME, "rm /home/uda%d/bin/pms%dstop.HaFlag",
+                        g_sysId, g_sysId);
+                system(stopFileNAME);   // PMS STOP Flag File 삭제
+
+                DebugLog(LOGFILE, "");
+                DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+                DebugLog(LOGFILE, "  %s Delete OK!!"            , stopFileNAME);
+                DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+                DebugLog(LOGFILE, "");
+
+                ptrThis->ExitPMS();     // 파일이 있으면 PMS 종료. ExitPMS 호출
+            }
+            netErrChkFlag = true;
+        }
+        /**********************************************************************/
+
+        // Disk, CPU 상태 정보 업데이트 ****************************************
+        if (sysInfoFlag)
+        {
+            time(&sysInfoST);
+            sysInfoFlag = false;
+        }
+
+        time(&sysInfoET);
+
+        if( (sysInfoET - sysInfoST) >= SYSINFOWAITTIME )    // 1시간마다 Update
+        {
+            DebugLog(LOGFILE, "");
+            DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+            DebugLog(LOGFILE, "   UDA%d Disk, CPU info update   ", g_sysId);
+            DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+            DebugLog(LOGFILE, "");
+
+            memset(sTime     , 0x00, sizeof(sTime     ));
+            memset(sDate     , 0x00, sizeof(sDate     ));
+            memset(systemDate, 0x00, sizeof(systemDate));
+            t.Time_Display(sDate, 4);
+            t.Time_Display(sTime, 5);
+            sprintf(systemDate, "%s%s", sDate, sTime);
+
+            ptrThis->InsertSysInfo(systemDate, 1);    // DISK 상태 정보 업데이트
+            ptrThis->InsertSysInfo(systemDate, 2);    // CPU  상태 정보 업데이트
+            sysInfoFlag = true;
+        }
+        /**********************************************************************/
+    }//end while
+
+    if (db.DisconnectDBMultiThread(5))
+        DebugLog(LOGFILE, "Success to Disconnect DB in OperationThread Thread");
+    else
+        DebugLog(LOGFILE, "Fail to Disconnect DB in OperationThread Thread");
+
+    pthread_exit(NULL); // thread 종료
+    return NULL;
+}
+
+/*******************************************************************************
+* Desc : PMS 업무 처리 thread를 생성한다.
+*        File Backup을 처리한다. UNIX의 cron과 비슷하나 Client로부터 제어될 수
+*        있게 하기위해 PMS에 기능 추가.
+*******************************************************************************/
+void  CreateBackupOperationThread()
+{
+    if (pthread_create(&idBackupOperationThread, NULL, &BackupOperationThread, (void *) NULL) == 0)
+        DebugLog(LOGFILE, "Create BackupOperation Thread");
+    else
+    {
+        //error log (fail to create thread)
+        ErrorLog(7006   , "Process Create Backup Operation Thread id = %d", idBackupOperationThread);
+        DebugLog(LOGFILE, "Fail to Create BackupOperation Thread");
+    }
+}
+
+/*******************************************************************************
+* Desc : 파일 백업 배치 작업을 처리 한다.
+*        DB table T_BACKUP_INFO를 참조하여 backup관련 정보를 읽어온다.
+*        백업 시간을 체크하여 하루 한번 백업시간대에 백업 프로세스를 호출한다.
+*        배치 작업이며 DB의 정보가 변경될 소지가 있기때문에 sleep 1시간씩 주어
+*        테이블의 정보를 refresh한다.
+*******************************************************************************/
+void* BackupOperationThread(void *a)
+{
+    time_t backupST, backupET;  // Backup Info Table Load 시간 설정
+    bool backupChkFlag = true;
+
+    BackInfo backInfo[100];
+    int readCnt;
+
+    int x;                      // for count
+    int reCnt = 0;              // fork retry count
+    pid_t   backupInfo;         // child pid
+
+//    char backupInfoPath[ 50];   // backup info process path
+    char backupInfoName[512];   // backup info process name
+
+//    memset(backupInfoPath, 0x00, sizeof(backupInfoPath));
+//    sprintf(backupInfoPath, "/home/uda%d/bin/BackupMGR", g_sysId);
+
+    CTime t;
+    char curTime[30];
+
+    CPmsDbHandler db(4, "recvpipe", "sendpipe");
+
+    if (db.ConnectDBMultiThread(4, USER, PASSWD) )      //true
+        DebugLog(LOGFILE, "Connect OK in BackupOperation Thread ");
+    else
+    {
+        DebugLog(LOGFILE, "Fail to Connect in BackupOperation Thread");
+        pthread_exit(NULL);
+    }
+
+    // 변수 초기화
+//  for(x = 0; x < 100; x++)
+//      backInfo.procFlag = false;
+
+    db._SelectBackupInfo(backInfo, readCnt);    // T_BACKUP_INFO data select
+
+    int ret;
+
+    while(CPMS::GetStopFlag())
+    {
+        if (backupChkFlag)
+        {
+            time(&backupST);
+            backupChkFlag = false;
+        }
+
+        time(&backupET);
+
+        if ( (backupET - backupST) >= 1 )       // 1시간 한번 실행 3600으로 수정!!
+        {
+            db._SelectBackupInfo(backInfo, readCnt);// T_BACKUP_INFO data select
+            backupChkFlag = true;
+        }
+
+        t.Time_Display(curTime, 5);         // System Time  ex)154125
+
+        for(x = 0 ; x < readCnt ; x++)
+        {
+//          if ( atoi(backInfo[x].bak_time) b<= (atoi(curTime)) &&
+//              (atoi(curTime)-atoi(backInfo[x].bak_time)) < 10000 )
+//          if (backInfo[x].procFlag == true)
+
+            if ( atoi(backInfo[x].bak_time) == atoi(curTime) )
+            {
+                memset(backupInfoName, 0x00, sizeof(backupInfoName));
+                sprintf(backupInfoName, "/home/uda%d/bin/BackupMGR %s %s %s %s %d %d",
+                g_sysId,
+                backInfo[x].srcDir , backInfo[x].srcFile,
+                backInfo[x].dstDir , backInfo[x].dstFile,
+                backInfo[x].bak_day, backInfo[x].bak_delday);
+
+                DebugLog(LOGFILE, "");
+                DebugLog(LOGFILE, "@@@@@@@@@[Backup File]@@@@@@@@@@");
+                DebugLog(LOGFILE, "  %s"                            , backupInfoName);
+                DebugLog(LOGFILE, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+                DebugLog(LOGFILE, "");
+
+                ret = system(backupInfoName);
+                if (ret == -1) DebugLog(LOGFILE, "[ERROR] BackupMGR execute fail.");
+
+//                backupInfo = fork();
+
+//                if (backupInfo == 0)
+//                {
+//                    if (execvp(backupInfoPath, GetStringList(backupInfoName)) < 0)
+//                    {
+//                        //error log (fail to fork process)
+//                        ErrorLog(7002, "backupInfoPath = %s, backupInfoName = %s",
+//                        backupInfoPath, backupInfoName);
+//
+//                        DebugLog(LOGFILE, "Start BackupInfo Fail");
+//                        DebugLog(LOGFILE, "backupInfoPath = %s, backupInfoName = %s",
+//                        backupInfoPath, backupInfoName);
+//
+//                        DebugLog(LOGFILE, "");
+//                        DebugLog(LOGFILE, "@@@@@@@@@@@@@@");
+//                        DebugLog(LOGFILE, "-- Quit PMS --");
+//                        DebugLog(LOGFILE, "@@@@@@@@@@@@@@");
+//                        DebugLog(LOGFILE, "");
+//
+////                      clsLogM->put_EventHistData(FLAG_END, 5);
+//                        exit(5);
+//                    }
+//                }
+//
+//                reCnt = 0;
+//
+//                if (backupInfo)
+//                {
+//                    while(waitpid(backupInfo, NULL, WNOHANG) != backupInfo)
+//                    {
+//                        if (reCnt == 10)
+//                        {
+//                            // 에러메세지 출력!!
+//                            break;
+//                        }
+//                        sleep(1);
+//                        reCnt++;
+//                    }//end while
+//                }//end if
+////              backInfo[x].procFlag = false;
+            }//end if
+        }//end for
+        sleep(1);
+    }//end while
+
+    if (db.DisconnectDBMultiThread(4))
+        DebugLog(LOGFILE, "Success to Disconnect DB in BackupOperation Thread");
+    else
+        DebugLog(LOGFILE, "Fail to Disconnect DB in BackupOperation Thread"   );
+
+    pthread_exit(NULL);
+    return NULL;
+}
+
+/*******************************************************************************
+* Desc : 지정한 시간과 현재 시간의 차를 구한다.
+*        지정시간의 형식은 '20001201130021'식으로 날짜시간으로 지정하면
+*        현재시간과의 차를 구해 반환한다.
+* Argu : char* trTime - 지정시간
+* Retn : long - 현재 시간과의 차(초단위)
+*******************************************************************************/
+long DiffTime(char* trTime)
+{
+    time_t curtime;
+    struct tm *curtimed;
+
+    time( &curtime );                       // 현재 시스템 타임 저장.
+    curtimed = localtime( &curtime );       //    "             "
+
+    struct tm iftime;                       // IF에서 가져온 first cdr time 저장.
+    time_t targettime;                      // 현재 시스템 시간과 비교하기 위해
+                                            // 똑같은 타입 선언.
+
+    long gap;                               // 시간차 구함
+
+    char    timebuff[10];
+
+    memset( &iftime, NULL, sizeof(iftime) );    // iftime 초기화
+
+    memset( timebuff, 0x00, sizeof(timebuff) ); // 년 정보 대입
+    memcpy( timebuff, trTime, 4 );
+    iftime.tm_year = (atoi(timebuff) - 1900);
+
+    memset( timebuff, 0x00, sizeof(timebuff) ); // 월 정보 대입
+    memcpy( timebuff, &trTime[4], 2 );
+    iftime.tm_mon  = (atoi(timebuff) - 1);
+
+    memset( timebuff, 0x00, sizeof(timebuff) ); // 일 정보 대입
+    memcpy( timebuff, &trTime[6], 2 );
+    iftime.tm_mday = atoi(timebuff);
+
+    memset( timebuff, 0x00, sizeof(timebuff) ); // 시 정보 대입
+    memcpy( timebuff, &trTime[8], 2 );
+    iftime.tm_hour = atoi( timebuff );
+
+    memset( timebuff, 0x00, sizeof(timebuff) ); // 분 정보 대입
+    memcpy( timebuff, &trTime[10], 2 );
+    iftime.tm_min = atoi( timebuff );
+
+    memset( timebuff, 0x00, sizeof(timebuff) ); // 초 정보 대입
+    memcpy( timebuff, &trTime[12], 2 );
+    iftime.tm_sec = atoi( timebuff );
+
+    targettime = mktime( &iftime );             // first cdr의 시간을 초단위로
+                                    // 변환
+
+    // 현재 시스템 간과 first cdr시간의 차 구함
+    gap = abs( difftime( curtime, targettime ) );
+
+    return gap;
+}
+
+
+

@@ -1,0 +1,172 @@
+/******************************************************************************* 
+* Database Pipes
+* 12-14 Your Product Name/BookTitle as a Variable
+* This example shows the Pro*C code that receives messages from the PLSQL_DEBUG
+* pipe in the PL/SQL example above, and displays the messages.
+* If the Pro*C session is run in a separate window,
+* it can be used to display any messages that are sent to
+* the debug procedure from a PL/SQL program executing in a separate session.
+*******************************************************************************/
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <iostream.h>
+#include <time.h>
+
+EXEC SQL BEGIN DECLARE SECTION;
+    varchar username[20];
+    int status;
+    int msg_length;
+    char retval[2000];
+    char cmd;
+    char type;
+    char subContent[10];
+    char cmdd[87+1];
+EXEC SQL END DECLARE SECTION;
+
+EXEC SQL INCLUDE sqlca;
+
+void sql_error();
+void CreateCommand(char command, char type, char* subContent, char* retCommand);
+
+int main()
+{
+    /* prepare username */
+
+    strcpy((char *)username.arr,"uda/uda");
+    username.len = strlen((char *)username.arr);
+
+    EXEC SQL WHENEVER SQLERROR GOTO _sqlerr_;
+    EXEC SQL CONNECT :username;
+    printf("connect ok\n");
+
+    /* start an endless loop to look for and print messages on the pipe */
+    for (;;)
+    {
+        cout << "====================================================" << endl;
+        cout << " 'X' is EXIT"                                         << endl;
+        cout << " Command    : S(tart), T(erminate), O(peration)"      << endl;
+        cout << " Type       : G(roup), O(ne), A(ll) | S(elete), U(pdate) | D(isk), C(pu)" << endl;
+        cout << " SubContent : detail content "                        << endl;
+        cout << "====================================================="<< endl <<endl;
+
+        cout << "Command : ";
+        cin >> cmd;
+        if (cmd == 'X') return 0;   
+        cout << cmd << endl;
+
+        cout << "Type : ";
+        cin  >> type;
+        cout << type << endl;
+
+        cout << "SubContent : ";
+        cin  >> subContent;
+        cout << subContent << endl;
+       
+        CreateCommand(cmd, type, subContent, cmdd);
+
+        EXEC SQL EXECUTE
+        DECLARE
+            sta INTEGER;
+        BEGIN
+            dbms_pipe.pack_message(:cmdd);
+//          dbms_pipe.pack_message(:cmd);
+//          dbms_pipe.pack_message(:type);
+//          dbms_pipe.pack_message(:subContent);
+            sta := dbms_pipe.send_message('recvpipe');
+            :status := sta;
+        END;
+        END-EXEC;
+
+        cout << "cmd = " << cmdd << endl;
+
+        if (status == 0)
+            printf("success to send message \n");
+        else
+            printf("abnormal status, value is %d\n", status);
+    }//end for
+    
+    return 0;
+
+_sqlerr_:
+    printf("ORACLE ERROR [%d]\n", sqlca.sqlcode);
+    cout << cmd  <<endl;
+    cout << type <<endl;
+    cout << subContent<<endl;               
+    return 0;
+}
+
+void sql_error()
+{
+    printf("ORACLE ERROR [%d]\n", sqlca.sqlcode);
+    cout << cmd  << endl;
+    cout << type << endl;
+    cout << subContent << endl; 
+    exit(1);
+}
+
+void CreateCommand(char command, char type, char* subContent, char* retCommand)
+{
+    char cTime[14+1]; 					   // 명령 일자/시간
+    char fFlag = '3';   				   // 파일구분
+    char fItem1[10+1] = { "         |" };  // 파일 ITEM 1
+    char fItem2[10+1] = { "         |" };  // 파일 ITEM 2
+    char fItem3[10+1] = { "         |" };  // 파일 ITEM 3
+    char fItem4[10+1] = { "         |" };  // 파일 ITEM 4
+    char fItem5[10+1] = { "         |" };  // 파일 ITEM 5
+    char fItem6[10+1] = { "         |" };  // 파일 ITEM 6
+    
+    time_t t;       time(&t);
+    struct tm *tp;  tp = localtime(&t);
+
+    // 현재 날짜구함  (년월일시분초)
+    sprintf(cTime, "%04d%02d%02d%02d%02d%02d",
+            tp->tm_year+1900, tp->tm_mon+1, tp->tm_mday,
+            tp->tm_hour, tp->tm_min, tp->tm_sec);
+    
+    switch(command)
+    {
+        // Start, Terminate
+        case 'S':
+        case 'T':
+            break;
+        
+        // Operation
+        case 'O':
+            switch(type)
+            {
+                // Select, Update
+                case 'S':
+                case 'U':
+                    fFlag = '3';
+                    break;
+                
+                // Disk, Cpu
+                case 'D':
+                case 'C':
+                    break;
+                default:
+                    printf("Worng Command !!");
+            }
+            break;
+        default:
+            printf("Worng Command !!");
+    }
+    
+    sprintf(retCommand, "%c%c%-10.10s%s%c%s%s%s%s%s%s",
+            command, type, subContent, cTime, fFlag,
+            fItem1, fItem2, fItem3, fItem4, fItem5, fItem6);
+            
+    cout << " retCommand = " << retCommand << endl;
+    cout << command << endl;
+    cout << type << endl;
+    cout << subContent << endl;
+    cout << cTime << endl;
+    cout << fFlag << endl;
+    cout << fItem1 << endl;
+    cout << fItem2 << endl;
+    cout << fItem3 << endl;
+    cout << fItem4 << endl;
+    cout << fItem5 << endl;
+    cout << fItem6 << endl;
+}

@@ -1,0 +1,65 @@
+#include <CustHist.hpp>
+
+#define SQLCA_STORAGE_CLASS extern
+EXEC    SQL     INCLUDE SQLCA;
+
+EXEC SQL BEGIN DECLARE SECTION;
+int			nSvc_type;
+int			nCust_Type;
+char		SDate[DATE_LEN+1];
+EXEC SQL END DECLARE SECTION;
+
+
+int CustHist::SetCustHist(int svctype, int custtype, char *strdate)
+{
+	int	nRet;
+	
+	//---------------- 변수할당
+	nSvc_type = svctype;
+	nCust_Type = custtype;
+	strcpy(SDate, strdate);
+	//---------------- 변수할당
+	
+	
+	cout << "INSERT....." << endl;
+	EXEC SQL INSERT INTO t_cust_status_hist(svc_type, cust_status_type, date_time)
+					values(:nSvc_type, :nCust_Type,TO_DATE(:SDate, 'YYYYMMDDHH24MISS')); 
+	
+	nRet = sqlca.sqlcode;
+	if (sqlca.sqlcode == 0)  EXEC SQL COMMIT WORK;
+	else
+	{
+		cout << "[INSERT] T_CUST_STATUS_HIST ERROR : " << (int)sqlca.sqlcode << endl;
+		EXEC SQL ROLLBACK;
+	}	
+	
+	
+
+ 	return (nRet);
+}
+
+
+//--------------------------------------------------------------------
+int main(void)
+{
+	
+	int			nRet;
+	DbConnect	clsDbConnect;
+
+	nRet = clsDbConnect.connect();
+	if (nRet < 0)
+	{
+		cout << "DB Connect Failure [" << nRet << "]" << endl;
+		return nRet;
+	}else cout << "DB Connect Success " << endl;
+	
+	
+	
+	CustHist custhist;
+	custhist.SetCustHist(0, 1, "20001115121250");
+	
+	
+	
+	clsDbConnect.disconnect();
+	exit(1);
+}

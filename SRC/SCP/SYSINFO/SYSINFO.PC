@@ -1,0 +1,374 @@
+/******************************************************************
+* 파 일 명     
+      : SysInfo.pc
+* 기   능                                                          
+     : 시스템 디스크및 자원정보를 DB에 추가한다.	
+* 작 성 자     
+     : 조상영                         
+* first data  
+     :                     
+* last updata 
+     : 2000. 11. 01                  
+* 관 련 화 일  
+     : 
+* program history                                
+                           
+* Version
+  : 1.1 ( 2001. 05. 21 )                                           
+******************************************************************/
+
+
+#include <iostream.h>
+#include <string.h>
+#include <stdio.h>
+#include <signal.h>
+#include <errno.h>
+#include <time.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/types.h>
+
+
+EXEC    SQL     INCLUDE SQLCA;
+EXEC    SQL     INCLUDE SQLDA;
+EXEC    SQL     INCLUDE ORACA;
+
+#define  DB_USERNAME  "uda"
+#define  DB_PASSWORD  "uda"
+
+
+// Table변수에 접근하기 위한 변수.-----------
+EXEC SQL BEGIN DECLARE SECTION;
+VARCHAR     username[32];
+VARCHAR     passwd[32];
+
+//------ 디스크 사용정보(bdf) 필드정의
+char		DateTime[14+1];
+int			SysID;	
+char		VolumeName[40+1];
+int			VolumeSize;
+int			UsedSize;
+int			AvailSize;
+int			UsedRate;
+char		Location[50+1];
+char		Result[1+1];
+
+//------ 자원 사용정보(sar) 필드정의
+//char		DateTime[14+1];
+//int		SysID;	
+int			UserMode;
+int			SystemMode;
+int			WaitIO;
+int			OtherIdle;
+//char		Result;
+
+EXEC SQL END DECLARE SECTION;
+// Table변수에 접근하기 위한 변수.-----------
+
+/*
+struct BDF {
+	char 	Filesystem[40];
+	int  	Kbytes;
+	int	 	Used;
+	int		Avail;
+	int		used;
+	char	Mounted[50];
+};
+
+struct SAR {
+	int 	Usr;
+	int  	Sys;
+	int	 	Wio;
+	int		Idle;
+};
+
+typedef BDF	BdfInfo;
+typedef SAR	SarInfo;
+*/
+
+//--------------------------------------------------------------------
+class SysInfo {
+	private:
+		int		DBConnect;
+		char	Dhm[15];			//YYYYMMDDhhmmss
+		
+		int		InsertBdf(void);	//디스크정보를 DB에 추가한다.
+		int		InsertSar(void);	//자원정보를 DB에 추가한다.
+		
+	public:
+		SysInfo();
+		~SysInfo(){;}
+		void 	GetBdf(char *date, int sysid=1);	// 일시및 시스템ID를 받는다.
+		void 	GetSar(char *date, int sysid=1);
+		void 	GetBdf(int sysid=1)	{ GetBdf(Dhm, sysid);	}	// 현재 시스템일시 사용
+		void 	GetSar(int sysid=1)	{ GetSar(Dhm, sysid);	}	
+};
+
+
+//--------------------------------------------------------------------
+SysInfo::SysInfo()
+{
+
+	memset(DateTime, 0x00, sizeof(DateTime));
+	SysID = 0;
+	memset(VolumeName, 0x00, sizeof(VolumeName));
+	VolumeSize=UsedSize=AvailSize=UsedRate=0;
+	memset(Location, 0x00, sizeof(Location));
+	memset(Result, 0x00, sizeof(Result));
+	Result[0]='S';
+	UserMode=SystemMode=WaitIO=OtherIdle=0;
+	
+	DBConnect=1;
+	
+	strcpy((char *)username.arr, DB_USERNAME);
+	username.len = (unsigned short) strlen(DB_USERNAME);
+
+	strcpy((char *) passwd.arr, DB_PASSWORD);
+	passwd.len = (unsigned short) strlen(DB_PASSWORD);
+
+	EXEC SQL connect :username identified by :passwd;
+	if( sqlca.sqlcode != 0 )
+	{
+		cout << " sqlcaid: " << sqlca.sqlcaid << endl;
+		printf (" (haxa)sql abc: %x\n",sqlca.sqlabc );
+		cout << " sqlabc: " << sqlca.sqlabc << endl;
+		printf (" (haxa)sql error code: %x\n",sqlca.sqlcode );
+		cout << " sql error code: " << sqlca.sqlcode << endl;
+		cout << " sqlerrml: " << sqlca.sqlerrm.sqlerrml << endl;
+		cout << " sqlerrmc: " << (char *)&sqlca.sqlerrm.sqlerrmc-8 << endl;
+		cout << " sqlerrp: " << sqlca.sqlerrp << endl;
+		cout << " sqlerd: " << sqlca.sqlerrd << endl;
+		cout << " sqlwarn: " << sqlca.sqlwarn << endl;
+		cout << " sqlext: " << sqlca.sqlext << endl;
+		//-------------------------------------------- 연결실패
+		DBConnect=0;
+		cout << "DB Connection Error!! : " << sqlca.sqlcode << endl;
+	}
+
+	cout << " sql error code: " << sqlca.sqlcode << endl;
+	cout << "ConnectToDB sqlcode:" << sqlca.sqlcode << endl;
+	
+	//-------------------------
+	struct  tm 	*Tm;
+	time_t		today;
+	
+	time(&today);	// 오늘날자 얻기
+	Tm = localtime(&today);
+	sprintf(Dhm,"%04d%02d%02d%02d%02d%02d", Tm->tm_year+1900, Tm->tm_mon+1, Tm->tm_mday,  
+				Tm->tm_hour, Tm->tm_min, Tm->tm_sec);
+}
+
+
+
+//--------------------------------------------------------------------
+int SysInfo::InsertBdf(void)
+{
+	printf("%s\n", DateTime);
+	printf("%d\n", SysID);
+	printf("%s\n", VolumeName);
+	printf("%d\n", VolumeSize);
+	printf("%d\n", UsedSize);
+	printf("%d\n", AvailSize);
+	printf("%d\n", UsedRate);
+	printf("%s\n", Location);
+	printf("%s\n", Result);
+	
+	EXEC SQL INSERT INTO t_use_filesystem(date_time, sys_id, volume_name, volume_size, used_size, avail_size, used_rate, mounted_loc, result)
+	values(:DateTime, :SysID, :VolumeName, :VolumeSize, :UsedSize, :AvailSize, :UsedRate, :Location, :Result);
+
+	if (sqlca.sqlcode == 0) 
+	{
+		EXEC SQL COMMIT WORK;
+		return 1;
+	}
+	else 
+	{
+		printf("InsertBdf Error: [%d]\n", sqlca.sqlcode);
+		EXEC SQL ROLLBACK;
+		return 0;
+	}	
+	
+}
+
+
+//--------------------------------------------------------------------
+int SysInfo::InsertSar(void)
+{
+	
+	EXEC SQL DELETE t_cpu_usage;
+	EXEC SQL INSERT INTO t_cpu_usage(date_time, sys_id, user_mode, system_mode, wait_io, other_idle, result)
+	values(:DateTime, :SysID, :UserMode, :SystemMode, :WaitIO, :OtherIdle, :Result);
+
+	if (sqlca.sqlcode == 0) 
+	{
+		EXEC SQL COMMIT WORK;
+		return 1;
+	}
+	else 
+	{
+		printf("InsertSar Error: [%d]\n", sqlca.sqlcode);
+		EXEC SQL ROLLBACK;
+		return 0;
+	}	
+	
+}
+
+
+
+//--------------------------------------------------------------------
+void SysInfo::GetBdf(char *date, int sysid)
+{
+	if(!DBConnect) return;
+	
+	int		i;
+	char 	strCmd[200];
+	FILE	*fp;
+	
+	
+	EXEC SQL DELETE t_use_filesystem;
+	
+	strcpy(DateTime, date);
+	SysID = sysid;
+	if((fp = popen("bdf","r")) == NULL)
+	{
+		perror("popen err:");
+		Result[0]='F';	
+		InsertBdf();
+		return;
+	}else
+	{
+		fgets(strCmd, 200, fp);	// 한줄건너뛰기
+		while(fgets(strCmd, 200, fp))
+		{
+			i=strlen(strCmd);
+			i--;
+			strCmd[i]=0x00;
+			while(i--) 	if(strCmd[i]=='%') { strCmd[i]=' '; break;}
+			sscanf(strCmd,"%s %d %d %d %d %s", VolumeName, &VolumeSize, &UsedSize, &AvailSize, &UsedRate, Location);
+			printf("%s %d %d %d %d %s\n", VolumeName, VolumeSize, UsedSize, AvailSize, UsedRate, Location);
+			Result[0]='S';	
+			if(!InsertBdf()) break;
+		}
+	}
+	pclose( fp );
+}
+
+
+
+//--------------------------------------------------------------------
+void SysInfo::GetSar(char *date, int sysid)
+{
+	if(!DBConnect) return;
+	
+	int		i;
+	char 	strCmd[200];
+	char 	imsi[20];
+	FILE	*fp;
+	
+	
+	strcpy(DateTime, date);
+	SysID = sysid;
+	if((fp = popen("sar 1 1","r")) == NULL)
+	{
+		perror("popen err:");
+		Result[0]='F';
+		InsertSar();
+		return;
+	}else
+	{
+		i=4; while(i--) fgets(strCmd, 100, fp); // 4줄건너뛰기
+		fgets(strCmd, 100, fp);
+		strCmd[strlen(strCmd)-1]=0x00;
+		sscanf(strCmd, "%s %d %d %d %d", imsi, &UserMode, &SystemMode, &WaitIO, &OtherIdle);
+		printf("%d %d %d %d\n", UserMode, SystemMode, WaitIO, OtherIdle);
+		Result[0]='S';
+		InsertSar();
+	}
+	pclose( fp );
+}
+
+
+
+
+
+//--------------------------------------------------------------------
+// infotype : 1(filesystem) 2.(cpu)
+// date : YYYYMMDDhhmmss (14)
+// systemid : UDA1, UDA2
+int main(int argc, char *argv[])
+{
+	if(argc<4) 
+	{
+		printf("\nUSE : SysInfo <infotype> <date> <systemid> \n");
+		exit(1);
+	}
+	
+	SysInfo	sysInfo;
+	
+	if(atoi(argv[1])==1) sysInfo.GetBdf(argv[2], atoi(argv[3]));
+	else sysInfo.GetSar(argv[2], atoi(argv[3]));	
+	
+	exit(1);
+}
+
+/*
+int main()
+{
+	FILE 		*pid;
+	int 		i, j;
+	BdfInfo		bdf;
+	SarInfo		sarif;
+	
+	char str[100];
+	char cmd[100];
+	
+	char psCommandTime[]="ps -ef | grep              | grep -v grep | grep -v ftp | grep -v tail | awk '{ print $5 }'";
+	char psCommand[]="ps -ef | grep              | grep -v grep | grep -v ftp | grep -v tail | awk '{ print $2 }'";
+	//char bdfCommand[]="bdf | grep -e SVC1/RADIUS";  // | cut -f 1 -d %  | tail -c 3";
+	//char bdfCommand[100]="bdf | grep -e SVC1/RADIUS | awk '{print $%d}'";
+	char bdfCommand[100]="bdf | grep -e SVC1/RADIUS | awk '{print $%d}'";
+	char sarifCommand[]="sarif 1 1 | tail -n 1 |awk '{ print $5 }'";
+	
+	
+	
+	
+	if((pid = popen("bdf","r")) == NULL)
+	{
+			perror("popen err:");
+	}else
+	{
+		fgets(str, 100, pid);	// 한줄건너뛰기
+		while(fgets(str, 100, pid))
+		{
+			i=strlen(str);
+			i--;
+			str[i]=0x00;
+			while(i--) 	if(str[i]=='%') { str[i]=' '; break;}
+			sscanf(str,"%s %d %d %d %d %s", bdf.Filesystem, &bdf.Kbytes, &bdf.Used, &bdf.Avail, &bdf.Used, bdf.Mounted);
+			printf("%s %d %d %d %d %s\n", bdf.Filesystem, bdf.Kbytes, bdf.Used, bdf.Avail, bdf.Used, bdf.Mounted);
+		}
+	}
+	pclose( pid );
+	
+	
+	if((pid = popen("sar 1 1","r")) == NULL)
+	{
+			perror("popen err:");
+	}else
+	{
+		i=4; while(i--) fgets(str, 100, pid); // 4줄건너뛰기
+		while(fgets(str, 100, pid))
+		{
+			str[strlen(str)-1]=0x00;
+			sscanf(str, "%d %d %d %d", &sarif.Usr, &sarif.Sys, &sarif.Wio, &sarif.Idle);
+			printf("%d %d %d %d\n", sarif.Usr, sarif.Sys, sarif.Wio, sarif.Idle);
+			//printf("[%s]\n", str);
+		}
+	}
+	pclose( pid );
+	
+	exit(1);	
+}
+*/
+
+

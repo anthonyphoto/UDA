@@ -1,0 +1,481 @@
+#include "CLimitTbl.hpp"
+
+extern SendLogManage	*LogM;
+
+#define SQLCA_STORAGE_CLASS extern
+EXEC    SQL     INCLUDE SQLCA;
+
+// 호스트 변수 선언------------
+EXEC SQL BEGIN DECLARE SECTION;
+
+	VARCHAR		strUserName[32];			// 사용자명
+	VARCHAR		strPasswd[32];				// 패스워드
+
+	int			gnMin;						// MIN
+	int			gnOId;						// operation Id 세션이 끝날때 까지 유지한다
+	long		gnEventTime;				// Event time
+	int			gnLimitAmt;					// 한도 금액
+	int			gnRateAmt;					// 중간정산된 금액
+	int			gnIntrimCnt;				// 5번에 한번 중간정산한다
+
+	char		gstrAccSId[LEN_ID+1];		// Account Session ID
+	char		gstrCorrId[LEN_ID+1];		// Correlation ID
+	int			gnCurrentAmt;				// 현재 쓴 금액
+	int			gnLastDataOct;				// 예전 Data Size
+	int			gnRemainAmt;				// 짜투리 패킷
+
+	int			gnCount;					// 해당 MIN 개수
+	int			gnTotalAmt;					// MIN별 현재 총사용금액
+
+EXEC SQL END DECLARE SECTION;
+//---------------------------//
+
+
+//------------------------------------------------------------------------------
+// 생성자
+CLimitTbl::CLimitTbl()
+{
+	gnMin			= 0;				// T_THRESHOLD_AMT, T_THRESHOLD_MID_AMT : 전화번호
+	memset( gstrAccSId,0x00,LEN_ID+1);	// T_THRESHOLD_MID_AMT	: Account Session ID
+	memset( gstrCorrId,0x00,LEN_ID+1);	// T_THRESHOLD_MID_AMT	: Correlation ID
+	gnLimitAmt		= 0;				// T_THRESHOLD_AMT		: 한도금액
+	gnCurrentAmt	= 0;				// T_THRESHOLD_MID_AMT	: session별 현사용액
+	gnRateAmt		= 0;				// T_THRESHOLD_MID_AMT	: session별 rating 금액
+	gnLastDataOct	= 0;				// T_THRESHOLD_MID_AMT	: 예전까지의 누적Data량 
+	gnOId			= 0;				// T_THRESHOLD_MID_AMT	: operationID
+	gnIntrimCnt		= 0;				// T_THRESHOLD_MID_AMT	: Intrim Count
+}
+
+
+
+//------------------------------------------------------------------------------
+// 소멸자
+CLimitTbl::~CLimitTbl()
+{
+	;
+}
+
+
+
+//------------------------------------------------------------------------------
+// START, INTERIM, STOP UDR이 들어왔을 때 [t_threshold_amt], [t_threshold_mid_amt] table에서 
+// MIN별 한도 정보와 세션별 사용금액, 짜투리 패킷을 조회한다.
+int CLimitTbl::GetLimitInfo()
+{
+	gnMin =  GetMin();
+
+	memset(gstrAccSId, 0x00, LEN_ID + 1);	// Account Session ID
+	memset(gstrCorrId, 0x00, LEN_ID + 1);	// Correlation ID
+
+	memcpy(gstrAccSId, GetAccSId(), LEN_ID);
+	memcpy(gstrCorrId, GetCorrId(), LEN_ID);
+	
+	// 먼저 T_THRESHOLD_AMT Table에서 조회한다, 존재하지 않으면 return
+	EXEC SQL	SELECT	nvl(LIMIT_AMT, 0),nvl(RATE_AMT, 0), nvl(INTRIM_CNT, 0),nvl(OP_ID,0)	
+				INTO	:gnLimitAmt ,:gnRateAmt, :gnIntrimCnt, :gnOId	
+				FROM	T_THRESHOLD_AMT
+				WHERE	MIN = :gnMin;
+
+	if(sqlca.sqlcode == 1403)
+		return (1403);
+	else if(sqlca.sqlcode != 0)
+	{
+		*LogM << LogM->ErrorCode(9501)<<"Fail select [t_threshold_amt][" << sqlca.sqlcode << "]" <<  endl;
+		return -1;		
+	}
+	
+	// 번호에 대한 한도금액이 존재하면 SET
+	SetLimitAmt(gnLimitAmt);
+	SetRateAmt(gnRateAmt);
+	SetIntrimCnt(gnIntrimCnt);
+	SetOId(gnOId);
+	
+	// MIN별로 [t_threshold_mid_amt]에서 총사용금액을 구함
+	EXEC SQL	SELECT	nvl(SUM(CUR_AMT),0)
+				INTO	:gnTotalAmt
+				FROM	T_THRESHOLD_MID_AMT
+				WHERE	MIN = :gnMin;
+
+	SetTotalAmt(gnTotalAmt);
+
+	#ifdef	__DEBUG
+	*LogM << LogM->ErrorCode(0)<<"Session 한도금액 총합: ["<< gnTotalAmt<<"]" <<  endl;
+	#endif
+	
+	// T_THRESHOLD_AMT에 MIN정보가 존재하면 T_THRESHOLD_MID_AMT에서 정보를 조회한다 
+	EXEC SQL	SELECT	CUR_AMT, LAST_PACKET_AMT, REMAIN_AMT	
+				INTO	:gnCurrentAmt, :gnLastDataOct, :gnRemainAmt
+				FROM	T_THRESHOLD_MID_AMT
+				WHERE	MIN = :gnMin AND ACC_ID = :gstrAccSId AND COR_ID = :gstrCorrId;
+	
+
+	// 존재하지 않으면 기본값으로 setting한다 
+	if(sqlca.sqlcode == 1403)
+	{
+		SetCurrentAmt(0);
+		SetLastDataOct(0);
+		SetRemainAmt(0);
+
+		#ifdef	__DEBUG
+		*LogM << LogM->ErrorCode(0)<<"Data Not Exist [t_threshold_mid_amt][" << sqlca.sqlcode << "]" <<  endl;
+		#endif
+
+		return NOT_EXIST_SESSION;
+	}
+	else if(sqlca.sqlcode == 0)
+	{
+		SetCurrentAmt(gnCurrentAmt);
+		SetLastDataOct(gnLastDataOct);
+		SetRemainAmt(gnRemainAmt);
+
+		return 0;
+	}
+	else
+	{	
+		*LogM << LogM->ErrorCode(9502)<<"Fail select [t_threshold_mid_amt][" << sqlca.sqlcode << "]" <<  endl;
+		return -1;
+	}	
+}
+
+
+
+//------------------------------------------------------------------------------
+// [t_threshold_amt], [t_threshold_mid_amt] table update
+int CLimitTbl::UpdateLimitInfo1()
+{
+	gnMin =  GetMin();
+	memset( gstrAccSId, 0x00, LEN_ID + 1);	// Account Session ID
+	memset( gstrCorrId, 0x00, LEN_ID + 1);	// Correlation ID
+
+	strncpy(gstrAccSId, GetAccSId(), strlen(GetAccSId()));
+	strncpy(gstrCorrId, GetCorrId(), strlen(GetCorrId()));
+
+	// [t_threshold_amt]
+	gnEventTime		= GetEventTime();		// Event time
+	gnIntrimCnt		= GetIntrimCnt();		// Intrim Count
+	gnOId			= GetOId();				// Operation ID
+	
+	// [t_threshold_mid_amt]
+	gnCurrentAmt	= GetCurrentAmt();		// 현재까지 사용한 총금액 
+	gnLastDataOct	= GetLastDataOct();		// 현재 누적 패캣량
+	gnRemainAmt		= GetRemainAmt();		// 사용금액 계산하고 남은 짜투리 패킷
+	
+	// [t_threshold_amt] Update-------------------------------------------------
+	EXEC SQL	UPDATE	T_THRESHOLD_AMT	
+				SET		E_T = :gnEventTime, INTRIM_CNT = :gnIntrimCnt, OP_ID = :gnOId
+				WHERE	MIN = :gnMin;
+				
+	if(sqlca.sqlcode == 1403)			// Data not exist
+	{
+		// [t_threshold_amt] Insert
+		EXEC SQL	INSERT	INTO	T_THRESHOLD_AMT(MIN, E_T, INTRIM_CNT, OP_ID) 		
+					VALUES(:gnMin, :gnEventTime, :gnIntrimCnt, :gnOId);
+					
+		if(sqlca.sqlcode != 0)
+		{	
+			EXEC SQL ROLLBACK;
+
+			*LogM << LogM->ErrorCode(9503)<<"Fail insert [t_threshold_amt]["<<sqlca.sqlcode<<"]"<<  endl;
+			return -1;
+		}		
+	}	
+	else if(sqlca.sqlcode != 0)									// Update fail
+	{
+		EXEC SQL ROLLBACK;
+
+		*LogM << LogM->ErrorCode(9504)<<"Fail update [t_threshold_amt]["<<sqlca.sqlcode<<"]"<<  endl;
+		return -1;
+	}	
+	// [t_threshold_amt] Update-----------------------------------------------//
+
+
+	
+	// [t_threshold_mid_amt] Update---------------------------------------------
+	EXEC SQL	UPDATE	T_THRESHOLD_MID_AMT	
+				SET		CUR_AMT = :gnCurrentAmt, LAST_PACKET_AMT = :gnLastDataOct, REMAIN_AMT =:gnRemainAmt
+				WHERE	MIN = :gnMin AND ACC_ID = :gstrAccSId AND COR_ID = :gstrCorrId;
+				
+	if(sqlca.sqlcode == 1403)			// Data not exist 
+	{
+		EXEC SQL	INSERT	INTO	T_THRESHOLD_MID_AMT ( MIN, ACC_ID, COR_ID, CUR_AMT, LAST_PACKET_AMT, REMAIN_AMT)
+					VALUES	( :gnMin, :gstrAccSId, :gstrCorrId, :gnCurrentAmt, :gnLastDataOct, :gnRemainAmt);
+		
+		if(sqlca.sqlcode != 0) 
+		{
+			EXEC SQL ROLLBACK;
+
+			*LogM << LogM->ErrorCode(9505)<<"Fail insert [t_threshold_mid_amt]["<<sqlca.sqlcode<<"]"<<  endl;
+			return -1;
+		}		
+	}
+	else if(sqlca.sqlcode != 0)								// Update fail
+	{
+		EXEC SQL ROLLBACK;
+
+		*LogM << LogM->ErrorCode(9506)<<"Fail update [t_threshold_mid_amt]["<<sqlca.sqlcode<<"]"<<  endl;
+		return -1;
+	}	
+	// [t_threshold_mid_amt] Update---------------------------------------------//	
+	
+	return 0;
+}
+
+
+
+//------------------------------------------------------------------------------
+// STOP UDR이 들어 왔을 때 [t_threshold_mid_amt] table delete
+int CLimitTbl::DeleteMidAmtTbl()
+{
+	gnMin =  GetMin();
+	memset(gstrAccSId, 0x00, LEN_ID + 1);	// T_THRESHOLD_MID_AMT	: Account Session ID
+	memset(gstrCorrId, 0x00, LEN_ID + 1);	// T_THRESHOLD_MID_AMT	: Correlation ID
+	memcpy(gstrAccSId, GetAccSId(), LEN_ID);
+	memcpy(gstrCorrId, GetCorrId(), LEN_ID);
+	
+	EXEC SQL	DELETE T_THRESHOLD_MID_AMT	 
+				WHERE	MIN = :gnMin AND ACC_ID = :gstrAccSId AND COR_ID = :gstrCorrId;
+	
+	if(sqlca.sqlcode != 0)
+	{
+		EXEC SQL ROLLBACK;
+
+		*LogM << LogM->ErrorCode(9507)<<"Fail delete [t_threshold_mid_amt]["<<sqlca.sqlcode<<"]"<<  endl;
+		return -1;
+	}	
+	
+	return 0;
+}	
+
+
+
+//------------------------------------------------------------------------------
+// STOP UDR이 들어 왔을 때 [t_threshold_amt] table delete	
+int CLimitTbl::DeleteAmtTbl()
+{
+	gnMin =  GetMin();
+	
+	EXEC SQL	DELETE T_THRESHOLD_AMT	 
+				WHERE	MIN = :gnMin;
+	
+	if(sqlca.sqlcode != 0)
+	{
+		EXEC SQL ROLLBACK;
+
+		*LogM << LogM->ErrorCode(9508)<<"Fail delete [t_threshold_amt]["<<sqlca.sqlcode<<"]"<<  endl;
+		return -1;
+	}	
+	
+	return 0;
+}
+
+
+
+//------------------------------------------------------------------------------
+// STOP UDR이 들어 왔을 때 [t_threshold_amt] table delete	
+int CLimitTbl::SelectAmtTbl()
+{
+	gnMin =  GetMin();
+	memset( gstrAccSId,0x00,LEN_ID+1);					// Account Session ID
+	memset( gstrCorrId,0x00,LEN_ID+1);					// Correlation ID
+	memcpy(gstrAccSId,GetAccSId(),LEN_ID);
+	memcpy(gstrCorrId,GetCorrId(),LEN_ID);
+	
+	EXEC SQL	SELECT	COUNT(*)
+				INTO	:gnCount
+				FROM	T_THRESHOLD_MID_AMT
+				WHERE	MIN = :gnMin AND ACC_ID <> :gstrAccSId  OR COR_ID <> :gstrCorrId;
+	
+	return gnCount;
+}
+
+
+
+
+//------------------------------------------------------------------------------
+// 한도요청결과, 중간정산 결과 받았을 때 한도 금액 update
+int CLimitTbl::UpdateLimitAmt()
+{
+	gnMin =  GetMin();									// MIN
+
+	memset(gstrAccSId, 0x00, LEN_ID + 1);				// Account Session ID
+	memset(gstrCorrId, 0x00, LEN_ID + 1);				// Correlation ID
+
+	memcpy(gstrAccSId, GetAccSId(), LEN_ID);
+	memcpy(gstrCorrId, GetCorrId(), LEN_ID);
+		
+	gnLimitAmt		= GetLimitAmt();					// 한도 금액
+	
+	EXEC SQL	UPDATE	T_THRESHOLD_AMT	
+				SET		LIMIT_AMT = :gnLimitAmt
+				WHERE	MIN = :gnMin;
+				
+	if(sqlca.sqlcode == 1403)							// Data not exist
+	{
+		EXEC SQL	INSERT	INTO	T_THRESHOLD_AMT ( MIN, LIMIT_AMT)
+					VALUES	( :gnMin, :gnLimitAmt );
+						
+		if(sqlca.sqlcode != 0) 
+		{
+			EXEC SQL ROLLBACK;
+
+			*LogM << LogM->ErrorCode(9509)<<"Fail insert limit amt[t_threshold_amt]["<<sqlca.sqlcode<<"]"<<  endl;
+			return -1;
+		}
+	}
+	else if(sqlca.sqlcode != 0)												 // Update fail
+	{
+		EXEC SQL ROLLBACK;
+
+		*LogM << LogM->ErrorCode(9510)<<"Fail update limit amt[t_threshold_amt]["<<sqlca.sqlcode<<"]"<<  endl;
+		return -1;
+	}		
+	
+	return 0;
+}
+
+
+
+//------------------------------------------------------------------------------
+// Operation ID update
+int CLimitTbl::UpdateOId()
+{
+	gnMin =  GetMin();
+	gnOId =  GetOId();
+
+	EXEC SQL	UPDATE	T_THRESHOLD_AMT	
+				SET		OP_ID = :gnOId
+				WHERE	MIN = :gnMin;
+
+	if(sqlca.sqlcode != 0)
+	{
+		EXEC SQL ROLLBACK;
+
+		*LogM << LogM->ErrorCode(9511)<<"Fail update Operaion ID[t_threshold_amt]["<<sqlca.sqlcode<<"]"<<  endl;
+		return -1;
+	}		
+	
+	return 0;
+}
+
+
+
+//------------------------------------------------------------------------------
+// Interim count update
+int CLimitTbl::UpdateInterimCnt()
+{
+	gnMin		 =  GetMin();
+	gnIntrimCnt	 =  0;
+
+	EXEC SQL	UPDATE	T_THRESHOLD_AMT	
+				SET		INTRIM_CNT = :gnIntrimCnt
+				WHERE	MIN = :gnMin;
+
+	if(sqlca.sqlcode != 0)
+	{
+		EXEC SQL ROLLBACK;
+
+		*LogM << LogM->ErrorCode(9512)<<"Fail update Interim Count[t_threshold_amt]["<<sqlca.sqlcode<<"]"<<  endl;
+		return -1;
+	}		
+	
+	return 0;
+}
+
+
+//------------------------------------------------------------------------------
+// operation ID update
+int CLimitTbl::SelectOId()
+{
+	gnMin =  GetMin();
+
+	EXEC SQL	SELECT	OP_ID
+				INTO	:gnOId	
+				FROM	T_THRESHOLD_AMT	
+				WHERE	MIN = :gnMin;
+	
+	if(sqlca.sqlcode == 1403) 
+	{
+		#ifdef	__DEBUG
+		*LogM << LogM->ErrorCode(0)<<"Operaion ID Not Exist.."<<  endl;
+		#endif
+
+		return 0;
+	}
+	else if(sqlca.sqlcode == 0)
+		return (gnOId);
+	else
+	{
+		*LogM << LogM->ErrorCode(9513)<<"Fail select Operaion ID [t_threshold_amt]["<<sqlca.sqlcode<<"]"<<  endl;
+		return -1;	
+	}	
+}
+
+
+
+//------------------------------------------------------------------------------
+// [t_threshold_amt] table의 한도 금액, 정산 금액 update
+int CLimitTbl::UpdateLimitNRateAmt()
+{
+	gnRateAmt		= GetRateAmt();						// 정산 금액	
+	gnLimitAmt		= GetLimitAmt();					// 한도 금액
+	
+	EXEC SQL	UPDATE	T_THRESHOLD_AMT	
+				SET		LIMIT_AMT = : gnLimitAmt, RATE_AMT = :gnRateAmt
+				WHERE	MIN 	 = :gnMin;
+	
+	if(sqlca.sqlcode == 1403)							// Data not exist
+	{
+		
+		EXEC SQL	INSERT	INTO	T_THRESHOLD_AMT(LIMIT_AMT, RATE_AMT) 		
+					VALUES(:gnLimitAmt, :gnRateAmt);
+					
+		if(sqlca.sqlcode != 0)
+		{
+			EXEC SQL ROLLBACK;
+
+			*LogM << LogM->ErrorCode(9514)<<"Fail insert limit, rate amt [t_threshold_amt]["<<sqlca.sqlcode<<"]"<<  endl;
+			return -1;
+		}
+	}
+	else if(sqlca.sqlcode != 0) 												 // Update fail
+	{
+		EXEC SQL ROLLBACK;
+
+		*LogM << LogM->ErrorCode(9515)<<"Fail update limit, rate amt [t_threshold_amt]["<<sqlca.sqlcode<<"]"<<  endl;
+		return -1;
+	}		
+	
+	return 0;
+}
+
+
+
+//------------------------------------------------------------------------------
+// STOP UDR 처리 후 정산 금액 update
+int CLimitTbl::UpdateRateAmt()
+{
+	gnMin 		=  GetMin();
+	gnRateAmt	=  GetRateAmt() - GetCurrentAmt();
+
+	EXEC SQL	UPDATE	T_THRESHOLD_AMT	
+				SET		RATE_AMT = :gnRateAmt
+				WHERE	MIN = :gnMin;
+
+	if(sqlca.sqlcode != 0)
+	{
+		EXEC SQL ROLLBACK;
+
+		*LogM << LogM->ErrorCode(9516)<<"Fail update rate amt [t_threshold_amt]["<<sqlca.sqlcode<<"]"<<  endl;
+		return -1;
+	}		
+	
+	return 0;
+}
+
+
+
+//------------------------------------------------------------------------------
+void CLimitTbl::Commit()
+{
+	EXEC	SQL	COMMIT	WORK;
+}	
